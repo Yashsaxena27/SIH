@@ -1,0 +1,198 @@
+/* ============================================================
+   MUIN — Mobile Urban Intelligence Network
+   Global Styles + Tailwind v4 Configuration
+   ============================================================ */
+
+@import "tailwindcss";
+
+/* ── Custom Theme ──────────────────────────────────────────── */
+@theme {
+  /* Font families */
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: "JetBrains Mono", "Fira Code", "SF Mono", Consolas, monospace;
+
+  /* Surface colors (dark theme) */
+  --color-surface-base: #09090b;
+  --color-surface-raised: #0f0f12;
+  --color-surface-overlay: #141419;
+  --color-surface-elevated: #1a1a21;
+  --color-surface-floating: #212129;
+
+  /* Brand / accent */
+  --color-accent-primary: #6366f1;
+  --color-accent-primary-hover: #818cf8;
+  --color-accent-secondary: #06b6d4;
+  --color-accent-secondary-hover: #22d3ee;
+
+  /* Status colors */
+  --color-status-critical: #ef4444;
+  --color-status-high: #f97316;
+  --color-status-medium: #eab308;
+  --color-status-low: #22c55e;
+  --color-status-live: #22c55e;
+  --color-status-monitoring: #3b82f6;
+  --color-status-processing: #a855f7;
+  --color-status-offline: #6b7280;
+  --color-status-syncing: #06b6d4;
+
+  /* Department colors */
+  --color-dept-pwd: #f97316;
+  --color-dept-traffic: #3b82f6;
+  --color-dept-disaster: #ef4444;
+  --color-dept-transport: #22c55e;
+
+  /* Shadows */
+  --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.15);
+  --shadow-glow-sm: 0 0 10px rgba(99, 102, 241, 0.10);
+
+  /* Animation */
+  --ease-out-custom: cubic-bezier(0, 0, 0.2, 1);
+  --ease-in-out-custom: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Sidebar width */
+  --sidebar-width: 16rem;
+  --sidebar-collapsed-width: 4.5rem;
+  --topbar-height: 3.5rem;
+}
+
+/* ── Base Reset & Defaults ─────────────────────────────────── */
+@layer base {
+  * {
+    border-color: rgba(255, 255, 255, 0.06);
+  }
+
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-surface-base text-white/90 antialiased;
+    font-family: var(--font-sans);
+    font-size: 0.875rem;
+    line-height: 1.375rem;
+    overflow: hidden;
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.18);
+  }
+
+  /* Focus styles */
+  :focus-visible {
+    outline: 2px solid rgba(99, 102, 241, 0.5);
+    outline-offset: 2px;
+    border-radius: 0.25rem;
+  }
+
+  /* Selection */
+  ::selection {
+    background: rgba(99, 102, 241, 0.3);
+    color: white;
+  }
+}
+
+/* ── Utility Components ────────────────────────────────────── */
+@layer components {
+  /* Glass panel */
+  .glass-panel {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(12px);
+    border-radius: 0.75rem;
+  }
+  .glass-panel:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.08);
+  }
+
+  /* Subtle separator */
+  .separator {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  /* Dot indicator */
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 9999px;
+    flex-shrink: 0;
+  }
+  .status-dot-live {
+    background: #22c55e;
+    box-shadow: 0 0 8px rgba(34, 197, 94, 0.4);
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+
+  /* Shimmer loading */
+  .shimmer {
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.03) 0%,
+      rgba(255, 255, 255, 0.06) 50%,
+      rgba(255, 255, 255, 0.03) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+  }
+}
+
+/* ── Keyframes ─────────────────────────────────────────────── */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.2); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Reduced Motion ────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── Leaflet Overrides (dark map theme) ────────────────────── */
+.leaflet-container {
+  background: #09090b;
+  font-family: var(--font-sans);
+}
+.leaflet-control-zoom a {
+  background: #141419 !important;
+  color: rgba(255, 255, 255, 0.8) !important;
+  border-color: rgba(255, 255, 255, 0.06) !important;
+}
+.leaflet-popup-content-wrapper {
+  background: #1a1a21 !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  border-radius: 0.75rem !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5) !important;
+}
+.leaflet-popup-tip {
+  background: #1a1a21 !important;
+  border-color: rgba(255, 255, 255, 0.06) !important;
+}
