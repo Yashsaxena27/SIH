@@ -82,11 +82,11 @@ export function IssueDetailPage() {
               issue.status === 'verified' ? 'bg-emerald-500/20 text-emerald-400' :
               issue.status === 'open' ? 'bg-orange-500/20 text-orange-400' : 'bg-blue-500/20 text-blue-400'
             )}>
-              Status: {issue.status.replace(/_/g, ' ')}
+              Status: {(issue.status || 'unknown').replace(/_/g, ' ')}
             </span>
           </div>
           <h1 className="text-3xl font-bold text-white/95 capitalize tracking-tight mb-2">
-            {issue.type.replace(/_/g, ' ')}
+            {(issue.type || 'unknown').replace(/_/g, ' ')}
           </h1>
           <div className="flex items-center gap-4 text-sm text-white/50">
             <span className="flex items-center gap-1.5"><MapPin className="w-4 h-4" /> {issue.location.address}</span>
@@ -133,7 +133,7 @@ export function IssueDetailPage() {
                   "absolute -top-6 left-0 px-2 py-0.5 text-[10px] font-mono font-bold text-black uppercase",
                   isCritical ? 'bg-red-500' : 'bg-accent-primary'
                 )}>
-                  {issue.type.replace(/_/g, ' ')} · {(issue.confidence * 100).toFixed(1)}%
+                  {(issue.type || 'unknown').replace(/_/g, ' ')} · {((issue.confidence ?? 0) * 100).toFixed(1)}%
                 </div>
               </motion.div>
 
@@ -250,7 +250,7 @@ export function IssueDetailPage() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-white/40 text-sm">Status</span>
-                  <span className="text-white/90 font-medium uppercase text-xs">{ticket.status.replace(/_/g, ' ')}</span>
+                  <span className="text-white/90 font-medium uppercase text-xs">{(ticket.status || 'unknown').replace(/_/g, ' ')}</span>
                 </div>
               </div>
             ) : (

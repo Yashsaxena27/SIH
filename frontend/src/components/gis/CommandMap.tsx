@@ -87,6 +87,7 @@ export function CommandMap({ buses, issues, routes, layers, filter, onIssueSelec
       <MapContainer 
         center={[28.6139, 77.2090]} 
         zoom={12} 
+        attributionControl={false} 
         className="w-full h-full z-0 outline-none"
         zoomControl={false}
       >

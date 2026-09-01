@@ -135,7 +135,7 @@ export function FleetPage() {
 
   const activeBuses = buses.filter(b => b.status === 'active').length;
   const offlineBuses = buses.filter(b => b.status === 'offline').length;
-  const totalObs = buses.reduce((acc, b) => acc + b.detectionsToday, 0);
+  const totalObs = buses.reduce((acc, b) => acc + ((b.detectionsToday ?? (b as any).detectionCount) || 0), 0);
 
   return (
     <div className="p-4 sm:p-6 space-y-6 max-w-[1920px] mx-auto h-[calc(100vh-3.5rem)] flex flex-col relative overflow-hidden">

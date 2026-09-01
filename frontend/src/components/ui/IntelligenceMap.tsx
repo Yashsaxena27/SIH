@@ -75,6 +75,7 @@ export function IntelligenceMap({ buses, issues }: IntelligenceMapProps) {
       <MapContainer 
         center={defaultCenter} 
         zoom={12} 
+        attributionControl={false} 
         className="w-full h-full z-0 outline-none"
         zoomControl={false}
       >

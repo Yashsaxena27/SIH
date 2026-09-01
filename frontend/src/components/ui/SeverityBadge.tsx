@@ -16,12 +16,13 @@ export function SeverityBadge({
   showIcon = true,
   className,
 }: SeverityBadgeProps) {
+  const normalizedSeverity = (severity?.toLowerCase() || 'low') as Severity;
   const config = {
     critical: { icon: AlertTriangle, color: 'text-status-critical bg-status-critical/10 border-status-critical/20', label: 'Critical' },
     high: { icon: AlertCircle, color: 'text-status-high bg-status-high/10 border-status-high/20', label: 'High' },
     medium: { icon: Info, color: 'text-status-medium bg-status-medium/10 border-status-medium/20', label: 'Medium' },
     low: { icon: CheckCircle, color: 'text-status-low bg-status-low/10 border-status-low/20', label: 'Low' },
-  }[severity];
+  }[normalizedSeverity] || { icon: Info, color: 'text-white/60 bg-white/10 border-white/20', label: severity || 'Unknown' };
 
   const Icon = config.icon;
 

@@ -158,7 +158,7 @@ export function IssuesPage() {
                       </div>
                       
                       <h3 className="text-lg font-bold text-white/90 truncate capitalize mb-1 group-hover:text-white transition-colors">
-                        {issue.type.replace(/_/g, ' ')}
+                        {(issue.type || 'unknown').replace(/_/g, ' ')}
                       </h3>
                       
                       <div className="flex items-center gap-1.5 text-xs text-white/50">
@@ -197,7 +197,7 @@ export function IssuesPage() {
                         "font-medium uppercase tracking-wider",
                         issue.status === 'verified' ? "text-emerald-400" :
                         issue.status === 'open' ? "text-orange-400" : "text-blue-400"
-                      )}>{issue.status.replace(/_/g, ' ')}</span>
+                      )}>{(issue.status || 'unknown').replace(/_/g, ' ')}</span>
                     </div>
                     <div className="flex items-center gap-1.5 text-white/30">
                       <Clock className="w-3 h-3" />

@@ -16,7 +16,7 @@ export function RoutesPage() {
         const data = await api.getRoutes();
         setRoutes(data);
       } catch (error) {
-        console.error('Failed to load routes:', error);
+        // Silent catch for demo
       } finally {
         setIsLoading(false);
       }

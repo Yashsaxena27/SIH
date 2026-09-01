@@ -16,7 +16,7 @@ export function EdgeMonitoringPage() {
         const data = await api.getBuses();
         setBuses(data);
       } catch (error) {
-        console.error('Failed to load edge devices:', error);
+        // Fallback or silent catch in demo mode
       } finally {
         setIsLoading(false);
       }
