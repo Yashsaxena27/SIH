@@ -87,13 +87,13 @@ export function TopBar({ className, onMenuClick, onCommandPaletteOpen }: TopBarP
         </button>
 
         {/* City / Deployment */}
-        <div className="flex items-center gap-3 px-3 py-1.5 rounded-lg bg-black/[0.02] border border-black/[0.05] cursor-pointer hover:bg-black/[0.04] transition-colors group">
+        <div className="flex items-center gap-2.5 px-3 py-1.5 rounded-lg bg-black/[0.03] border border-black/[0.06] cursor-pointer hover:bg-black/[0.05] transition-colors group">
           <MapPin className="w-4 h-4 text-accent-secondary flex-shrink-0" />
           <div className="hidden sm:block">
-            <div className="text-[14px] font-bold text-black/90 leading-none">Delhi NCR</div>
-            <div className="text-[10px] text-black/40 leading-none mt-1 uppercase tracking-wider font-semibold">Pilot Deployment</div>
+            <div className="text-[13px] font-bold text-black/90 leading-none">Delhi NCR</div>
+            <div className="text-[10px] text-black/50 leading-none mt-1 uppercase tracking-wider font-semibold">Pilot Deployment</div>
           </div>
-          <ChevronDown className="w-3.5 h-3.5 text-black/20 group-hover:text-black/40 transition-colors hidden sm:block" />
+          <ChevronDown className="w-3.5 h-3.5 text-black/30 group-hover:text-black/50 transition-colors hidden sm:block ml-0.5" />
         </div>
 
         <div className="h-4 w-px bg-black/[0.05] hidden sm:block" />
