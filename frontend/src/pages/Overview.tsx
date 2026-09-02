@@ -123,12 +123,9 @@ export function OverviewPage() {
               <div className="flex justify-between items-start z-10">
                 <span className="text-[11px] font-semibold text-white/40 uppercase tracking-wider">{metric.label}</span>
               </div>
-              <div className="flex items-end justify-between z-10">
-                <div className="text-2xl font-bold font-mono tracking-tight text-white/90 group-hover:text-white transition-colors">
+              <div className="flex items-end justify-between z-10 mt-2">
+                <div className="text-4xl font-bold font-mono tracking-tight text-white/90 group-hover:text-white transition-colors">
                   {metric.value.toLocaleString()}
-                </div>
-                <div className="opacity-50 group-hover:opacity-100 transition-opacity">
-                  <Sparkline data={metric.spark} color={metric.color} />
                 </div>
               </div>
             </GlassPanel>
