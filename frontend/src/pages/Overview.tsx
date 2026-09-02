@@ -101,12 +101,12 @@ export function OverviewPage() {
       {/* ── Top Metrics Grid ──────────────────────────────── */}
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 sm:gap-4">
         {[
-          { label: 'Active Buses', value: activeBuses, spark: sparkData.buses, color: '#06b6d4' },
-          { label: 'Live Observations', value: liveObservations, spark: sparkData.obs, color: '#6366f1' },
-          { label: 'Open Issues', value: openIssues, spark: sparkData.open, color: '#f59e0b' },
-          { label: 'Critical Issues', value: criticalIssues, spark: sparkData.critical, color: '#ef4444' },
-          { label: 'Pending Verification', value: verification?.pendingReview || 0, spark: sparkData.pending, color: '#8b5cf6' },
-          { label: 'Verified Repairs', value: verification?.resolved || 0, spark: sparkData.verified, color: '#10b981' },
+          { label: 'Active Buses', value: activeBuses, spark: sparkData.buses, color: '#8ab4f8' },
+          { label: 'Live Observations', value: liveObservations, spark: sparkData.obs, color: '#c58af9' },
+          { label: 'Open Issues', value: openIssues, spark: sparkData.open, color: '#ffaa00' },
+          { label: 'Critical Issues', value: criticalIssues, spark: sparkData.critical, color: '#ff5e5e' },
+          { label: 'Pending Verification', value: verification?.pendingReview || 0, spark: sparkData.pending, color: '#c58af9' },
+          { label: 'Verified Repairs', value: verification?.resolved || 0, spark: sparkData.verified, color: '#00e676' },
         ].map((metric, idx) => (
           <motion.div
             key={metric.label}

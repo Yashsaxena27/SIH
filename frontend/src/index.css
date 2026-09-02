@@ -12,38 +12,38 @@
   --font-mono: "JetBrains Mono", "Fira Code", "SF Mono", Consolas, monospace;
 
   /* Surface colors (dark theme) */
-  --color-surface-base: #09090b;
-  --color-surface-raised: #0f0f12;
-  --color-surface-overlay: #141419;
-  --color-surface-elevated: #1a1a21;
-  --color-surface-floating: #212129;
+  --color-surface-base: #000000;
+  --color-surface-raised: #131314;
+  --color-surface-overlay: #1e1f20;
+  --color-surface-elevated: #282a2c;
+  --color-surface-floating: #303134;
 
-  /* Brand / accent */
-  --color-accent-primary: #6366f1;
-  --color-accent-primary-hover: #818cf8;
-  --color-accent-secondary: #06b6d4;
-  --color-accent-secondary-hover: #22d3ee;
+  /* Brand / accent (Vibrant AI Blues & Purples) */
+  --color-accent-primary: #8ab4f8;
+  --color-accent-primary-hover: #aecbfa;
+  --color-accent-secondary: #c58af9;
+  --color-accent-secondary-hover: #d7aefb;
 
-  /* Status colors */
-  --color-status-critical: #ef4444;
-  --color-status-high: #f97316;
-  --color-status-medium: #eab308;
-  --color-status-low: #22c55e;
-  --color-status-live: #22c55e;
-  --color-status-monitoring: #3b82f6;
-  --color-status-processing: #a855f7;
-  --color-status-offline: #6b7280;
-  --color-status-syncing: #06b6d4;
+  /* Status colors (High contrast neon variants) */
+  --color-status-critical: #ff5e5e;
+  --color-status-high: #ffaa00;
+  --color-status-medium: #fde293;
+  --color-status-low: #00e676;
+  --color-status-live: #00e676;
+  --color-status-monitoring: #8ab4f8;
+  --color-status-processing: #c58af9;
+  --color-status-offline: #5f6368;
+  --color-status-syncing: #8ab4f8;
 
   /* Department colors */
-  --color-dept-pwd: #f97316;
-  --color-dept-traffic: #3b82f6;
-  --color-dept-disaster: #ef4444;
-  --color-dept-transport: #22c55e;
+  --color-dept-pwd: #ffaa00;
+  --color-dept-traffic: #8ab4f8;
+  --color-dept-disaster: #ff5e5e;
+  --color-dept-transport: #00e676;
 
   /* Shadows */
-  --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.15);
-  --shadow-glow-sm: 0 0 10px rgba(99, 102, 241, 0.10);
+  --shadow-glow: 0 0 20px rgba(138, 180, 248, 0.15);
+  --shadow-glow-sm: 0 0 10px rgba(138, 180, 248, 0.10);
 
   /* Animation */
   --ease-out-custom: cubic-bezier(0, 0, 0.2, 1);
@@ -181,22 +181,22 @@
 
 /* ── Leaflet Overrides (dark map theme) ────────────────────── */
 .leaflet-container {
-  background: #09090b;
+  background: #000000;
   font-family: var(--font-sans);
 }
 .leaflet-control-zoom a {
-  background: #141419 !important;
+  background: #1e1f20 !important;
   color: rgba(255, 255, 255, 0.8) !important;
   border-color: rgba(255, 255, 255, 0.06) !important;
 }
 .leaflet-popup-content-wrapper {
-  background: #1a1a21 !important;
+  background: #131314 !important;
   color: rgba(255, 255, 255, 0.9) !important;
   border: 1px solid rgba(255, 255, 255, 0.06) !important;
   border-radius: 0.75rem !important;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8) !important;
 }
 .leaflet-popup-tip {
-  background: #1a1a21 !important;
+  background: #131314 !important;
   border-color: rgba(255, 255, 255, 0.06) !important;
 }
