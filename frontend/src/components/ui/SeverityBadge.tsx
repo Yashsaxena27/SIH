@@ -22,7 +22,7 @@ export function SeverityBadge({
     high: { icon: AlertCircle, color: 'text-status-high bg-status-high/10 border-status-high/20', label: 'High' },
     medium: { icon: Info, color: 'text-status-medium bg-status-medium/10 border-status-medium/20', label: 'Medium' },
     low: { icon: CheckCircle, color: 'text-status-low bg-status-low/10 border-status-low/20', label: 'Low' },
-  }[normalizedSeverity] || { icon: Info, color: 'text-white/60 bg-white/10 border-white/20', label: severity || 'Unknown' };
+  }[normalizedSeverity] || { icon: Info, color: 'text-black/60 bg-black/10 border-black/20', label: severity || 'Unknown' };
 
   const Icon = config.icon;
 

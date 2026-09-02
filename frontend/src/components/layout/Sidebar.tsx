@@ -99,14 +99,14 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
   return (
     <>
       {/* ── Desktop Floating Navbar (Bottom Dock) ─────────────────────────── */}
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 hidden lg:flex items-center gap-2 p-2 rounded-full bg-white/[0.02] border border-white/[0.08] backdrop-blur-xl shadow-[0_10px_40px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.05)]">
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 hidden lg:flex items-center gap-2 p-2 rounded-full bg-black/[0.02] border border-black/[0.08] backdrop-blur-xl shadow-[0_10px_40px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.05)]">
         
         {/* Brand/Logo Pill */}
         <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-accent-primary to-accent-secondary mr-2 shadow-glow-sm">
-          <Activity className="w-5 h-5 text-white" />
+          <Activity className="w-5 h-5 text-black" />
         </div>
         
-        <div className="w-[1px] h-8 bg-white/[0.1] mr-2" />
+        <div className="w-[1px] h-8 bg-black/[0.1] mr-2" />
 
         {sections.map((section) => {
           const active = isSectionActive(section);
@@ -117,8 +117,8 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
                   className={cn(
                     "flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium transition-all duration-300 outline-none",
                     active 
-                      ? "bg-white/10 text-white shadow-[inset_0_0_10px_rgba(255,255,255,0.05)]" 
-                      : "text-white/60 hover:text-white hover:bg-white/5"
+                      ? "bg-black/10 text-black shadow-[inset_0_0_10px_rgba(255,255,255,0.05)]" 
+                      : "text-black/60 hover:text-black hover:bg-black/5"
                   )}
                 >
                   <section.icon className={cn("w-4 h-4", active ? "text-accent-primary" : "")} />
@@ -131,7 +131,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
                   side="top" 
                   align="center"
                   sideOffset={12}
-                  className="z-50 min-w-[200px] p-2 rounded-2xl bg-[#131314]/95 backdrop-blur-2xl border border-white/[0.08] shadow-[0_10px_40px_rgba(0,0,0,0.8)] animate-in fade-in zoom-in-95 duration-200"
+                  className="z-50 min-w-[200px] p-2 rounded-2xl bg-[#131314]/95 backdrop-blur-2xl border border-black/[0.08] shadow-[0_10px_40px_rgba(0,0,0,0.8)] animate-in fade-in zoom-in-95 duration-200"
                 >
                   {section.items.map((item) => {
                     const itemActive = isActivePath(item.path);
@@ -143,7 +143,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
                             "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer outline-none mb-1 last:mb-0",
                             itemActive 
                               ? "bg-accent-primary/10 text-accent-primary" 
-                              : "text-white/70 hover:bg-white/5 hover:text-white"
+                              : "text-black/70 hover:bg-black/5 hover:text-black"
                           )}
                         >
                           <item.icon className="w-4 h-4" />
@@ -157,7 +157,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
                       </DropdownMenu.Item>
                     );
                   })}
-                  <DropdownMenu.Arrow className="fill-white/[0.08]" />
+                  <DropdownMenu.Arrow className="fill-black/[0.08]" />
                 </DropdownMenu.Content>
               </DropdownMenu.Portal>
             </DropdownMenu.Root>
@@ -182,23 +182,23 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', stiffness: 400, damping: 35 }}
-              className="fixed left-0 top-0 bottom-0 z-50 w-[16.5rem] flex flex-col bg-[#131314] border-r border-white/[0.06] lg:hidden p-4 overflow-y-auto"
+              className="fixed left-0 top-0 bottom-0 z-50 w-[16.5rem] flex flex-col bg-[#131314] border-r border-black/[0.06] lg:hidden p-4 overflow-y-auto"
             >
               <div className="flex items-center justify-between mb-8">
                 <div className="flex items-center gap-3">
                   <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-accent-primary to-accent-secondary">
-                    <Activity className="w-[18px] h-[18px] text-white" />
+                    <Activity className="w-[18px] h-[18px] text-black" />
                   </div>
-                  <span className="font-bold tracking-widest text-white uppercase text-sm">MUIN</span>
+                  <span className="font-bold tracking-widest text-black uppercase text-sm">MUIN</span>
                 </div>
-                <button onClick={onMobileClose} className="p-2 text-white/50 hover:text-white">
+                <button onClick={onMobileClose} className="p-2 text-black/50 hover:text-black">
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
               {sections.map(section => (
                 <div key={section.id} className="mb-6">
-                  <h4 className="text-[10px] font-bold tracking-widest text-white/40 uppercase mb-3 px-2">
+                  <h4 className="text-[10px] font-bold tracking-widest text-black/40 uppercase mb-3 px-2">
                     {section.label}
                   </h4>
                   <div className="space-y-1">
@@ -209,7 +209,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
                         onClick={onMobileClose}
                         className={({ isActive }) => cn(
                           "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors",
-                          isActive ? "bg-accent-primary/10 text-accent-primary" : "text-white/60 hover:bg-white/5 hover:text-white"
+                          isActive ? "bg-accent-primary/10 text-accent-primary" : "text-black/60 hover:bg-black/5 hover:text-black"
                         )}
                       >
                         <item.icon className="w-4 h-4" />

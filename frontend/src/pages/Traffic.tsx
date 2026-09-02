@@ -29,7 +29,7 @@ export function TrafficPage() {
             Vehicle detection, tracking, density heatmaps, and congestion pattern analysis using edge inference data from the bus fleet.
           </p>
 
-          <div className="flex items-center space-x-2 text-sm text-foreground/40 bg-white/5 px-4 py-2 rounded-full">
+          <div className="flex items-center space-x-2 text-sm text-foreground/40 bg-black/5 px-4 py-2 rounded-full">
             <Clock className="w-4 h-4" />
             <span>Under development</span>
           </div>

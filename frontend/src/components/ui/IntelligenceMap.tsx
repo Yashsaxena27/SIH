@@ -71,7 +71,7 @@ export function IntelligenceMap({ buses, issues }: IntelligenceMapProps) {
   const defaultCenter: [number, number] = [28.6139, 77.2090];
 
   return (
-    <div className="relative w-full h-full rounded-xl overflow-hidden border border-white/[0.06] shadow-2xl bg-[#0f0f12]">
+    <div className="relative w-full h-full rounded-xl overflow-hidden border border-black/[0.06] shadow-2xl bg-[#0f0f12]">
       <MapContainer 
         center={defaultCenter} 
         zoom={12} 
@@ -80,7 +80,7 @@ export function IntelligenceMap({ buses, issues }: IntelligenceMapProps) {
         zoomControl={false}
       >
         <TileLayer
-          url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}"
+          url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
         />
         
@@ -111,7 +111,7 @@ export function IntelligenceMap({ buses, issues }: IntelligenceMapProps) {
       {/* Floating Context Panel over the Map */}
       {selectedIssue && (
         <div className="absolute top-4 right-4 z-[400] w-80 animate-in slide-in-from-right-8 fade-in duration-300">
-          <GlassPanel className="backdrop-blur-3xl bg-surface-elevated/90 border-white/[0.12] shadow-2xl">
+          <GlassPanel className="backdrop-blur-3xl bg-surface-elevated/90 border-black/[0.12] shadow-2xl">
             <div className="flex items-start justify-between mb-3">
               <div className="flex items-center gap-2">
                 <div className={cn(
@@ -123,50 +123,50 @@ export function IntelligenceMap({ buses, issues }: IntelligenceMapProps) {
                 )}>
                   {selectedIssue.severity}
                 </div>
-                <span className="text-[10px] text-white/40 font-mono">{selectedIssue.id}</span>
+                <span className="text-[10px] text-black/40 font-mono">{selectedIssue.id}</span>
               </div>
               <button 
                 onClick={() => setSelectedIssue(null)}
-                className="text-white/40 hover:text-white transition-colors p-1 -mr-1 -mt-1 rounded-md hover:bg-white/[0.06]"
+                className="text-black/40 hover:text-black transition-colors p-1 -mr-1 -mt-1 rounded-md hover:bg-black/[0.06]"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
             
-            <h3 className="text-sm font-semibold text-white/90 mb-1 leading-snug">
+            <h3 className="text-sm font-semibold text-black/90 mb-1 leading-snug">
               {selectedIssue.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
             </h3>
-            <p className="text-xs text-white/60 mb-4 flex items-start gap-1.5">
+            <p className="text-xs text-black/60 mb-4 flex items-start gap-1.5">
               <span className="mt-0.5">📍</span> {selectedIssue.location.address}
             </p>
 
             <div className="grid grid-cols-2 gap-2 mb-4">
-              <div className="bg-white/[0.03] rounded-lg p-2 border border-white/[0.04]">
-                <div className="text-[10px] text-white/40 uppercase">Observations</div>
-                <div className="text-sm font-semibold text-white/90 mt-0.5">{selectedIssue.observationCount}</div>
+              <div className="bg-black/[0.03] rounded-lg p-2 border border-black/[0.04]">
+                <div className="text-[10px] text-black/40 uppercase">Observations</div>
+                <div className="text-sm font-semibold text-black/90 mt-0.5">{selectedIssue.observationCount}</div>
               </div>
-              <div className="bg-white/[0.03] rounded-lg p-2 border border-white/[0.04]">
-                <div className="text-[10px] text-white/40 uppercase">Confidence</div>
+              <div className="bg-black/[0.03] rounded-lg p-2 border border-black/[0.04]">
+                <div className="text-[10px] text-black/40 uppercase">Confidence</div>
                 <div className="text-sm font-semibold text-accent-primary-hover mt-0.5">{((selectedIssue?.confidence ?? 0) * 100).toFixed(1)}%</div>
               </div>
             </div>
 
             <div className="space-y-1.5 text-[11px]">
-              <div className="flex justify-between border-b border-white/[0.04] pb-1.5">
-                <span className="text-white/40">First detected</span>
-                <span className="text-white/80">{timeAgo(selectedIssue.firstDetectedAt)}</span>
+              <div className="flex justify-between border-b border-black/[0.04] pb-1.5">
+                <span className="text-black/40">First detected</span>
+                <span className="text-black/80">{timeAgo(selectedIssue.firstDetectedAt)}</span>
               </div>
-              <div className="flex justify-between border-b border-white/[0.04] pb-1.5">
-                <span className="text-white/40">Status</span>
-                <span className="text-white/80 capitalize">{selectedIssue.status.replace(/_/g, ' ')}</span>
+              <div className="flex justify-between border-b border-black/[0.04] pb-1.5">
+                <span className="text-black/40">Status</span>
+                <span className="text-black/80 capitalize">{selectedIssue.status.replace(/_/g, ' ')}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-white/40">Assigned To</span>
-                <span className="text-white/80 font-medium">{selectedIssue.assignedDepartmentId || 'Unassigned'}</span>
+                <span className="text-black/40">Assigned To</span>
+                <span className="text-black/80 font-medium">{selectedIssue.assignedDepartmentId || 'Unassigned'}</span>
               </div>
             </div>
 
-            <button className="w-full mt-4 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] text-white/80 text-xs font-medium py-2 rounded-lg transition-colors">
+            <button className="w-full mt-4 bg-black/[0.06] hover:bg-black/[0.1] border border-black/[0.08] text-black/80 text-xs font-medium py-2 rounded-lg transition-colors">
               View Full Details
             </button>
           </GlassPanel>

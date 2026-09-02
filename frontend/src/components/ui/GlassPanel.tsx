@@ -36,10 +36,10 @@ export function GlassPanel({
         "rounded-xl border",
         // Solid vs Glass logic
         glass 
-          ? "bg-white/[0.03] backdrop-blur-2xl border-white/[0.1] shadow-xl" 
-          : "bg-[#0f0f12] border-white/[0.06] shadow-sm",
+          ? "bg-black/[0.03] backdrop-blur-2xl border-black/[0.1] shadow-xl" 
+          : "bg-[#0f0f12] border-black/[0.06] shadow-sm",
         // Hover interaction
-        hover && "transition-colors duration-200 hover:border-white/[0.1] hover:bg-[#141419]",
+        hover && "transition-colors duration-200 hover:border-black/[0.1] hover:bg-[#141419]",
         paddingStyles[padding],
         className
       )}

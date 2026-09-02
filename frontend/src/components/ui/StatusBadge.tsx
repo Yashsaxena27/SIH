@@ -19,7 +19,7 @@ export function StatusBadge({
     live: { color: 'bg-status-low', label: 'Live' },
     monitoring: { color: 'bg-status-high', label: 'Monitoring' },
     processing: { color: 'bg-status-medium', label: 'Processing' },
-    offline: { color: 'bg-white/20', label: 'Offline' },
+    offline: { color: 'bg-black/20', label: 'Offline' },
     syncing: { color: 'bg-accent-secondary', label: 'Syncing' },
     error: { color: 'bg-status-critical', label: 'Error' },
   };
@@ -29,7 +29,7 @@ export function StatusBadge({
   return (
     <div
       className={cn(
-        'inline-flex items-center rounded-full bg-white/[0.03] border border-white/[0.06]',
+        'inline-flex items-center rounded-full bg-black/[0.03] border border-black/[0.06]',
         {
           'px-2 py-1 gap-1.5 text-xs': size === 'sm',
           'px-2.5 py-1.5 gap-2 text-sm': size === 'md',
@@ -43,7 +43,7 @@ export function StatusBadge({
         )}
         <span className={cn('relative inline-flex h-2 w-2 rounded-full', config.color)} />
       </div>
-      {showLabel && <span className="font-medium text-white/90">{config.label}</span>}
+      {showLabel && <span className="font-medium text-black/90">{config.label}</span>}
     </div>
   );
 }

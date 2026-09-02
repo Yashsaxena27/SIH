@@ -84,7 +84,7 @@ export function OverviewPage() {
       {/* ── Page Header ───────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-2">
         <div>
-          <h1 className="text-2xl font-bold text-white/95 tracking-tight flex items-center gap-3">
+          <h1 className="text-2xl font-bold text-black/95 tracking-tight flex items-center gap-3">
             Urban Intelligence
             <span className="flex items-center gap-1.5 px-2 py-0.5 rounded text-[10px] uppercase font-bold tracking-widest bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
               <span className="relative flex h-1.5 w-1.5">
@@ -94,7 +94,7 @@ export function OverviewPage() {
               Live
             </span>
           </h1>
-          <p className="text-sm text-white/40 mt-1">City operational overview · Last updated: just now</p>
+          <p className="text-sm text-black/40 mt-1">City operational overview · Last updated: just now</p>
         </div>
       </div>
 
@@ -114,12 +114,12 @@ export function OverviewPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: idx * 0.05, duration: 0.3 }}
           >
-            <div className="relative overflow-hidden group h-[88px] flex flex-col justify-between bg-white rounded-2xl shadow-lg border border-white/20 hover:-translate-y-1 transition-all duration-300 cursor-pointer p-4">
+            <div className="relative overflow-hidden group h-[88px] flex flex-col justify-between bg-white/70 backdrop-blur-xl rounded-2xl shadow-lg border border-black/5 hover:-translate-y-1 transition-all duration-300 cursor-pointer p-4">
               <div className="flex justify-between items-start z-10">
-                <span className="text-[11px] font-bold text-blue-500 uppercase tracking-wider">{metric.label}</span>
+                <span className="text-[11px] font-bold text-black/50 uppercase tracking-wider">{metric.label}</span>
               </div>
               <div className="flex items-end justify-between z-10 mt-2">
-                <div className="text-4xl font-bold font-mono tracking-tight text-blue-600 group-hover:text-blue-700 transition-colors">
+                <div className="text-4xl font-bold font-mono tracking-tight text-black group-hover:text-black/80 transition-colors">
                   {metric.value.toLocaleString()}
                 </div>
               </div>
@@ -139,10 +139,10 @@ export function OverviewPage() {
           transition={{ delay: 0.2, duration: 0.4 }}
         >
           {/* Subtle map overlay frame */}
-          <div className="absolute inset-0 border border-white/[0.08] rounded-xl pointer-events-none z-10" />
-          <div className="absolute top-4 left-4 z-20 px-3 py-1.5 rounded-lg bg-black/40 backdrop-blur-md border border-white/[0.1] flex items-center gap-2">
+          <div className="absolute inset-0 border border-black/[0.08] rounded-xl pointer-events-none z-10" />
+          <div className="absolute top-4 left-4 z-20 px-3 py-1.5 rounded-lg bg-black/40 backdrop-blur-md border border-black/[0.1] flex items-center gap-2">
             <MapPin className="w-4 h-4 text-accent-secondary" />
-            <span className="text-xs font-semibold text-white/80">Live Intelligence Map</span>
+            <span className="text-xs font-semibold text-black/80">Live Intelligence Map</span>
           </div>
           
           <IntelligenceMap buses={buses} issues={issues} />
@@ -157,39 +157,39 @@ export function OverviewPage() {
               <GlassPanel padding="md">
                 <div className="flex items-center gap-2 mb-4">
                   <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                  <h3 className="text-xs font-bold text-white/70 uppercase tracking-widest">Repair Verification</h3>
+                  <h3 className="text-xs font-bold text-black/70 uppercase tracking-widest">Repair Verification</h3>
                 </div>
                 
                 <div className="flex items-end gap-3 mb-4">
-                  <div className="text-3xl font-bold text-white/90 leading-none">{verification.totalVerifications}</div>
-                  <div className="text-xs text-white/40 pb-1">repairs reported</div>
+                  <div className="text-3xl font-bold text-black/90 leading-none">{verification.totalVerifications}</div>
+                  <div className="text-xs text-black/40 pb-1">repairs reported</div>
                 </div>
 
                 <div className="space-y-3">
                   <div>
                     <div className="flex justify-between text-[11px] mb-1.5">
                       <span className="text-emerald-400/80 font-medium">Verified fixed</span>
-                      <span className="text-white/80 font-semibold">{verification.resolved}</span>
+                      <span className="text-black/80 font-semibold">{verification.resolved}</span>
                     </div>
-                    <div className="h-1.5 bg-white/[0.04] rounded-full overflow-hidden">
+                    <div className="h-1.5 bg-black/[0.04] rounded-full overflow-hidden">
                       <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${(verification.resolved/verification.totalVerifications)*100}%` }} />
                     </div>
                   </div>
                   <div>
                     <div className="flex justify-between text-[11px] mb-1.5">
                       <span className="text-yellow-400/80 font-medium">Awaiting inspection</span>
-                      <span className="text-white/80 font-semibold">{verification.pendingReview}</span>
+                      <span className="text-black/80 font-semibold">{verification.pendingReview}</span>
                     </div>
-                    <div className="h-1.5 bg-white/[0.04] rounded-full overflow-hidden">
+                    <div className="h-1.5 bg-black/[0.04] rounded-full overflow-hidden">
                       <div className="h-full bg-yellow-500 rounded-full" style={{ width: `${(verification.pendingReview/verification.totalVerifications)*100}%` }} />
                     </div>
                   </div>
                   <div>
                     <div className="flex justify-between text-[11px] mb-1.5">
                       <span className="text-red-400/80 font-medium">Reopened (Failed)</span>
-                      <span className="text-white/80 font-semibold">{verification.unresolved}</span>
+                      <span className="text-black/80 font-semibold">{verification.unresolved}</span>
                     </div>
-                    <div className="h-1.5 bg-white/[0.04] rounded-full overflow-hidden">
+                    <div className="h-1.5 bg-black/[0.04] rounded-full overflow-hidden">
                       <div className="h-full bg-red-500 rounded-full" style={{ width: `${(verification.unresolved/verification.totalVerifications)*100}%` }} />
                     </div>
                   </div>
@@ -204,12 +204,12 @@ export function OverviewPage() {
               <GlassPanel padding="md">
                 <div className="flex items-center gap-2 mb-3">
                   <Activity className="w-4 h-4 text-accent-secondary" />
-                  <h3 className="text-xs font-bold text-white/70 uppercase tracking-widest">Road Health</h3>
+                  <h3 className="text-xs font-bold text-black/70 uppercase tracking-widest">Road Health</h3>
                 </div>
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="text-2xl font-bold text-white/90">{(roadHealth?.averageScore ?? 0).toFixed(0)}</div>
-                    <div className="text-[10px] text-white/40 uppercase tracking-wider">Avg Score</div>
+                    <div className="text-2xl font-bold text-black/90">{(roadHealth?.averageScore ?? 0).toFixed(0)}</div>
+                    <div className="text-[10px] text-black/40 uppercase tracking-wider">Avg Score</div>
                   </div>
                   <div className="flex gap-1.5">
                     {[
@@ -219,10 +219,10 @@ export function OverviewPage() {
                       { label: 'Crit', count: roadHealth?.segmentDistribution?.critical ?? 0, color: 'bg-red-500' },
                     ].map(st => (
                       <div key={st.label} className="flex flex-col items-center gap-1.5">
-                        <div className="h-12 w-6 bg-white/[0.03] rounded-sm flex items-end overflow-hidden border border-white/[0.05]">
+                        <div className="h-12 w-6 bg-black/[0.03] rounded-sm flex items-end overflow-hidden border border-black/[0.05]">
                           <div className={cn("w-full transition-all duration-700", st.color)} style={{ height: `${(st.count / Math.max(roadHealth?.totalSegments ?? 1, 1)) * 100}%` }} />
                         </div>
-                        <span className="text-[9px] text-white/40">{st.count}</span>
+                        <span className="text-[9px] text-black/40">{st.count}</span>
                       </div>
                     ))}
                   </div>
@@ -243,7 +243,7 @@ export function OverviewPage() {
               
               <div className="flex items-center gap-2 mb-4 relative z-20">
                 <Clock className="w-4 h-4 text-accent-primary" />
-                <h3 className="text-xs font-bold text-white/70 uppercase tracking-widest">Live Activity</h3>
+                <h3 className="text-xs font-bold text-black/70 uppercase tracking-widest">Live Activity</h3>
               </div>
               
               <div className="flex-1 overflow-y-auto scrollbar-none -mx-2 px-2 relative z-0">
@@ -252,24 +252,24 @@ export function OverviewPage() {
                     <div key={event.id} className="relative pl-6">
                       {/* Timeline line */}
                       {i !== Math.min(activity.length, 8) - 1 && (
-                        <div className="absolute left-[9px] top-6 bottom-[-16px] w-[2px] bg-white/[0.06]" />
+                        <div className="absolute left-[9px] top-6 bottom-[-16px] w-[2px] bg-black/[0.06]" />
                       )}
                       
                       {/* Timeline node */}
-                      <div className="absolute left-0 top-1.5 w-[20px] h-[20px] rounded-full bg-surface-base flex items-center justify-center border border-white/[0.1]">
+                      <div className="absolute left-0 top-1.5 w-[20px] h-[20px] rounded-full bg-surface-base flex items-center justify-center border border-black/[0.1]">
                         {event.type === 'detection' ? <CircleDot className="w-2.5 h-2.5 text-accent-secondary" /> :
                          event.type === 'issue_created' ? <AlertTriangle className="w-2.5 h-2.5 text-red-400" /> :
                          event.type === 'verification' ? <CheckCircle className="w-2.5 h-2.5 text-emerald-400" /> :
                          <Wrench className="w-2.5 h-2.5 text-yellow-400" />}
                       </div>
 
-                      <div className="text-xs font-medium text-white/80 leading-tight">
+                      <div className="text-xs font-medium text-black/80 leading-tight">
                         {event.title}
                       </div>
-                      <div className="text-[11px] text-white/40 mt-0.5">
+                      <div className="text-[11px] text-black/40 mt-0.5">
                         {event.description}
                       </div>
-                      <div className="text-[10px] text-white/30 mt-1 font-mono">
+                      <div className="text-[10px] text-black/30 mt-1 font-mono">
                         {timeAgo(event.timestamp)}
                       </div>
                     </div>

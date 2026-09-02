@@ -63,11 +63,11 @@ export function TicketsPage() {
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex items-start gap-3 min-w-0">
                     <div className="mt-1">
-                      <Ticket className="w-4 h-4 text-white/30" />
+                      <Ticket className="w-4 h-4 text-black/30" />
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-xs font-mono text-white/36">{ticket.displayId}</span>
+                        <span className="text-xs font-mono text-black/36">{ticket.displayId}</span>
                         <SeverityBadge severity={ticket.severity} size="sm" />
                         <span className={cn(
                           'flex items-center gap-1 text-[10px] font-medium',
@@ -77,18 +77,18 @@ export function TicketsPage() {
                           {ticket.status.replace(/_/g, ' ')}
                         </span>
                       </div>
-                      <h3 className="text-sm font-medium text-white/90 mt-1">{ticket.title}</h3>
+                      <h3 className="text-sm font-medium text-black/90 mt-1">{ticket.title}</h3>
                       <div className="flex items-center gap-3 mt-1.5 flex-wrap">
-                        <span className="flex items-center gap-1 text-xs text-white/40">
+                        <span className="flex items-center gap-1 text-xs text-black/40">
                           <Building2 className="w-3 h-3" />
                           {ticket.departmentName}
                         </span>
-                        <span className="flex items-center gap-1 text-xs text-white/40">
+                        <span className="flex items-center gap-1 text-xs text-black/40">
                           <Clock className="w-3 h-3" />
                           {timeAgo(ticket.updatedAt)}
                         </span>
                         {ticket.assignedOfficer && (
-                          <span className="text-xs text-white/40">
+                          <span className="text-xs text-black/40">
                             → {ticket.assignedOfficer}
                           </span>
                         )}

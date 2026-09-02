@@ -57,7 +57,7 @@ export function RoutesPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/10">
+              <div className="grid grid-cols-2 gap-4 pt-4 border-t border-black/10">
                 <div className="space-y-1">
                   <div className="flex items-center text-xs text-foreground/60">
                     <Map className="w-3 h-3 mr-1" /> Length

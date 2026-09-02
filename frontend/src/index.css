@@ -11,39 +11,39 @@
   --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-mono: "JetBrains Mono", "Fira Code", "SF Mono", Consolas, monospace;
 
-  /* Surface colors (dark theme) */
-  --color-surface-base: #000000;
-  --color-surface-raised: #131314;
-  --color-surface-overlay: #1e1f20;
-  --color-surface-elevated: #282a2c;
-  --color-surface-floating: #303134;
+  /* Surface colors (light theme) */
+  --color-surface-base: #f8fafc;
+  --color-surface-raised: #ffffff;
+  --color-surface-overlay: #f1f5f9;
+  --color-surface-elevated: #e2e8f0;
+  --color-surface-floating: #ffffff;
 
-  /* Brand / accent (Vibrant AI Blues & Purples) */
-  --color-accent-primary: #8ab4f8;
-  --color-accent-primary-hover: #aecbfa;
-  --color-accent-secondary: #c58af9;
-  --color-accent-secondary-hover: #d7aefb;
+  /* Brand / accent */
+  --color-accent-primary: #3b82f6;
+  --color-accent-primary-hover: #2563eb;
+  --color-accent-secondary: #8b5cf6;
+  --color-accent-secondary-hover: #7c3aed;
 
-  /* Status colors (High contrast neon variants) */
-  --color-status-critical: #ff5e5e;
-  --color-status-high: #ffaa00;
-  --color-status-medium: #fde293;
-  --color-status-low: #00e676;
-  --color-status-live: #00e676;
-  --color-status-monitoring: #8ab4f8;
-  --color-status-processing: #c58af9;
-  --color-status-offline: #5f6368;
-  --color-status-syncing: #8ab4f8;
+  /* Status colors */
+  --color-status-critical: #ef4444;
+  --color-status-high: #f59e0b;
+  --color-status-medium: #eab308;
+  --color-status-low: #10b981;
+  --color-status-live: #10b981;
+  --color-status-monitoring: #3b82f6;
+  --color-status-processing: #8b5cf6;
+  --color-status-offline: #64748b;
+  --color-status-syncing: #3b82f6;
 
   /* Department colors */
-  --color-dept-pwd: #ffaa00;
-  --color-dept-traffic: #8ab4f8;
-  --color-dept-disaster: #ff5e5e;
-  --color-dept-transport: #00e676;
+  --color-dept-pwd: #f59e0b;
+  --color-dept-traffic: #3b82f6;
+  --color-dept-disaster: #ef4444;
+  --color-dept-transport: #10b981;
 
   /* Shadows */
-  --shadow-glow: 0 0 20px rgba(138, 180, 248, 0.15);
-  --shadow-glow-sm: 0 0 10px rgba(138, 180, 248, 0.10);
+  --shadow-glow: 0 0 20px rgba(59, 130, 246, 0.15);
+  --shadow-glow-sm: 0 0 10px rgba(59, 130, 246, 0.10);
 
   /* Animation */
   --ease-out-custom: cubic-bezier(0, 0, 0.2, 1);
@@ -58,15 +58,15 @@
 /* ── Base Reset & Defaults ─────────────────────────────────── */
 @layer base {
   * {
-    border-color: rgba(255, 255, 255, 0.06);
+    border-color: rgba(0, 0, 0, 0.1);
   }
 
   html {
-    color-scheme: dark;
+    color-scheme: light;
   }
 
   body {
-    @apply bg-surface-base text-white/90 antialiased;
+    @apply bg-surface-base text-slate-900 antialiased;
     font-family: var(--font-sans);
     font-size: 0.875rem;
     line-height: 1.375rem;
@@ -82,24 +82,24 @@
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
+    background: rgba(0, 0, 0, 0.15);
     border-radius: 3px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.18);
+    background: rgba(0, 0, 0, 0.25);
   }
 
   /* Focus styles */
   :focus-visible {
-    outline: 2px solid rgba(99, 102, 241, 0.5);
+    outline: 2px solid rgba(59, 130, 246, 0.5);
     outline-offset: 2px;
     border-radius: 0.25rem;
   }
 
   /* Selection */
   ::selection {
-    background: rgba(99, 102, 241, 0.3);
-    color: white;
+    background: rgba(59, 130, 246, 0.2);
+    color: #0f172a;
   }
 }
 
@@ -107,24 +107,24 @@
 @layer components {
   /* Glass panel */
   .glass-panel {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(0, 0, 0, 0.05);
     backdrop-filter: blur(12px);
     border-radius: 0.75rem;
-    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05), 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
   .glass-panel:hover {
-    background: rgba(255, 255, 255, 0.06);
-    border-color: rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.9);
+    border-color: rgba(0, 0, 0, 0.1);
     transform: translateY(-2px);
-    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.1), 0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 0 15px rgba(255,255,255,0.02);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
   }
 
   /* Subtle separator */
   .separator {
     height: 1px;
-    background: rgba(255, 255, 255, 0.06);
+    background: rgba(0, 0, 0, 0.06);
   }
 
   /* Dot indicator */
@@ -135,8 +135,8 @@
     flex-shrink: 0;
   }
   .status-dot-live {
-    background: #22c55e;
-    box-shadow: 0 0 8px rgba(34, 197, 94, 0.4);
+    background: #10b981;
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
     animation: pulse-dot 2s ease-in-out infinite;
   }
 
@@ -144,9 +144,9 @@
   .shimmer {
     background: linear-gradient(
       90deg,
-      rgba(255, 255, 255, 0.03) 0%,
-      rgba(255, 255, 255, 0.06) 50%,
-      rgba(255, 255, 255, 0.03) 100%
+      rgba(0, 0, 0, 0.02) 0%,
+      rgba(0, 0, 0, 0.06) 50%,
+      rgba(0, 0, 0, 0.02) 100%
     );
     background-size: 200% 100%;
     animation: shimmer 1.5s ease-in-out infinite;
@@ -179,24 +179,24 @@
   }
 }
 
-/* ── Leaflet Overrides (dark map theme) ────────────────────── */
+/* ── Leaflet Overrides (light map theme) ────────────────────── */
 .leaflet-container {
-  background: #000000;
+  background: #f8fafc;
   font-family: var(--font-sans);
 }
 .leaflet-control-zoom a {
-  background: #1e1f20 !important;
-  color: rgba(255, 255, 255, 0.8) !important;
-  border-color: rgba(255, 255, 255, 0.06) !important;
+  background: #ffffff !important;
+  color: rgba(0, 0, 0, 0.8) !important;
+  border-color: rgba(0, 0, 0, 0.1) !important;
 }
 .leaflet-popup-content-wrapper {
-  background: #131314 !important;
-  color: rgba(255, 255, 255, 0.9) !important;
-  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  background: #ffffff !important;
+  color: rgba(0, 0, 0, 0.9) !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
   border-radius: 0.75rem !important;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1) !important;
 }
 .leaflet-popup-tip {
-  background: #131314 !important;
-  border-color: rgba(255, 255, 255, 0.06) !important;
+  background: #ffffff !important;
+  border-color: rgba(0, 0, 0, 0.1) !important;
 }

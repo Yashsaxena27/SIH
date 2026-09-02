@@ -20,7 +20,7 @@ export function LoadingState({
           'h-12 w-12': size === 'lg',
         })}
       />
-      {message && <p className="mt-4 text-sm font-medium text-white/56">{message}</p>}
+      {message && <p className="mt-4 text-sm font-medium text-black/56">{message}</p>}
     </div>
   );
 }
