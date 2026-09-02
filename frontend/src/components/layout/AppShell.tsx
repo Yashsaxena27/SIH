@@ -14,25 +14,18 @@ export function AppShell() {
     <div className="flex h-screen bg-[#09090b] text-white overflow-hidden selection:bg-accent-primary/30">
       
       <Sidebar 
-        collapsed={sidebarCollapsed} 
-        onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
         mobileOpen={mobileMenuOpen}
         onMobileClose={() => setMobileMenuOpen(false)}
       />
 
-      <div 
-        className={cn(
-          "flex-1 flex flex-col min-w-0 relative z-10 transition-[margin] duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)]",
-          sidebarCollapsed ? "lg:ml-[4.5rem]" : "lg:ml-[15.5rem]"
-        )}
-      >
+      <div className="flex-1 flex flex-col min-w-0 relative z-10 w-full">
         <TopBar 
           onCommandPaletteOpen={() => setPaletteOpen(true)} 
           onMenuClick={() => setMobileMenuOpen(true)}
         />
         
         {/* Main Content Area */}
-        <main className="flex-1 overflow-y-auto scrollbar-none focus:outline-none bg-[#09090b]">
+        <main className="flex-1 overflow-y-auto scrollbar-none focus:outline-none bg-[#000000] pb-24">
           <Outlet />
         </main>
       </div>

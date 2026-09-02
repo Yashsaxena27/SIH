@@ -1,29 +1,11 @@
-// ============================================================
-// Sidebar — Premium collapsible navigation
-// ============================================================
-
 import { useState, useCallback } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import {
-  LayoutDashboard,
-  Brain,
-  Map,
-  AlertTriangle,
-  Ticket,
-  ShieldCheck,
-  Bus,
-  Route,
-  Cpu,
-  Activity,
-  Car,
-  FileText,
-  Bell,
-  Settings,
-  ChevronLeft,
-  ChevronRight,
-  X,
-  type LucideIcon,
+  LayoutDashboard, Brain, Map, AlertTriangle, Ticket, ShieldCheck,
+  Bus, Route, Cpu, Activity, Car, FileText, Bell, Settings,
+  ChevronDown, X, type LucideIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -38,6 +20,7 @@ interface NavItem {
 interface NavSection {
   id: string;
   label: string;
+  icon: LucideIcon;
   items: NavItem[];
 }
 
@@ -45,6 +28,7 @@ const sections: NavSection[] = [
   {
     id: 'command',
     label: 'Command',
+    icon: LayoutDashboard,
     items: [
       { label: 'Overview', path: '/overview', icon: LayoutDashboard },
       { label: 'Intelligence', path: '/intelligence', icon: Brain },
@@ -54,6 +38,7 @@ const sections: NavSection[] = [
   {
     id: 'operations',
     label: 'Operations',
+    icon: ShieldCheck,
     items: [
       { label: 'Issues', path: '/issues', icon: AlertTriangle, badge: 12 },
       { label: 'Tickets', path: '/tickets', icon: Ticket, badge: 5 },
@@ -63,15 +48,17 @@ const sections: NavSection[] = [
   {
     id: 'fleet',
     label: 'Fleet',
+    icon: Bus,
     items: [
       { label: 'Buses', path: '/fleet', icon: Bus },
       { label: 'Routes', path: '/routes', icon: Route },
-      { label: 'Edge Monitoring', path: '/edge-monitoring', icon: Cpu },
+      { label: 'Edge', path: '/edge-monitoring', icon: Cpu },
     ],
   },
   {
     id: 'analytics',
     label: 'Analytics',
+    icon: Activity,
     items: [
       { label: 'Road Health', path: '/road-health', icon: Activity },
       { label: 'Traffic', path: '/traffic', icon: Car },
@@ -81,6 +68,7 @@ const sections: NavSection[] = [
   {
     id: 'system',
     label: 'System',
+    icon: Settings,
     items: [
       { label: 'Alerts', path: '/alerts', icon: Bell, badge: 3 },
       { label: 'Settings', path: '/settings', icon: Settings },
@@ -90,240 +78,97 @@ const sections: NavSection[] = [
 
 // ── Props ─────────────────────────────────────────────────────
 interface SidebarProps {
-  collapsed: boolean;
-  onToggle: () => void;
   mobileOpen: boolean;
   onMobileClose: () => void;
+  collapsed?: boolean;
+  onToggle?: () => void;
 }
 
-export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: SidebarProps) {
+export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
   const location = useLocation();
-  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
 
-  const isActive = useCallback((path: string) => {
+  const isActivePath = useCallback((path: string) => {
     if (path === '/overview') return location.pathname === '/overview' || location.pathname === '/';
     return location.pathname === path || location.pathname.startsWith(path + '/');
   }, [location.pathname]);
 
-  // ── Sidebar content (shared between desktop and mobile) ─────
-  const sidebarContent = (
-    <>
-      {/* Brand / Logo */}
-      <div className="flex items-center h-14 px-4 border-b border-white/[0.06] flex-shrink-0">
-        <div className="flex items-center gap-3 min-w-0">
-          {/* Logo mark */}
-          <div className="relative flex-shrink-0 w-8 h-8">
-            <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-accent-primary to-accent-secondary opacity-90" />
-            <div className="absolute inset-0 rounded-lg bg-gradient-to-br from-accent-primary to-accent-secondary blur-md opacity-30" />
-            <div className="relative w-8 h-8 rounded-lg flex items-center justify-center">
-              <Activity className="w-[18px] h-[18px] text-white" />
-            </div>
-          </div>
-          <AnimatePresence mode="wait">
-            {!collapsed && (
-              <motion.div
-                initial={{ opacity: 0, x: -8 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -8 }}
-                transition={{ duration: 0.15, ease: [0, 0, 0.2, 1] }}
-                className="overflow-hidden whitespace-nowrap"
-              >
-                <div className="text-[13px] font-bold text-white/92 tracking-tight leading-none">
-                  MUIN
-                </div>
-                <div className="text-[9px] font-semibold text-white/30 mt-[2px] tracking-[0.1em] uppercase leading-none">
-                  Urban Intelligence
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-
-        {/* Mobile close */}
-        <button
-          onClick={onMobileClose}
-          className="ml-auto p-1 rounded-md text-white/30 hover:text-white/60 hover:bg-white/[0.04] transition-colors lg:hidden"
-        >
-          <X className="w-4 h-4" />
-        </button>
-      </div>
-
-      {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto py-2.5 px-2 scrollbar-thin">
-        {sections.map((section, sectionIdx) => (
-          <div key={section.id} className={cn(sectionIdx > 0 && 'mt-4')}>
-            {/* Section header */}
-            <AnimatePresence mode="wait">
-              {!collapsed && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.1 }}
-                  className="px-3 mb-1"
-                >
-                  <span className="text-[10px] font-semibold uppercase tracking-[0.1em] text-white/25 select-none">
-                    {section.label}
-                  </span>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* Collapsed separator */}
-            {collapsed && sectionIdx > 0 && (
-              <div className="mx-3 mb-2 h-px bg-white/[0.04]" />
-            )}
-
-            {/* Items */}
-            <div className="space-y-[2px]">
-              {section.items.map((item) => {
-                const active = isActive(item.path);
-                return (
-                  <NavLink
-                    key={item.path}
-                    to={item.path}
-                    onClick={onMobileClose}
-                    onMouseEnter={() => setHoveredItem(item.path)}
-                    onMouseLeave={() => setHoveredItem(null)}
-                    className={cn(
-                      'group relative flex items-center rounded-lg transition-all duration-150',
-                      collapsed ? 'justify-center px-0 py-2 mx-1' : 'gap-3 px-3 py-[7px]',
-                      active
-                        ? 'bg-white/[0.06] text-white'
-                        : 'text-white/45 hover:text-white/75 hover:bg-white/[0.03]'
-                    )}
-                  >
-                    {/* Active indicator bar */}
-                    {active && (
-                      <motion.div
-                        layoutId="nav-active-indicator"
-                        className="absolute left-0 top-1/2 -translate-y-1/2 w-[2.5px] h-4 rounded-r-full bg-accent-primary"
-                        style={{ boxShadow: '0 0 8px rgba(99, 102, 241, 0.4)' }}
-                        transition={{ type: 'spring', stiffness: 400, damping: 28 }}
-                      />
-                    )}
-
-                    {/* Icon */}
-                    <item.icon
-                      className={cn(
-                        'flex-shrink-0 transition-colors duration-150',
-                        collapsed ? 'w-[18px] h-[18px]' : 'w-4 h-4',
-                        active && 'text-accent-primary-hover'
-                      )}
-                    />
-
-                    {/* Label */}
-                    {!collapsed && (
-                      <span className="text-[12.5px] font-medium whitespace-nowrap flex-1">
-                        {item.label}
-                      </span>
-                    )}
-
-                    {/* Badge */}
-                    {item.badge !== undefined && (
-                      <>
-                        {!collapsed ? (
-                          <span className={cn(
-                            'ml-auto text-[10px] font-semibold px-[6px] py-[1px] rounded-full min-w-[18px] text-center leading-relaxed',
-                            active
-                              ? 'bg-accent-primary/20 text-accent-primary-hover'
-                              : 'bg-white/[0.06] text-white/40'
-                          )}>
-                            {item.badge}
-                          </span>
-                        ) : (
-                          <span className="absolute top-1.5 right-1.5 w-[6px] h-[6px] rounded-full bg-accent-primary shadow-[0_0_6px_rgba(99,102,241,0.5)]" />
-                        )}
-                      </>
-                    )}
-
-                    {/* Collapsed tooltip */}
-                    <AnimatePresence>
-                      {collapsed && hoveredItem === item.path && (
-                        <motion.div
-                          initial={{ opacity: 0, x: -4 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, x: -4 }}
-                          transition={{ duration: 0.12 }}
-                          className="absolute left-full ml-2.5 z-50"
-                        >
-                          <div className="px-2.5 py-1.5 bg-surface-floating border border-white/[0.08] rounded-lg shadow-xl whitespace-nowrap">
-                            <span className="text-[11px] font-medium text-white/85">{item.label}</span>
-                            {item.badge !== undefined && (
-                              <span className="ml-2 text-[10px] text-accent-primary-hover font-semibold">{item.badge}</span>
-                            )}
-                          </div>
-                          {/* Arrow */}
-                          <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-[3px] w-[6px] h-[6px] bg-surface-floating border-l border-b border-white/[0.08] rotate-45" />
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </NavLink>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-      </nav>
-
-      {/* Bottom: Version + Collapse */}
-      <div className="flex-shrink-0 border-t border-white/[0.04] p-2">
-        {/* System pulse indicator */}
-        {!collapsed && (
-          <div className="px-3 py-2 mb-1.5 rounded-lg bg-emerald-500/[0.06] border border-emerald-500/[0.08]">
-            <div className="flex items-center gap-2">
-              <div className="relative w-[6px] h-[6px]">
-                <div className="absolute inset-0 rounded-full bg-emerald-500" />
-                <div className="absolute inset-0 rounded-full bg-emerald-500/50 animate-ping" />
-              </div>
-              <span className="text-[10px] font-semibold text-emerald-400/80 uppercase tracking-wider">System Operational</span>
-            </div>
-            <div className="text-[10px] text-white/25 mt-0.5 pl-[14px]">v1.0.0-alpha · Delhi Pilot</div>
-          </div>
-        )}
-
-        {/* Collapse toggle */}
-        <button
-          onClick={onToggle}
-          className={cn(
-            'w-full items-center gap-2.5 rounded-lg px-3 py-2',
-            'text-white/30 hover:text-white/55 hover:bg-white/[0.03]',
-            'transition-all duration-150 hidden lg:flex',
-            collapsed && 'justify-center'
-          )}
-        >
-          {collapsed ? (
-            <ChevronRight className="w-3.5 h-3.5" />
-          ) : (
-            <>
-              <ChevronLeft className="w-3.5 h-3.5" />
-              <span className="text-[11px] font-medium">Collapse</span>
-            </>
-          )}
-        </button>
-      </div>
-    </>
-  );
+  const isSectionActive = useCallback((section: NavSection) => {
+    return section.items.some(item => isActivePath(item.path));
+  }, [isActivePath]);
 
   return (
     <>
-      {/* ── Desktop Sidebar ─────────────────────────────────── */}
-      <aside
-        className={cn(
-          'fixed left-0 top-0 bottom-0 z-30 hidden lg:flex flex-col',
-          'bg-surface-raised/95 backdrop-blur-2xl border-r border-white/[0.06]',
-          'transition-[width] duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)]',
-          collapsed ? 'w-[4.5rem]' : 'w-[15.5rem]'
-        )}
-      >
-        {sidebarContent}
-      </aside>
+      {/* ── Desktop Floating Navbar (Bottom Dock) ─────────────────────────── */}
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 hidden lg:flex items-center gap-2 p-2 rounded-full bg-white/[0.02] border border-white/[0.08] backdrop-blur-xl shadow-[0_10px_40px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.05)]">
+        
+        {/* Brand/Logo Pill */}
+        <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-accent-primary to-accent-secondary mr-2 shadow-glow-sm">
+          <Activity className="w-5 h-5 text-white" />
+        </div>
+        
+        <div className="w-[1px] h-8 bg-white/[0.1] mr-2" />
+
+        {sections.map((section) => {
+          const active = isSectionActive(section);
+          return (
+            <DropdownMenu.Root key={section.id}>
+              <DropdownMenu.Trigger asChild>
+                <button
+                  className={cn(
+                    "flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium transition-all duration-300 outline-none",
+                    active 
+                      ? "bg-white/10 text-white shadow-[inset_0_0_10px_rgba(255,255,255,0.05)]" 
+                      : "text-white/60 hover:text-white hover:bg-white/5"
+                  )}
+                >
+                  <section.icon className={cn("w-4 h-4", active ? "text-accent-primary" : "")} />
+                  <span>{section.label}</span>
+                </button>
+              </DropdownMenu.Trigger>
+
+              <DropdownMenu.Portal>
+                <DropdownMenu.Content 
+                  side="top" 
+                  align="center"
+                  sideOffset={12}
+                  className="z-50 min-w-[200px] p-2 rounded-2xl bg-[#131314]/95 backdrop-blur-2xl border border-white/[0.08] shadow-[0_10px_40px_rgba(0,0,0,0.8)] animate-in fade-in zoom-in-95 duration-200"
+                >
+                  {section.items.map((item) => {
+                    const itemActive = isActivePath(item.path);
+                    return (
+                      <DropdownMenu.Item key={item.path} asChild>
+                        <NavLink
+                          to={item.path}
+                          className={cn(
+                            "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer outline-none mb-1 last:mb-0",
+                            itemActive 
+                              ? "bg-accent-primary/10 text-accent-primary" 
+                              : "text-white/70 hover:bg-white/5 hover:text-white"
+                          )}
+                        >
+                          <item.icon className="w-4 h-4" />
+                          <span className="flex-1">{item.label}</span>
+                          {item.badge && (
+                            <span className="flex h-5 items-center justify-center rounded-full bg-status-critical/20 px-2 text-[10px] font-bold text-status-critical">
+                              {item.badge}
+                            </span>
+                          )}
+                        </NavLink>
+                      </DropdownMenu.Item>
+                    );
+                  })}
+                  <DropdownMenu.Arrow className="fill-white/[0.08]" />
+                </DropdownMenu.Content>
+              </DropdownMenu.Portal>
+            </DropdownMenu.Root>
+          );
+        })}
+      </div>
 
       {/* ── Mobile Overlay ──────────────────────────────────── */}
       <AnimatePresence>
         {mobileOpen && (
           <>
-            {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -332,15 +177,53 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: Side
               className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
               onClick={onMobileClose}
             />
-            {/* Drawer */}
             <motion.aside
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', stiffness: 400, damping: 35 }}
-              className="fixed left-0 top-0 bottom-0 z-50 w-[16.5rem] flex flex-col bg-surface-raised border-r border-white/[0.06] lg:hidden"
+              className="fixed left-0 top-0 bottom-0 z-50 w-[16.5rem] flex flex-col bg-[#131314] border-r border-white/[0.06] lg:hidden p-4 overflow-y-auto"
             >
-              {sidebarContent}
+              <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-accent-primary to-accent-secondary">
+                    <Activity className="w-[18px] h-[18px] text-white" />
+                  </div>
+                  <span className="font-bold tracking-widest text-white uppercase text-sm">MUIN</span>
+                </div>
+                <button onClick={onMobileClose} className="p-2 text-white/50 hover:text-white">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {sections.map(section => (
+                <div key={section.id} className="mb-6">
+                  <h4 className="text-[10px] font-bold tracking-widest text-white/40 uppercase mb-3 px-2">
+                    {section.label}
+                  </h4>
+                  <div className="space-y-1">
+                    {section.items.map(item => (
+                      <NavLink
+                        key={item.path}
+                        to={item.path}
+                        onClick={onMobileClose}
+                        className={({ isActive }) => cn(
+                          "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors",
+                          isActive ? "bg-accent-primary/10 text-accent-primary" : "text-white/60 hover:bg-white/5 hover:text-white"
+                        )}
+                      >
+                        <item.icon className="w-4 h-4" />
+                        <span className="flex-1">{item.label}</span>
+                        {item.badge && (
+                          <span className="flex h-5 items-center justify-center rounded-full bg-status-critical/20 px-2 text-[10px] font-bold text-status-critical">
+                            {item.badge}
+                          </span>
+                        )}
+                      </NavLink>
+                    ))}
+                  </div>
+                </div>
+              ))}
             </motion.aside>
           </>
         )}
