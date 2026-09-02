@@ -67,7 +67,7 @@ export function OverviewPage() {
   const activeBuses = buses.filter(b => b.status === 'active').length;
   const openIssues = issues.filter(i => ['open', 'confirmed', 'assigned'].includes(i.status)).length;
   const criticalIssues = issues.filter(i => i.severity === 'critical' && ['open', 'confirmed', 'assigned'].includes(i.status)).length;
-  const liveObservations = buses.reduce((acc, b) => acc + b.detectionsToday, 0);
+  const liveObservations = buses.reduce((acc, b) => acc + (b.detectionsToday || 0), 0);
 
   // Mock sparkline data
   const sparkData = {
