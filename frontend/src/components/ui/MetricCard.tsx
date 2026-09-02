@@ -44,7 +44,7 @@ export function MetricCard({
                 <Icon className="h-5 w-5 text-white/70" />
               </div>
             )}
-            <h3 className="text-sm font-medium text-white/56">{title}</h3>
+            <h3 className="text-xs uppercase tracking-widest font-medium text-white/50">{title}</h3>
           </div>
           {status && <StatusBadge status={status} size="sm" />}
         </div>
@@ -54,7 +54,7 @@ export function MetricCard({
             <div className="h-10 w-24 animate-pulse rounded-lg bg-white/10" />
           ) : (
             <div className="flex items-baseline gap-2">
-              <div className="text-3xl font-semibold tracking-tight text-white/90">{value}</div>
+              <div className="text-3xl font-semibold font-mono tracking-tight text-white/90">{value}</div>
               {change !== undefined && changeDirection && (
                 <div
                   className={cn('flex items-center text-xs font-medium', {
