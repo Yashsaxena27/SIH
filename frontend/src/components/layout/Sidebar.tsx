@@ -131,7 +131,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
                   side="top" 
                   align="center"
                   sideOffset={12}
-                  className="z-50 min-w-[200px] p-2 rounded-2xl bg-[#131314]/95 backdrop-blur-2xl border border-black/[0.08] shadow-[0_10px_40px_rgba(0,0,0,0.8)] animate-in fade-in zoom-in-95 duration-200"
+                  className="z-50 min-w-[200px] p-2 rounded-2xl bg-white/70 backdrop-blur-3xl border border-black/5 shadow-[0_10px_40px_rgba(0,0,0,0.1)] animate-in fade-in zoom-in-95 duration-200"
                 >
                   {section.items.map((item) => {
                     const itemActive = isActivePath(item.path);
@@ -157,7 +157,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
                       </DropdownMenu.Item>
                     );
                   })}
-                  <DropdownMenu.Arrow className="fill-black/[0.08]" />
+                  <DropdownMenu.Arrow className="fill-white/70" />
                 </DropdownMenu.Content>
               </DropdownMenu.Portal>
             </DropdownMenu.Root>
