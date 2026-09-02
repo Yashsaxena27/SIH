@@ -114,21 +114,16 @@ export function OverviewPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: idx * 0.05, duration: 0.3 }}
           >
-            <GlassPanel hover padding="sm" className="relative overflow-hidden group h-[88px] flex flex-col justify-between bg-white/[0.02] backdrop-blur-3xl border border-white/[0.08] rounded-2xl shadow-[inset_0_1px_1px_rgba(255,255,255,0.05),0_4px_20px_rgba(0,0,0,0.5)] hover:bg-white/[0.06] hover:border-white/[0.2] transition-all duration-300 cursor-pointer">
-              {/* Colored Glow Orb */}
-              <div 
-                className="absolute -top-10 -right-10 w-24 h-24 rounded-full blur-[30px] opacity-20 group-hover:opacity-40 transition-opacity duration-500"
-                style={{ backgroundColor: metric.color }}
-              />
+            <div className="relative overflow-hidden group h-[88px] flex flex-col justify-between bg-white rounded-2xl shadow-lg border border-white/20 hover:-translate-y-1 transition-all duration-300 cursor-pointer p-4">
               <div className="flex justify-between items-start z-10">
-                <span className="text-[11px] font-semibold text-white/40 uppercase tracking-wider">{metric.label}</span>
+                <span className="text-[11px] font-bold text-blue-500 uppercase tracking-wider">{metric.label}</span>
               </div>
               <div className="flex items-end justify-between z-10 mt-2">
-                <div className="text-4xl font-bold font-mono tracking-tight text-white/90 group-hover:text-white transition-colors">
+                <div className="text-4xl font-bold font-mono tracking-tight text-blue-600 group-hover:text-blue-700 transition-colors">
                   {metric.value.toLocaleString()}
                 </div>
               </div>
-            </GlassPanel>
+            </div>
           </motion.div>
         ))}
       </div>
