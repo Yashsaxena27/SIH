@@ -1,3 +1,8 @@
+// ============================================================
+// AppShell — Main application layout container
+// Design: Stitch reference — sidebar + header + content
+// ============================================================
+
 import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
@@ -11,7 +16,7 @@ export function AppShell() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <div className="flex h-screen bg-[#09090b] text-white overflow-hidden selection:bg-accent-primary/30">
+    <div className="flex h-screen bg-background text-on-surface overflow-hidden selection:bg-secondary-container/30">
       
       <Sidebar 
         collapsed={sidebarCollapsed} 
@@ -23,7 +28,7 @@ export function AppShell() {
       <div 
         className={cn(
           "flex-1 flex flex-col min-w-0 relative z-10 transition-[margin] duration-300 ease-[cubic-bezier(0.25,0.1,0.25,1)]",
-          sidebarCollapsed ? "lg:ml-[4.5rem]" : "lg:ml-[15.5rem]"
+          sidebarCollapsed ? "lg:ml-[var(--spacing-sidebar-collapsed)]" : "lg:ml-[var(--spacing-sidebar-width)]"
         )}
       >
         <TopBar 
@@ -32,7 +37,7 @@ export function AppShell() {
         />
         
         {/* Main Content Area */}
-        <main className="flex-1 overflow-y-auto scrollbar-none focus:outline-none bg-[#09090b]">
+        <main className="flex-1 overflow-y-auto scrollbar-none focus:outline-none bg-background">
           <Outlet />
         </main>
       </div>

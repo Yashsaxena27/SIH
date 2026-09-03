@@ -1,0 +1,8 @@
+ultralytics>=8.2.0
+opencv-python>=4.9.0
+numpy>=1.26.0
+httpx>=0.27.0
+pydantic>=2.7.0
+pydantic-settings>=2.2.1
+filterpy>=1.4.5
+pytest>=8.2.0

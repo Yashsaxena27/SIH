@@ -53,7 +53,7 @@ export function EdgeMonitoringPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold">{bus.id}</h3>
-                    <p className="text-xs text-foreground/60 font-mono">{bus.edgeDeviceId}</p>
+                    <p className="text-xs text-foreground/60 font-data-mono">{bus.edgeDeviceId}</p>
                   </div>
                 </div>
                 <StatusBadge 

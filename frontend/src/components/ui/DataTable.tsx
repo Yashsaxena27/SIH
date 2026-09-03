@@ -27,9 +27,9 @@ export function DataTable<T extends Record<string, any>>({
   className,
 }: DataTableProps<T>) {
   return (
-    <div className={cn('w-full overflow-x-auto rounded-xl border border-white/[0.06] bg-white/[0.03]', className)}>
-      <table className="w-full text-left text-sm text-white/90">
-        <thead className="border-b border-white/[0.06] bg-white/[0.02] text-xs uppercase text-white/56">
+    <div className={cn('w-full overflow-x-auto rounded-xl border border-outline-variant bg-surface-container', className)}>
+      <table className="w-full text-left text-sm text-on-surface">
+        <thead className="border-b border-outline-variant bg-white/[0.02] text-xs uppercase text-white/56">
           <tr>
             {columns.map((col) => (
               <th
@@ -52,7 +52,7 @@ export function DataTable<T extends Record<string, any>>({
             <tr>
               <td colSpan={columns.length} className="px-6 py-8 text-center text-white/56">
                 <div className="flex items-center justify-center space-x-2">
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-accent-primary border-t-transparent" />
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
                   <span>Loading data...</span>
                 </div>
               </td>
@@ -68,14 +68,14 @@ export function DataTable<T extends Record<string, any>>({
               <tr
                 key={rowIndex}
                 onClick={() => onRowClick?.(item)}
-                className={cn('transition-colors hover:bg-white/[0.04]', {
+                className={cn('transition-colors hover:bg-surface-container', {
                   'cursor-pointer': !!onRowClick,
                 })}
               >
                 {columns.map((col) => (
                   <td
                     key={col.key}
-                    className={cn('px-6 py-4', {
+                    className={cn('px-6 py-4 tabular-nums', {
                       'text-left': !col.align || col.align === 'left',
                       'text-center': col.align === 'center',
                       'text-right': col.align === 'right',

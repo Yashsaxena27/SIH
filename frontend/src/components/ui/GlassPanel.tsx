@@ -33,13 +33,13 @@ export function GlassPanel({
   return (
     <Component
       className={cn(
-        "rounded-xl border",
+        "rounded border",
         // Solid vs Glass logic
         glass 
-          ? "bg-white/[0.03] backdrop-blur-2xl border-white/[0.1] shadow-xl" 
-          : "bg-[#0f0f12] border-white/[0.06] shadow-sm",
+          ? "bg-surface/90 backdrop-blur-md border-outline-variant shadow-[0_0_15px_rgba(0,0,0,0.5)]" 
+          : "bg-surface-low border-outline-variant",
         // Hover interaction
-        hover && "transition-colors duration-200 hover:border-white/[0.1] hover:bg-[#141419]",
+        hover && "transition-colors duration-200 hover:border-outline hover:bg-surface-container",
         paddingStyles[padding],
         className
       )}

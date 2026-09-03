@@ -39,7 +39,7 @@ export function SeverityBadge({
       )}
     >
       {showIcon && <Icon className={cn({ 'h-3 w-3': size === 'sm', 'h-4 w-4': size === 'md' })} />}
-      <span className="font-medium">{config.label}</span>
+      <span className="font-label-caps">{config.label}</span>
     </div>
   );
 }

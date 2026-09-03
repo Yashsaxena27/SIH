@@ -1,142 +1,164 @@
 // ============================================================
-// MUIN Design Tokens
-// Centralized design system values
+// POTHOLE WALA Design Tokens
+// Kinetic Infrastructure Intel Design System
+// Synchronized with index.css @theme block
 // ============================================================
 
 export const tokens = {
-  // ── Typography ──────────────────────────────────────────────
+  // ── Typography (Tri-Font Architecture) ─────────────────────
   typography: {
     fontFamily: {
-      sans: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      sans: '"Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+      body: '"Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
       mono: '"JetBrains Mono", "Fira Code", "SF Mono", Consolas, monospace',
     },
     fontSize: {
-      'display': ['2.25rem', { lineHeight: '2.5rem', letterSpacing: '-0.02em', fontWeight: '700' }],
-      'h1':      ['1.875rem', { lineHeight: '2.25rem', letterSpacing: '-0.02em', fontWeight: '700' }],
-      'h2':      ['1.5rem', { lineHeight: '2rem', letterSpacing: '-0.01em', fontWeight: '600' }],
-      'h3':      ['1.25rem', { lineHeight: '1.75rem', letterSpacing: '-0.01em', fontWeight: '600' }],
-      'h4':      ['1.125rem', { lineHeight: '1.5rem', fontWeight: '600' }],
-      'body':    ['0.875rem', { lineHeight: '1.375rem', fontWeight: '400' }],
-      'body-sm': ['0.8125rem', { lineHeight: '1.25rem', fontWeight: '400' }],
-      'caption': ['0.75rem', { lineHeight: '1rem', fontWeight: '500' }],
-      'micro':   ['0.6875rem', { lineHeight: '0.875rem', fontWeight: '500', letterSpacing: '0.02em' }],
+      'display-metrics': ['2.25rem', { lineHeight: '2.75rem', letterSpacing: '-0.02em', fontWeight: '600' }],
+      'headline-md':     ['1.25rem', { lineHeight: '1.75rem', fontWeight: '600' }],
+      'body-md':         ['0.875rem', { lineHeight: '1.25rem', fontWeight: '400' }],
+      'body-sm':         ['0.75rem', { lineHeight: '1rem', fontWeight: '400' }],
+      'data-mono':       ['0.75rem', { lineHeight: '1rem', fontWeight: '500' }],
+      'label-caps':      ['0.6875rem', { lineHeight: '0.875rem', fontWeight: '700', letterSpacing: '0.06em' }],
     },
   },
 
-  // ── Spacing ─────────────────────────────────────────────────
+  // ── Spacing (4px Baseline Grid) ─────────────────────────────
   spacing: {
     px: '1px',
-    0.5: '0.125rem',
-    1: '0.25rem',
-    1.5: '0.375rem',
-    2: '0.5rem',
-    2.5: '0.625rem',
-    3: '0.75rem',
-    4: '1rem',
-    5: '1.25rem',
-    6: '1.5rem',
-    8: '2rem',
-    10: '2.5rem',
-    12: '3rem',
-    16: '4rem',
-    20: '5rem',
-    24: '6rem',
+    0.5: '0.125rem',  // 2px
+    1: '0.25rem',      // 4px — baseline unit
+    1.5: '0.375rem',   // 6px
+    2: '0.5rem',       // 8px — high-density gutter
+    2.5: '0.625rem',   // 10px
+    3: '0.75rem',      // 12px — panel margin
+    4: '1rem',         // 16px
+    5: '1.25rem',      // 20px
+    6: '1.5rem',       // 24px
+    8: '2rem',         // 32px
+    10: '2.5rem',      // 40px
+    12: '3rem',        // 48px — header height
+    16: '4rem',        // 64px — collapsed sidebar
+    20: '5rem',        // 80px
+    24: '6rem',        // 96px
   },
 
-  // ── Border Radius ───────────────────────────────────────────
+  // ── Layout Dimensions ──────────────────────────────────────
+  layout: {
+    headerHeight: '48px',
+    sidebarWidth: '240px',
+    sidebarCollapsed: '64px',
+    drawerWidth: '400px',
+    marginPanel: '12px',
+    gutterDensityHigh: '8px',
+  },
+
+  // ── Border Radius ──────────────────────────────────────────
   radius: {
     none: '0',
-    sm: '0.25rem',
-    DEFAULT: '0.5rem',
-    md: '0.625rem',
-    lg: '0.75rem',
-    xl: '1rem',
-    '2xl': '1.25rem',
-    full: '9999px',
+    sm: '0.125rem',    // 2px — badges, small checkboxes
+    DEFAULT: '0.25rem', // 4px — buttons, inputs, cards, HUD panels
+    md: '0.375rem',     // 6px
+    lg: '0.5rem',       // 8px
+    xl: '0.75rem',      // 12px
+    full: '9999px',     // pills, circular badges
   },
 
-  // ── Surface Levels (dark theme) ─────────────────────────────
+  // ── Surface Levels (Stitch Dark Theme) ─────────────────────
   surfaces: {
-    // Foundation
-    'base':       '#09090b',  // zinc-950 — deepest background
-    'raised':     '#0f0f12',  // slightly elevated
-    'overlay':    '#141419',  // cards, panels
-    'elevated':   '#1a1a21',  // popovers, dropdowns
-    'floating':   '#212129',  // modals, command palette
+    background:          '#131315',
+    surface:             '#131315',
+    surfaceDim:          '#131315',
+    surfaceBright:       '#39393b',
+    surfaceLowest:       '#0e0e10',
+    surfaceLow:          '#1b1b1d',
+    surfaceContainer:    '#1f1f21',
+    surfaceHigh:         '#2a2a2b',
+    surfaceHighest:      '#353436',
+    surfaceVariant:      '#353436',
+    surfaceTint:         '#bec6e0',
 
-    // Glass (with opacity)
-    'glass':      'rgba(255, 255, 255, 0.03)',
-    'glass-hover':'rgba(255, 255, 255, 0.05)',
-    'glass-active':'rgba(255, 255, 255, 0.07)',
+    // Legacy aliases
+    'base':     '#131315',
+    'raised':   '#1b1b1d',
+    'overlay':  '#1f1f21',
+    'elevated': '#2a2a2b',
+    'floating': '#353436',
 
-    // Borders
-    'border':        'rgba(255, 255, 255, 0.06)',
-    'border-subtle': 'rgba(255, 255, 255, 0.04)',
-    'border-strong': 'rgba(255, 255, 255, 0.10)',
-    'border-focus':  'rgba(99, 102, 241, 0.5)',
+    // Glass
+    'glass':       'rgba(19, 19, 21, 0.90)',
+    'glass-hover': 'rgba(19, 19, 21, 0.95)',
+    'glass-active':'rgba(31, 31, 33, 0.95)',
   },
 
   // ── Text Colors ─────────────────────────────────────────────
   text: {
-    primary:   'rgba(255, 255, 255, 0.92)',
-    secondary: 'rgba(255, 255, 255, 0.56)',
-    tertiary:  'rgba(255, 255, 255, 0.36)',
+    primary:   '#e4e2e4',  // on-surface
+    secondary: '#c6c6cd',  // on-surface-variant
+    tertiary:  '#909097',  // outline
     disabled:  'rgba(255, 255, 255, 0.20)',
-    inverse:   '#09090b',
+    inverse:   '#303032',  // inverse-on-surface
   },
 
-  // ── Status Colors ───────────────────────────────────────────
-  status: {
-    // Severity
-    critical: { base: '#ef4444', muted: 'rgba(239, 68, 68, 0.12)', text: '#fca5a5', border: 'rgba(239, 68, 68, 0.25)' },
-    high:     { base: '#f97316', muted: 'rgba(249, 115, 22, 0.12)', text: '#fdba74', border: 'rgba(249, 115, 22, 0.25)' },
-    medium:   { base: '#eab308', muted: 'rgba(234, 179, 8, 0.12)', text: '#fde047', border: 'rgba(234, 179, 8, 0.25)' },
-    low:      { base: '#22c55e', muted: 'rgba(34, 197, 94, 0.12)', text: '#86efac', border: 'rgba(34, 197, 94, 0.25)' },
+  // ── Border / Outline Colors ────────────────────────────────
+  borders: {
+    outline:        '#909097',
+    outlineVariant: '#45464d',
+    focus:          '#b4c5ff',  // secondary color for focus
+  },
 
-    // Operational
-    live:       { base: '#22c55e', muted: 'rgba(34, 197, 94, 0.12)', text: '#86efac' },
+  // ── Status Colors ──────────────────────────────────────────
+  status: {
+    critical:  { base: '#dc2626', muted: 'rgba(220, 38, 38, 0.12)', text: '#fca5a5', border: 'rgba(220, 38, 38, 0.25)' },
+    high:      { base: '#f97316', muted: 'rgba(249, 115, 22, 0.12)', text: '#fdba74', border: 'rgba(249, 115, 22, 0.25)' },
+    medium:    { base: '#fbbf24', muted: 'rgba(251, 191, 36, 0.12)', text: '#fde68a', border: 'rgba(251, 191, 36, 0.25)' },
+    low:       { base: '#10b981', muted: 'rgba(16, 185, 129, 0.12)', text: '#6ee7b7', border: 'rgba(16, 185, 129, 0.25)' },
+
+    live:       { base: '#10b981', muted: 'rgba(16, 185, 129, 0.12)', text: '#6ee7b7' },
     monitoring: { base: '#3b82f6', muted: 'rgba(59, 130, 246, 0.12)', text: '#93c5fd' },
     processing: { base: '#a855f7', muted: 'rgba(168, 85, 247, 0.12)', text: '#d8b4fe' },
     offline:    { base: '#6b7280', muted: 'rgba(107, 114, 128, 0.12)', text: '#9ca3af' },
-    syncing:    { base: '#06b6d4', muted: 'rgba(6, 182, 212, 0.12)', text: '#67e8f9' },
-    error:      { base: '#ef4444', muted: 'rgba(239, 68, 68, 0.12)', text: '#fca5a5' },
+    syncing:    { base: '#b4c5ff', muted: 'rgba(180, 197, 255, 0.12)', text: '#dbe1ff' },
+    error:      { base: '#dc2626', muted: 'rgba(220, 38, 38, 0.12)', text: '#fca5a5' },
+    healthy:    { base: '#10b981', muted: 'rgba(16, 185, 129, 0.12)', text: '#6ee7b7' },
 
-    // Verification
-    verified:    { base: '#22c55e', muted: 'rgba(34, 197, 94, 0.12)', text: '#86efac' },
-    unresolved:  { base: '#ef4444', muted: 'rgba(239, 68, 68, 0.12)', text: '#fca5a5' },
-    pending:     { base: '#eab308', muted: 'rgba(234, 179, 8, 0.12)', text: '#fde047' },
+    verified:    { base: '#10b981', muted: 'rgba(16, 185, 129, 0.12)', text: '#6ee7b7' },
+    unresolved:  { base: '#dc2626', muted: 'rgba(220, 38, 38, 0.12)', text: '#fca5a5' },
+    pending:     { base: '#fbbf24', muted: 'rgba(251, 191, 36, 0.12)', text: '#fde68a' },
     inconclusive:{ base: '#6b7280', muted: 'rgba(107, 114, 128, 0.12)', text: '#9ca3af' },
   },
 
-  // ── Brand / Accent ──────────────────────────────────────────
+  // ── Brand / Accent ─────────────────────────────────────────
   accent: {
-    primary:   '#6366f1', // indigo-500
-    primaryHover: '#818cf8',
-    secondary: '#06b6d4', // cyan-500
-    secondaryHover: '#22d3ee',
-    gradient: 'linear-gradient(135deg, #6366f1 0%, #06b6d4 100%)',
+    primary:       '#bec6e0',
+    primaryHover:  '#dae2fd',
+    secondary:     '#b4c5ff',
+    secondaryHover:'#dbe1ff',
+    secondaryContainer: '#0053db',
+    tertiary:      '#dec29a',
+    gradient: 'linear-gradient(135deg, #bec6e0 0%, #b4c5ff 100%)',
   },
 
-  // ── Department Colors ───────────────────────────────────────
+  // ── Department Colors ──────────────────────────────────────
   departments: {
     pwd:      { base: '#f97316', muted: 'rgba(249, 115, 22, 0.12)' },
     traffic:  { base: '#3b82f6', muted: 'rgba(59, 130, 246, 0.12)' },
-    disaster: { base: '#ef4444', muted: 'rgba(239, 68, 68, 0.12)' },
-    transport:{ base: '#22c55e', muted: 'rgba(34, 197, 94, 0.12)' },
+    disaster: { base: '#dc2626', muted: 'rgba(220, 38, 38, 0.12)' },
+    transport:{ base: '#10b981', muted: 'rgba(16, 185, 129, 0.12)' },
   },
 
-  // ── Shadows ─────────────────────────────────────────────────
+  // ── Shadows ────────────────────────────────────────────────
   shadows: {
-    sm:   '0 1px 2px rgba(0, 0, 0, 0.3)',
+    sm:    '0 1px 2px rgba(0, 0, 0, 0.3)',
     DEFAULT: '0 2px 8px rgba(0, 0, 0, 0.4)',
-    md:   '0 4px 16px rgba(0, 0, 0, 0.4)',
-    lg:   '0 8px 32px rgba(0, 0, 0, 0.5)',
-    xl:   '0 16px 48px rgba(0, 0, 0, 0.6)',
-    glow: '0 0 20px rgba(99, 102, 241, 0.15)',
-    'glow-sm': '0 0 10px rgba(99, 102, 241, 0.10)',
+    md:    '0 4px 16px rgba(0, 0, 0, 0.4)',
+    lg:    '0 8px 32px rgba(0, 0, 0, 0.5)',
+    xl:    '0 16px 48px rgba(0, 0, 0, 0.6)',
+    float: '0 0 15px rgba(0, 0, 0, 0.5)',
+    glow:  '0 0 20px rgba(190, 198, 224, 0.10)',
+    'glow-sm': '0 0 10px rgba(190, 198, 224, 0.06)',
   },
 
-  // ── Animation ───────────────────────────────────────────────
+  // ── Animation ──────────────────────────────────────────────
   animation: {
     duration: {
       instant: 75,
@@ -155,12 +177,15 @@ export const tokens = {
     },
   },
 
-  // ── Z-Index ─────────────────────────────────────────────────
+  // ── Z-Index ────────────────────────────────────────────────
   zIndex: {
     base: 0,
     raised: 10,
     sticky: 20,
+    sidebar: 30,
+    header: 25,
     overlay: 30,
+    drawer: 35,
     modal: 40,
     popover: 50,
     toast: 60,
@@ -168,7 +193,7 @@ export const tokens = {
     max: 100,
   },
 
-  // ── Opacity ─────────────────────────────────────────────────
+  // ── Opacity ────────────────────────────────────────────────
   opacity: {
     disabled: 0.4,
     muted: 0.6,
@@ -209,6 +234,12 @@ export const motionVariants = {
     exit: { opacity: 0, x: 16 },
     transition: { duration: tokens.animation.duration.normal / 1000, ease: tokens.animation.easing.out },
   },
+  slideInLeft: {
+    initial: { opacity: 0, x: -16 },
+    animate: { opacity: 1, x: 0 },
+    exit: { opacity: 0, x: -16 },
+    transition: { duration: tokens.animation.duration.normal / 1000, ease: tokens.animation.easing.out },
+  },
   stagger: {
     animate: {
       transition: {
@@ -232,5 +263,10 @@ export const pulseKeyframes = {
   'pulse-dot': {
     '0%, 100%': { transform: 'scale(1)', opacity: 1 },
     '50%': { transform: 'scale(1.5)', opacity: 0 },
+  },
+  'pin-radar': {
+    '0%': { transform: 'scale(1)', opacity: 0.6 },
+    '50%': { transform: 'scale(1.8)', opacity: 0 },
+    '100%': { transform: 'scale(1)', opacity: 0.6 },
   },
 } as const;

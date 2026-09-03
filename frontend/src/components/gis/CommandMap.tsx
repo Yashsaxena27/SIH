@@ -28,7 +28,7 @@ const createBusIcon = () => {
   const html = renderToString(
     <div className="relative flex items-center justify-center w-8 h-8">
       <div className="absolute inset-0 bg-cyan-500/20 rounded-full animate-ping" />
-      <div className="relative flex items-center justify-center w-6 h-6 bg-[#0f0f12] border border-cyan-500 rounded-full shadow-[0_0_12px_rgba(6,182,212,0.6)]">
+      <div className="relative flex items-center justify-center w-6 h-6 bg-surface-low border border-cyan-500 rounded-full shadow-[0_0_12px_rgba(6,182,212,0.6)]">
         <BusIcon className="w-3.5 h-3.5 text-cyan-400" />
       </div>
     </div>
@@ -44,16 +44,16 @@ const createIssueIcon = (severity: string, observationCount: number, showCluster
       {isCritical && <div className="absolute inset-[-4px] rounded-full bg-red-500/30 animate-ping" />}
       <div className={cn(
         "relative flex items-center justify-center rounded-full border shadow-lg transition-transform group-hover:scale-110",
-        isCritical ? 'w-7 h-7 bg-[#0f0f12] border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.5)]' :
-        severity === 'high' ? 'w-6 h-6 bg-[#0f0f12] border-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.4)]' :
-        'w-5 h-5 bg-[#0f0f12] border-yellow-500 shadow-[0_0_8px_rgba(234,179,8,0.3)]'
+        isCritical ? 'w-7 h-7 bg-surface-low border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.5)]' :
+        severity === 'high' ? 'w-6 h-6 bg-surface-low border-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.4)]' :
+        'w-5 h-5 bg-surface-low border-yellow-500 shadow-[0_0_8px_rgba(234,179,8,0.3)]'
       )}>
         {isCritical ? <ShieldAlert className="w-3.5 h-3.5 text-red-500" /> : <AlertTriangle className={cn("w-3 h-3", severity === 'high' ? 'text-orange-500' : 'text-yellow-500')} />}
       </div>
       
       {/* Clustering Indicator Badge */}
       {showClusters && observationCount > 1 && (
-        <div className="absolute -top-2 -right-2 bg-accent-primary text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-[#0f0f12] shadow-md z-10">
+        <div className="absolute -top-2 -right-2 bg-secondary-container text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-[#0f0f12] shadow-md z-10">
           {observationCount}
         </div>
       )}
@@ -83,7 +83,7 @@ export function CommandMap({ buses, issues, routes, layers, filter, onIssueSelec
   });
 
   return (
-    <div className="absolute inset-0 z-0 bg-[#09090b]">
+    <div className="absolute inset-0 z-0 bg-background">
       <MapContainer 
         center={[28.6139, 77.2090]} 
         zoom={12} 
@@ -104,7 +104,7 @@ export function CommandMap({ buses, issues, routes, layers, filter, onIssueSelec
             radius={issue.severity === 'critical' ? 400 : 250}
             pathOptions={{
               stroke: false,
-              fillColor: issue.severity === 'critical' ? '#ef4444' : '#f97316',
+              fillColor: issue.severity === 'critical' ? 'var(--color-status-critical)' : '#f97316',
               fillOpacity: issue.severity === 'critical' ? 0.15 : 0.08
             }}
           />
@@ -115,7 +115,7 @@ export function CommandMap({ buses, issues, routes, layers, filter, onIssueSelec
           <Polyline
             key={route.id}
             positions={route.waypoints.map(wp => [wp.lat, wp.lng])}
-            pathOptions={{ color: '#8b5cf6', weight: 3, opacity: 0.4, dashArray: '10, 10' }}
+            pathOptions={{ color: '#b4c5ff', weight: 3, opacity: 0.4, dashArray: '10, 10' }}
           />
         ))}
 
