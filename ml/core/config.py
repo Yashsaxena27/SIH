@@ -31,25 +31,39 @@ class MLSettings(BaseSettings):
 
     @property
     def RESOLVED_MODEL_PATH(self) -> str:
-        """Resolve model path whether run from root, backend, or ml directory."""
+        """Resolve model path whether run from root, backend, or container directory."""
         if os.path.exists(self.MODEL_PATH):
-            return self.MODEL_PATH
+            return os.path.abspath(self.MODEL_PATH)
         # Try relative to ml directory
         alt_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "models", "best.pt"))
         if os.path.exists(alt_path):
             return alt_path
         # Try from current working directory
-        cwd_alt = os.path.join(os.getcwd(), "ml", "models", "best.pt")
+        cwd_alt = os.path.abspath(os.path.join(os.getcwd(), "ml", "models", "best.pt"))
         if os.path.exists(cwd_alt):
             return cwd_alt
+        # Try Docker container location
+        docker_path = "/app/ml/models/best.pt"
+        if os.path.exists(docker_path):
+            return docker_path
         return self.MODEL_PATH
 
     @property
     def RESOLVED_EVIDENCE_DIR(self) -> str:
         """Resolve evidence storage directory."""
         if os.path.exists(self.EVIDENCE_DIR):
-            return self.EVIDENCE_DIR
+            return os.path.abspath(self.EVIDENCE_DIR)
+        # Inside backend container or backend folder
+        if os.path.exists("evidence"):
+            return os.path.abspath("evidence")
+        docker_evidence = "/app/evidence"
+        if os.path.exists(docker_evidence):
+            return docker_evidence
         alt_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "backend", "evidence"))
-        return alt_path
+        if os.path.exists(alt_path):
+            return alt_path
+        fallback = os.path.abspath("evidence")
+        os.makedirs(fallback, exist_ok=True)
+        return fallback
 
 settings = MLSettings()

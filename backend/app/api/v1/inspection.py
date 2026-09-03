@@ -22,8 +22,17 @@ try:
     from ml.pipeline.video_processor import VideoProcessor
     from ml.core.config import settings as ml_settings
 except ImportError:
-    VideoProcessor = None
-    ml_settings = None
+    try:
+        import sys
+        # Add root project directory if running inside backend or other subdir
+        root_cand = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
+        if os.path.exists(os.path.join(root_cand, "ml")) and root_cand not in sys.path:
+            sys.path.insert(0, root_cand)
+        from ml.pipeline.video_processor import VideoProcessor
+        from ml.core.config import settings as ml_settings
+    except ImportError:
+        VideoProcessor = None
+        ml_settings = None
 
 logger = logging.getLogger(__name__)
 
