@@ -83,7 +83,7 @@ def mark_as_synced(event_ids):
     conn.commit()
     conn.close()
 
-def sync_to_backend(backend_url="http://localhost:5000/api/events"):
+def sync_to_backend(backend_url="http://localhost:5001/api/events"):
     """
     Batch-sync all unsynced events to the backend API.
     This is called when the bus comes back online.

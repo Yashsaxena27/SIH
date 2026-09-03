@@ -12,9 +12,9 @@ from offline_buffer import init_database, save_event, sync_to_backend, get_event
 
 # Configuration
 VIDEO_PATH = "test_video.mp4"
-MODEL_PATH = r"runs\detect\train\weights\best.pt"
-CONFIDENCE_THRESHOLD = 0.3       # Minimum confidence to count as a detection
-SAMPLE_INTERVAL_SEC = 1          # Sample 1 frame per second
+MODEL_PATH = r"runs/detect/train/weights/best.pt"
+CONFIDENCE_THRESHOLD = 0.37      # Finely tuned threshold for CLAHE night-vision
+SAMPLE_INTERVAL_SEC = 0.1        # Increased to 10 FPS (1 sec was skipping the potholes!)
 CROPPED_FRAMES_DIR = "cropped_detections"
 
 # Class names from our training
@@ -103,8 +103,18 @@ def run_pipeline():
         elapsed = timedelta(seconds=frame_count / fps)
         timestamp = (start_time + elapsed).strftime("%Y-%m-%dT%H:%M:%S")
         
-        # Run AI detection on this frame
-        results = model.predict(source=frame, verbose=False, conf=CONFIDENCE_THRESHOLD)
+        # --- COMPUTER VISION PREPROCESSING ---
+        # To fix the "Daytime Dataset vs Night Video" domain shift, we use OpenCV CLAHE 
+        # (Contrast Limited Adaptive Histogram Equalization) to artificially enhance the lighting!
+        lab = cv2.cvtColor(frame, cv2.COLOR_BGR2LAB)
+        l_channel, a, b = cv2.split(lab)
+        clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8,8))
+        cl = clahe.apply(l_channel)
+        limg = cv2.merge((cl,a,b))
+        enhanced_frame = cv2.cvtColor(limg, cv2.COLOR_LAB2BGR)
+        
+        # Run YOLO inference on the enhanced frame
+        results = model.predict(source=enhanced_frame, verbose=False, conf=CONFIDENCE_THRESHOLD)
         
         # Process each detection in this frame
         for result in results:
@@ -117,8 +127,27 @@ def run_pipeline():
                 confidence = float(box.conf[0])
                 x1, y1, x2, y2 = map(int, box.xyxy[0])
                 
+                # HACKATHON PROTOTYPE FILTER:
+                # 5-epoch models confuse speed bumps and shadows for potholes.
+                # We use geometry to reject them automatically!
+                
+                width = x2 - x1
+                height = y2 - y1
+                aspect_ratio = width / (height + 1e-6)
+                
                 # Calculate severity
-                bbox_area = (x2 - x1) * (y2 - y1)
+                bbox_area = width * height
+                area_ratio = bbox_area / frame_area
+                
+                if aspect_ratio > 3.0:
+                    continue  # Skip speed bumps (they are extremely wide)
+                    
+                if area_ratio > 0.20:
+                    continue  # Skip massive shadows (too large to be a normal pothole)
+                    
+                if area_ratio < 0.01:
+                    continue  # Skip tiny glare/noise
+                
                 severity = get_severity(bbox_area, frame_area)
                 
                 # Get class name
