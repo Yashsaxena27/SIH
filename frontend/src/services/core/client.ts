@@ -38,6 +38,19 @@ class ApiClient {
     });
   }
 
+  async postForm<T>(endpoint: string, formData: FormData): Promise<T> {
+    const url = `${this.baseUrl}${endpoint}`;
+    const response = await fetch(url, {
+      method: 'POST',
+      body: formData,
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.detail || errorData.message || `API Error: ${response.status} ${response.statusText}`);
+    }
+    return response.json();
+  }
+
   patch<T>(endpoint: string, data?: any) {
     return this.fetch<T>(endpoint, {
       method: 'PATCH',

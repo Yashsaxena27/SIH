@@ -1,0 +1,17 @@
+{
+  "total_frames": 331,
+  "sampled_frames": 12,
+  "frames_with_raw_detections": 11,
+  "total_raw_detections": 125,
+  "raw_by_class": {
+    "D00": 25,
+    "D10": 0,
+    "D20": 18,
+    "D40": 82,
+    "Other": 0
+  },
+  "conf_threshold": 0.25,
+  "filtered_detections_count": 0,
+  "filtered_detections": [],
+  "all_frames_raw_dets": 3074
+}

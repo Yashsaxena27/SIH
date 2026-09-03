@@ -4,16 +4,16 @@ import L from 'leaflet';
 import { renderToString } from 'react-dom/server';
 import { Bus as BusIcon, AlertTriangle, X, ShieldAlert } from 'lucide-react';
 import { GlassPanel } from './GlassPanel';
-import { cn, timeAgo } from '@/lib/utils';
+import { cn, timeAgo, getValidLatLng } from '@/lib/utils';
 import type { Bus, UrbanIssue } from '@/types';
 
 // Custom icons using Lucide and Tailwind classes via divIcon
 const createBusIcon = () => {
   const iconHtml = renderToString(
     <div className="relative flex items-center justify-center w-8 h-8">
-      <div className="absolute inset-0 bg-accent-secondary/20 rounded-full animate-ping" />
-      <div className="relative flex items-center justify-center w-6 h-6 bg-surface-raised border border-accent-secondary rounded-full shadow-[0_0_10px_rgba(6,182,212,0.5)]">
-        <BusIcon className="w-3.5 h-3.5 text-accent-secondary" />
+      <div className="absolute inset-0 bg-secondary/20 rounded-full animate-ping" />
+      <div className="relative flex items-center justify-center w-6 h-6 bg-surface-low border border-secondary rounded-full shadow-[0_0_10px_rgba(6,182,212,0.5)]">
+        <BusIcon className="w-3.5 h-3.5 text-secondary" />
       </div>
     </div>
   );
@@ -34,7 +34,7 @@ const createIssueIcon = (severity: string, isSelected: boolean) => {
   const iconHtml = renderToString(
     <div className={cn("relative flex items-center justify-center transition-all duration-300", isSelected ? 'scale-110 z-50' : 'scale-100 z-10')}>
       {severity === 'critical' && <div className={`absolute inset-0 rounded-full animate-ping opacity-30 ${colors.bg.replace('/10', '')}`} />}
-      <div className={cn(`relative flex items-center justify-center bg-surface-raised rounded-full border ${colors.border} ${colors.shadow}`, sizeClass)}>
+      <div className={cn(`relative flex items-center justify-center bg-surface-low rounded-full border ${colors.border} ${colors.shadow}`, sizeClass)}>
         {severity === 'critical' 
           ? <ShieldAlert className={cn(colors.text, iconSizeClass)} />
           : <AlertTriangle className={cn(colors.text, iconSizeClass)} />
@@ -51,8 +51,14 @@ function MapBounds({ buses, issues }: { buses: Bus[], issues: UrbanIssue[] }) {
   useEffect(() => {
     if (!buses.length && !issues.length) return;
     const bounds = L.latLngBounds([]);
-    buses.forEach(b => { if (b.currentPosition) bounds.extend([b.currentPosition.lat, b.currentPosition.lng]); });
-    issues.forEach(i => bounds.extend([i.location.lat, i.location.lng]));
+    buses.forEach(b => {
+      const pos = getValidLatLng(b);
+      if (pos) bounds.extend(pos);
+    });
+    issues.forEach(i => {
+      const pos = getValidLatLng(i);
+      if (pos) bounds.extend(pos);
+    });
     if (bounds.isValid()) {
       map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
     }
@@ -67,11 +73,11 @@ interface IntelligenceMapProps {
 
 export function IntelligenceMap({ buses, issues }: IntelligenceMapProps) {
   const [selectedIssue, setSelectedIssue] = useState<UrbanIssue | null>(null);
-  // Default to Delhi coords
-  const defaultCenter: [number, number] = [28.6139, 77.2090];
+  // Default to Bengaluru coords (matching seed_demo.py)
+  const defaultCenter: [number, number] = [12.9716, 77.5946];
 
   return (
-    <div className="relative w-full h-full rounded-xl overflow-hidden border border-white/[0.06] shadow-2xl bg-[#0f0f12]">
+    <div className="relative w-full h-full rounded-xl overflow-hidden border border-outline-variant shadow-2xl bg-surface-low">
       <MapContainer 
         center={defaultCenter} 
         zoom={12} 
@@ -85,25 +91,33 @@ export function IntelligenceMap({ buses, issues }: IntelligenceMapProps) {
         />
         
         {/* Render Buses */}
-        {buses.map(bus => bus.currentPosition && (
-          <Marker 
-            key={`bus-${bus.id}`}
-            position={[bus.currentPosition.lat, bus.currentPosition.lng]}
-            icon={createBusIcon()}
-          />
-        ))}
+        {buses.map(bus => {
+          const pos = getValidLatLng(bus);
+          if (!pos) return null;
+          return (
+            <Marker 
+              key={`bus-${bus.id}`}
+              position={pos}
+              icon={createBusIcon()}
+            />
+          );
+        })}
 
         {/* Render Issues */}
-        {issues.map(issue => (
-          <Marker 
-            key={`issue-${issue.id}`}
-            position={[issue.location.lat, issue.location.lng]}
-            icon={createIssueIcon(issue.severity, selectedIssue?.id === issue.id)}
-            eventHandlers={{
-              click: () => setSelectedIssue(issue)
-            }}
-          />
-        ))}
+        {issues.map(issue => {
+          const pos = getValidLatLng(issue);
+          if (!pos) return null;
+          return (
+            <Marker 
+              key={`issue-${issue.id}`}
+              position={pos}
+              icon={createIssueIcon(issue.severity, selectedIssue?.id === issue.id)}
+              eventHandlers={{
+                click: () => setSelectedIssue(issue)
+              }}
+            />
+          );
+        })}
         
         <MapBounds buses={buses} issues={issues} />
       </MapContainer>
@@ -111,7 +125,7 @@ export function IntelligenceMap({ buses, issues }: IntelligenceMapProps) {
       {/* Floating Context Panel over the Map */}
       {selectedIssue && (
         <div className="absolute top-4 right-4 z-[400] w-80 animate-in slide-in-from-right-8 fade-in duration-300">
-          <GlassPanel className="backdrop-blur-3xl bg-surface-elevated/90 border-white/[0.12] shadow-2xl">
+          <GlassPanel className="backdrop-blur-3xl bg-surface-high/90 border-white/[0.12] shadow-2xl">
             <div className="flex items-start justify-between mb-3">
               <div className="flex items-center gap-2">
                 <div className={cn(
@@ -123,50 +137,50 @@ export function IntelligenceMap({ buses, issues }: IntelligenceMapProps) {
                 )}>
                   {selectedIssue.severity}
                 </div>
-                <span className="text-[10px] text-white/40 font-mono">{selectedIssue.id}</span>
+                <span className="text-[10px] text-on-surface-variant font-data-mono">{selectedIssue.id}</span>
               </div>
               <button 
                 onClick={() => setSelectedIssue(null)}
-                className="text-white/40 hover:text-white transition-colors p-1 -mr-1 -mt-1 rounded-md hover:bg-white/[0.06]"
+                className="text-on-surface-variant hover:text-white transition-colors p-1 -mr-1 -mt-1 rounded-md hover:bg-surface-high"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
             
-            <h3 className="text-sm font-semibold text-white/90 mb-1 leading-snug">
+            <h3 className="text-sm font-semibold text-on-surface mb-1 leading-snug">
               {selectedIssue.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
             </h3>
             <p className="text-xs text-white/60 mb-4 flex items-start gap-1.5">
-              <span className="mt-0.5">📍</span> {selectedIssue.location.address}
+              <span className="mt-0.5">📍</span> {selectedIssue.location?.address || 'Bengaluru Road Network'}
             </p>
 
             <div className="grid grid-cols-2 gap-2 mb-4">
-              <div className="bg-white/[0.03] rounded-lg p-2 border border-white/[0.04]">
-                <div className="text-[10px] text-white/40 uppercase">Observations</div>
-                <div className="text-sm font-semibold text-white/90 mt-0.5">{selectedIssue.observationCount}</div>
+              <div className="bg-surface-container rounded-lg p-2 border border-white/[0.04]">
+                <div className="text-[10px] text-on-surface-variant uppercase">Observations</div>
+                <div className="text-sm font-semibold text-on-surface mt-0.5">{selectedIssue.observationCount}</div>
               </div>
-              <div className="bg-white/[0.03] rounded-lg p-2 border border-white/[0.04]">
-                <div className="text-[10px] text-white/40 uppercase">Confidence</div>
-                <div className="text-sm font-semibold text-accent-primary-hover mt-0.5">{((selectedIssue?.confidence ?? 0) * 100).toFixed(1)}%</div>
+              <div className="bg-surface-container rounded-lg p-2 border border-white/[0.04]">
+                <div className="text-[10px] text-on-surface-variant uppercase">Confidence</div>
+                <div className="text-sm font-semibold text-primary-hover mt-0.5">{((selectedIssue?.confidence ?? 0) * 100).toFixed(1)}%</div>
               </div>
             </div>
 
             <div className="space-y-1.5 text-[11px]">
               <div className="flex justify-between border-b border-white/[0.04] pb-1.5">
-                <span className="text-white/40">First detected</span>
-                <span className="text-white/80">{timeAgo(selectedIssue.firstDetectedAt)}</span>
+                <span className="text-on-surface-variant">First detected</span>
+                <span className="text-on-surface">{timeAgo(selectedIssue.firstDetectedAt)}</span>
               </div>
               <div className="flex justify-between border-b border-white/[0.04] pb-1.5">
-                <span className="text-white/40">Status</span>
-                <span className="text-white/80 capitalize">{selectedIssue.status.replace(/_/g, ' ')}</span>
+                <span className="text-on-surface-variant">Status</span>
+                <span className="text-on-surface capitalize">{selectedIssue.status.replace(/_/g, ' ')}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-white/40">Assigned To</span>
-                <span className="text-white/80 font-medium">{selectedIssue.assignedDepartmentId || 'Unassigned'}</span>
+                <span className="text-on-surface-variant">Assigned To</span>
+                <span className="text-on-surface font-medium">{selectedIssue.assignedDepartmentId || 'Unassigned'}</span>
               </div>
             </div>
 
-            <button className="w-full mt-4 bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] text-white/80 text-xs font-medium py-2 rounded-lg transition-colors">
+            <button className="w-full mt-4 bg-surface-high hover:bg-white/[0.1] border border-outline-variant text-on-surface text-xs font-medium py-2 rounded-lg transition-colors">
               View Full Details
             </button>
           </GlassPanel>

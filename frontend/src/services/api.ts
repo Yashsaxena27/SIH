@@ -5,8 +5,14 @@ import { issueService } from './modules/issueService';
 import { ticketService, verificationService } from './modules/ticketing';
 import { fleetService, routeService } from './modules/fleetService';
 import { analyticsService, detectionService } from './modules/analyticsService';
+import { inspectionService } from './modules/inspectionService';
 
 export const api = {
+  // Inspection
+  uploadInspectionVideo: inspectionService.uploadVideo,
+  getInspectionStatus: inspectionService.getInspectionStatus,
+  listRecentInspections: inspectionService.listRecentInspections,
+
   // Fleet
   getBuses: fleetService.getBuses,
   getBus: fleetService.getBus,

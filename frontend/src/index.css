@@ -1,64 +1,125 @@
 /* ============================================================
-   MUIN — Mobile Urban Intelligence Network
+   POTHOLE WALA — Infrastructure Intelligence Platform
    Global Styles + Tailwind v4 Configuration
+   Design System: Kinetic Infrastructure Intel (Stitch Reference)
    ============================================================ */
 
 @import "tailwindcss";
 
 /* ── Custom Theme ──────────────────────────────────────────── */
 @theme {
-  /* Font families */
-  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  /* ── Font Families (Tri-Font Architecture) ────────────────── */
+  --font-sans: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-body: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-mono: "JetBrains Mono", "Fira Code", "SF Mono", Consolas, monospace;
 
-  /* Surface colors (dark theme) */
-  --color-surface-base: #09090b;
-  --color-surface-raised: #0f0f12;
-  --color-surface-overlay: #141419;
-  --color-surface-elevated: #1a1a21;
-  --color-surface-floating: #212129;
+  /* ── Surface Hierarchy (Dark Theme) ──────────────────────── */
+  --color-background: #131315;
+  --color-surface: #131315;
+  --color-surface-dim: #131315;
+  --color-surface-bright: #39393b;
+  --color-surface-lowest: #0e0e10;
+  --color-surface-low: #1b1b1d;
+  --color-surface-container: #1f1f21;
+  --color-surface-high: #2a2a2b;
+  --color-surface-highest: #353436;
+  --color-surface-variant: #353436;
+  --color-surface-tint: #bec6e0;
 
-  /* Brand / accent */
-  --color-accent-primary: #6366f1;
-  --color-accent-primary-hover: #818cf8;
-  --color-accent-secondary: #06b6d4;
-  --color-accent-secondary-hover: #22d3ee;
+  /* Legacy aliases for backward compat */
+  --color-surface-base: #131315;
+  --color-surface-raised: #1b1b1d;
+  --color-surface-overlay: #1f1f21;
+  --color-surface-elevated: #2a2a2b;
+  --color-surface-floating: #353436;
 
-  /* Status colors */
-  --color-status-critical: #ef4444;
+  /* ── Text Colors ─────────────────────────────────────────── */
+  --color-on-surface: #e4e2e4;
+  --color-on-surface-variant: #c6c6cd;
+  --color-inverse-surface: #e4e2e4;
+  --color-inverse-on-surface: #303032;
+
+  /* ── Outline / Border Colors ─────────────────────────────── */
+  --color-outline: #909097;
+  --color-outline-variant: #45464d;
+
+  /* ── Primary (Slate-Blue) ────────────────────────────────── */
+  --color-primary: #bec6e0;
+  --color-on-primary: #283044;
+  --color-primary-container: #0f172a;
+  --color-on-primary-container: #798098;
+  --color-inverse-primary: #565e74;
+
+  /* Legacy aliases */
+  --color-accent-primary: #bec6e0;
+  --color-accent-primary-hover: #dae2fd;
+
+  /* ── Secondary (System Blue) ─────────────────────────────── */
+  --color-secondary: #b4c5ff;
+  --color-on-secondary: #002a78;
+  --color-secondary-container: #0053db;
+  --color-on-secondary-container: #cdd7ff;
+
+  /* Legacy aliases */
+  --color-accent-secondary: #b4c5ff;
+  --color-accent-secondary-hover: #dbe1ff;
+
+  /* ── Tertiary (Amber / Gold) ─────────────────────────────── */
+  --color-tertiary: #dec29a;
+  --color-on-tertiary: #3e2d11;
+  --color-tertiary-container: #231500;
+  --color-on-tertiary-container: #957d5a;
+
+  /* ── Error ────────────────────────────────────────────────── */
+  --color-error: #ffb4ab;
+  --color-on-error: #690005;
+  --color-error-container: #93000a;
+  --color-on-error-container: #ffdad6;
+
+  /* ── Semantic Status Colors ──────────────────────────────── */
+  --color-status-critical: #dc2626;
   --color-status-high: #f97316;
-  --color-status-medium: #eab308;
-  --color-status-low: #22c55e;
-  --color-status-live: #22c55e;
+  --color-status-medium: #fbbf24;
+  --color-status-low: #10b981;
+  --color-status-live: #10b981;
   --color-status-monitoring: #3b82f6;
   --color-status-processing: #a855f7;
   --color-status-offline: #6b7280;
-  --color-status-syncing: #06b6d4;
+  --color-status-syncing: #b4c5ff;
+  --color-status-healthy: #10b981;
 
-  /* Department colors */
+  /* ── Department Colors ───────────────────────────────────── */
   --color-dept-pwd: #f97316;
   --color-dept-traffic: #3b82f6;
-  --color-dept-disaster: #ef4444;
-  --color-dept-transport: #22c55e;
+  --color-dept-disaster: #dc2626;
+  --color-dept-transport: #10b981;
 
-  /* Shadows */
-  --shadow-glow: 0 0 20px rgba(99, 102, 241, 0.15);
-  --shadow-glow-sm: 0 0 10px rgba(99, 102, 241, 0.10);
+  /* ── Layout Dimensions ───────────────────────────────────── */
+  --spacing-header-height: 48px;
+  --spacing-sidebar-width: 240px;
+  --spacing-sidebar-collapsed: 64px;
+  --spacing-drawer-width: 400px;
+  --spacing-margin-panel: 12px;
 
-  /* Animation */
+  /* Legacy aliases */
+  --sidebar-width: 240px;
+  --sidebar-collapsed-width: 64px;
+  --topbar-height: 48px;
+
+  /* ── Shadows ──────────────────────────────────────────────── */
+  --shadow-glow: 0 0 20px rgba(190, 198, 224, 0.10);
+  --shadow-glow-sm: 0 0 10px rgba(190, 198, 224, 0.06);
+  --shadow-float: 0 0 15px rgba(0, 0, 0, 0.5);
+
+  /* ── Animation ────────────────────────────────────────────── */
   --ease-out-custom: cubic-bezier(0, 0, 0.2, 1);
   --ease-in-out-custom: cubic-bezier(0.4, 0, 0.2, 1);
-
-  /* Sidebar width */
-  --sidebar-width: 16rem;
-  --sidebar-collapsed-width: 4.5rem;
-  --topbar-height: 3.5rem;
 }
 
 /* ── Base Reset & Defaults ─────────────────────────────────── */
 @layer base {
   * {
-    border-color: rgba(255, 255, 255, 0.06);
+    border-color: var(--color-outline-variant);
   }
 
   html {
@@ -66,61 +127,118 @@
   }
 
   body {
-    @apply bg-surface-base text-white/90 antialiased;
-    font-family: var(--font-sans);
+    background-color: var(--color-background);
+    color: var(--color-on-surface);
+    font-family: var(--font-body);
     font-size: 0.875rem;
-    line-height: 1.375rem;
+    line-height: 1.25rem;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
     overflow: hidden;
   }
 
-  /* Scrollbar styling */
+  /* Scrollbar styling — slim 4px, transparent track */
   ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+    width: 4px;
+    height: 4px;
   }
   ::-webkit-scrollbar-track {
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 3px;
+    background: var(--color-outline-variant);
+    border-radius: 2px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.18);
+    background: var(--color-outline);
   }
 
   /* Focus styles */
   :focus-visible {
-    outline: 2px solid rgba(99, 102, 241, 0.5);
+    outline: 2px solid var(--color-secondary);
     outline-offset: 2px;
     border-radius: 0.25rem;
   }
 
   /* Selection */
   ::selection {
-    background: rgba(99, 102, 241, 0.3);
+    background: rgba(0, 83, 219, 0.3);
     color: white;
+  }
+}
+
+/* ── Typography Utility Classes ────────────────────────────── */
+@layer utilities {
+  .font-display-metrics {
+    font-family: var(--font-sans);
+    font-size: 36px;
+    font-weight: 600;
+    line-height: 44px;
+    letter-spacing: -0.02em;
+  }
+
+  .font-headline-md {
+    font-family: var(--font-sans);
+    font-size: 20px;
+    font-weight: 600;
+    line-height: 28px;
+  }
+
+  .font-body-md {
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 20px;
+  }
+
+  .font-body-sm {
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 400;
+    line-height: 16px;
+  }
+
+  .font-data-mono {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 16px;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .font-label-caps {
+    font-family: var(--font-sans);
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 14px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  /* Tabular numbers for data tables */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
   }
 }
 
 /* ── Utility Components ────────────────────────────────────── */
 @layer components {
-  /* Glass panel */
+  /* Glass panel — floating HUD with frosted glass */
   .glass-panel {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(19, 19, 21, 0.90);
+    border: 1px solid var(--color-outline-variant);
     backdrop-filter: blur(12px);
-    border-radius: 0.75rem;
+    border-radius: 0.25rem;
   }
   .glass-panel:hover {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.08);
+    background: rgba(19, 19, 21, 0.95);
+    border-color: var(--color-outline);
   }
 
   /* Subtle separator */
   .separator {
     height: 1px;
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--color-outline-variant);
   }
 
   /* Dot indicator */
@@ -131,8 +249,8 @@
     flex-shrink: 0;
   }
   .status-dot-live {
-    background: #22c55e;
-    box-shadow: 0 0 8px rgba(34, 197, 94, 0.4);
+    background: var(--color-status-healthy);
+    box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
     animation: pulse-dot 2s ease-in-out infinite;
   }
 
@@ -140,12 +258,27 @@
   .shimmer {
     background: linear-gradient(
       90deg,
-      rgba(255, 255, 255, 0.03) 0%,
-      rgba(255, 255, 255, 0.06) 50%,
-      rgba(255, 255, 255, 0.03) 100%
+      rgba(255, 255, 255, 0.02) 0%,
+      rgba(255, 255, 255, 0.05) 50%,
+      rgba(255, 255, 255, 0.02) 100%
     );
     background-size: 200% 100%;
     animation: shimmer 1.5s ease-in-out infinite;
+  }
+
+  /* Tactical grid background for map canvas */
+  .map-tactical-grid {
+    background-color: #131315;
+    background-image:
+      radial-gradient(circle at 50% 50%, rgba(20, 25, 40, 0.4) 0%, transparent 80%),
+      linear-gradient(to right, rgba(69, 70, 77, 0.1) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(69, 70, 77, 0.1) 1px, transparent 1px);
+    background-size: 100% 100%, 40px 40px, 40px 40px;
+  }
+
+  /* Critical pin pulsing radar animation */
+  .pin-pulse-critical {
+    animation: pin-radar 2s ease-in-out infinite;
   }
 }
 
@@ -165,6 +298,12 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes pin-radar {
+  0% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(1.8); opacity: 0; }
+  100% { transform: scale(1); opacity: 0.6; }
+}
+
 /* ── Reduced Motion ────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -175,24 +314,45 @@
   }
 }
 
-/* ── Leaflet Overrides (dark map theme) ────────────────────── */
+/* ── Leaflet Overrides (dark tactical theme) ───────────────── */
 .leaflet-container {
-  background: #09090b;
-  font-family: var(--font-sans);
+  background: #131315;
+  font-family: var(--font-body);
+}
+.leaflet-control-zoom {
+  border: none !important;
+  box-shadow: none !important;
 }
 .leaflet-control-zoom a {
-  background: #141419 !important;
-  color: rgba(255, 255, 255, 0.8) !important;
-  border-color: rgba(255, 255, 255, 0.06) !important;
+  background: rgba(31, 31, 33, 0.90) !important;
+  color: var(--color-on-surface-variant) !important;
+  border: 1px solid var(--color-outline-variant) !important;
+  backdrop-filter: blur(12px) !important;
+  width: 32px !important;
+  height: 32px !important;
+  line-height: 32px !important;
+  font-size: 16px !important;
+  border-radius: 0.25rem !important;
+}
+.leaflet-control-zoom a:hover {
+  background: rgba(42, 42, 43, 0.95) !important;
+  color: var(--color-on-surface) !important;
+}
+.leaflet-control-zoom a:first-child {
+  border-radius: 0.25rem !important;
+  margin-bottom: 4px !important;
+}
+.leaflet-control-zoom a:last-child {
+  border-radius: 0.25rem !important;
 }
 .leaflet-popup-content-wrapper {
-  background: #1a1a21 !important;
-  color: rgba(255, 255, 255, 0.9) !important;
-  border: 1px solid rgba(255, 255, 255, 0.06) !important;
-  border-radius: 0.75rem !important;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5) !important;
+  background: var(--color-surface-container) !important;
+  color: var(--color-on-surface) !important;
+  border: 1px solid var(--color-outline-variant) !important;
+  border-radius: 0.25rem !important;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.5) !important;
 }
 .leaflet-popup-tip {
-  background: #1a1a21 !important;
-  border-color: rgba(255, 255, 255, 0.06) !important;
+  background: var(--color-surface-container) !important;
+  border-color: var(--color-outline-variant) !important;
 }

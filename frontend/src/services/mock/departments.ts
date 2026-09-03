@@ -4,10 +4,10 @@ import type { Department } from '@/types/department';
 export const mockDepartments: Department[] = [
   {
     id: 'dept-1',
-    name: 'Public Works Department',
-    shortName: 'PWD',
+    name: 'BBMP Major Roads Department',
+    shortName: 'BBMP-Roads',
     type: 'maintenance',
-    contactEmail: 'pwd@delhi.gov.in',
+    contactEmail: 'roads@bbmp.gov.in',
     activeTickets: 250,
     performance: {
       resolutionRate: 78.5,
@@ -18,10 +18,10 @@ export const mockDepartments: Department[] = [
   },
   {
     id: 'dept-2',
-    name: 'Delhi Traffic Police',
-    shortName: 'DTP',
+    name: 'Bengaluru Traffic Police',
+    shortName: 'BTP',
     type: 'traffic',
-    contactEmail: 'traffic@delhipolice.gov.in',
+    contactEmail: 'traffic@btp.gov.in',
     activeTickets: 45,
     performance: {
       resolutionRate: 92.0,
@@ -32,10 +32,10 @@ export const mockDepartments: Department[] = [
   },
   {
     id: 'dept-3',
-    name: 'Municipal Corporation',
-    shortName: 'MCD',
+    name: 'BBMP Ward Infrastructure Works',
+    shortName: 'BBMP-Ward',
     type: 'municipal',
-    contactEmail: 'mcd@delhi.gov.in',
+    contactEmail: 'works@bbmp.gov.in',
     activeTickets: 420,
     performance: {
       resolutionRate: 65.0,
@@ -46,10 +46,10 @@ export const mockDepartments: Department[] = [
   },
   {
     id: 'dept-4',
-    name: 'Delhi Transport Corporation',
-    shortName: 'DTC',
+    name: 'Bengaluru Metropolitan Transport Corp',
+    shortName: 'BMTC',
     type: 'transport',
-    contactEmail: 'dtc@delhi.gov.in',
+    contactEmail: 'edge@bmtc.karnataka.gov.in',
     activeTickets: 15,
     performance: {
       resolutionRate: 88.0,

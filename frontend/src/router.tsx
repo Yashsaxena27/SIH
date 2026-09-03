@@ -8,6 +8,7 @@ const OverviewPage = lazy(() => import('./pages/Overview').then(m => ({ default:
 const IssuesPage = lazy(() => import('./pages/Issues').then(m => ({ default: m.IssuesPage })));
 const IssueDetailPage = lazy(() => import('./pages/IssueDetail').then(m => ({ default: m.IssueDetailPage })));
 const IntelligencePage = lazy(() => import('./pages/Intelligence').then(m => ({ default: m.IntelligencePage })));
+const InspectionPage = lazy(() => import('./pages/Inspection').then(m => ({ default: m.InspectionPage })));
 const LiveMapPage = lazy(() => import('./pages/LiveMap').then(m => ({ default: m.LiveMapPage })));
 const VerificationPage = lazy(() => import('./pages/Verification').then(m => ({ default: m.VerificationPage })));
 const FleetPage = lazy(() => import('./pages/Fleet').then(m => ({ default: m.FleetPage })));
@@ -39,6 +40,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: Loadable(OverviewPage) },
       { path: 'overview', element: Loadable(OverviewPage) },
+      { path: 'inspection', element: Loadable(InspectionPage) },
       { path: 'live-map', element: Loadable(LiveMapPage) },
       { path: 'intelligence', element: Loadable(IntelligencePage) },
       { path: 'issues', element: Loadable(IssuesPage) },

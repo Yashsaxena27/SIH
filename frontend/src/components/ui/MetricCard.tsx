@@ -40,11 +40,11 @@ export function MetricCard({
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-2">
             {Icon && (
-              <div className="rounded-lg bg-white/5 p-2">
-                <Icon className="h-5 w-5 text-white/70" />
+              <div className="rounded-lg bg-surface-container p-2">
+                <Icon className="h-5 w-5 text-on-surface" />
               </div>
             )}
-            <h3 className="text-sm font-medium text-white/56">{title}</h3>
+            <h3 className="text-sm font-medium text-on-surface-variant">{title}</h3>
           </div>
           {status && <StatusBadge status={status} size="sm" />}
         </div>
@@ -54,13 +54,13 @@ export function MetricCard({
             <div className="h-10 w-24 animate-pulse rounded-lg bg-white/10" />
           ) : (
             <div className="flex items-baseline gap-2">
-              <div className="text-3xl font-semibold tracking-tight text-white/90">{value}</div>
+              <div className="text-3xl font-semibold tracking-tight text-on-surface">{value}</div>
               {change !== undefined && changeDirection && (
                 <div
                   className={cn('flex items-center text-xs font-medium', {
-                    'text-status-low': changeDirection === 'up',
+                    'text-status-healthy': changeDirection === 'up',
                     'text-status-critical': changeDirection === 'down',
-                    'text-white/56': changeDirection === 'stable',
+                    'text-on-surface-variant': changeDirection === 'stable',
                   })}
                 >
                   {changeDirection === 'up' && <ArrowUpIcon className="mr-0.5 h-3 w-3" />}
@@ -71,7 +71,7 @@ export function MetricCard({
               )}
             </div>
           )}
-          {subtitle && <p className="mt-1 text-xs text-white/56">{subtitle}</p>}
+          {subtitle && <p className="mt-1 text-xs text-on-surface-variant">{subtitle}</p>}
         </div>
       </GlassPanel>
     </motion.div>

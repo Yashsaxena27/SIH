@@ -14,11 +14,11 @@ export const generateDate = (daysAgoStart: number, daysAgoEnd: number = 0) => {
 };
 
 export const delhiCoordinates = () => {
-  // Rough bounding box for Delhi/NCR
-  const minLat = 28.5;
-  const maxLat = 28.8;
-  const minLng = 77.0;
-  const maxLng = 77.4;
+  // Canonical Bengaluru Corridor Bounding Box (MG Road, Koramangala, Indiranagar, ORR)
+  const minLat = 12.930;
+  const maxLat = 12.985;
+  const minLng = 77.585;
+  const maxLng = 77.655;
   
   return {
     lat: minLat + Math.random() * (maxLat - minLat),
@@ -26,19 +26,19 @@ export const delhiCoordinates = () => {
   };
 };
 
-const delhiRoads = [
-  'Ring Road', 'Outer Ring Road', 'Mathura Road', 'GT Karnal Road',
-  'Mehrauli-Gurgaon Road', 'NH-8', 'Najafgarh Road', 'Rohtak Road',
-  'Aurobindo Marg', 'August Kranti Marg', 'Vikas Marg', 'ITO Road'
+const bengaluruRoads = [
+  'MG Road', 'Koramangala 100ft Road', 'Indiranagar 100ft Road', 'Outer Ring Road (ORR)',
+  'Brigade Road', 'Hosur Road', 'Old Airport Road', 'Residency Road',
+  'Sarjapur Road', 'Bellary Road', 'Whitefield Main Road', 'Richmond Road'
 ];
 
 export const randomRoadName = () => {
-  return delhiRoads[Math.floor(Math.random() * delhiRoads.length)];
+  return bengaluruRoads[Math.floor(Math.random() * bengaluruRoads.length)];
 };
 
 export const randomBusRegistration = () => {
   const number = Math.floor(1000 + Math.random() * 9000);
-  return `DL-1P-${number}`;
+  return `KA-01-F-${number}`;
 };
 
 export const randomConfidence = (min = 0.6, max = 0.98) => {

@@ -1,31 +1,52 @@
-
-# Node.js
-**/node_modules/
-
-# Python
-venv/
+# Python & Virtual Environments
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.venv/
+env/
+ENV/
+backend/venv/
+.pytest_cache/
 
-# Environment
+# Node & Frontend build
+node_modules/
+frontend/node_modules/
+frontend/dist/
+dist/
+
+# Environment Variables & Secrets
 .env
+.env.*
+.env*.local
+*.key
+*.pem
+backend/.env
+frontend/.env.local
+!.env.demo.example
+!.env.production.example
 
-# Dataset and generated files
-dataset/
-runs/
-cropped_detections/
-
-# Local database
+# Databases & local buffers
 *.db
+*.sqlite3
+events_buffer.db
 
-# Videos
-*.mp4
-*.avi
-*.mov
+# Output artifacts & generated media
+annotated_output.mp4
+mock_input.mp4
+output.mp4
+cropped_detections/
+runs/
+backend/evidence/*
+!backend/evidence/.gitkeep
 
-# Model weights
-*.pt
-*.onnx
+# Logs
+*.log
 
-# Jupyter
-.ipynb_checkpoints/
+# IDE & OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

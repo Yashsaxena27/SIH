@@ -3,29 +3,32 @@ import { config } from './config';
 type Listener = (data: any) => void;
 
 class RealtimeClient {
-  private ws: WebSocket | null = null;
+  private eventSource: EventSource | null = null;
   private listeners: Map<string, Set<Listener>> = new Map();
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
 
   connect() {
     if (config.useMockData) {
-      console.log('[Realtime] Mock mode active. WebSocket connection skipped.');
+      console.log('[Realtime] Mock mode active. SSE connection skipped.');
       return;
     }
 
-    if (this.ws?.readyState === WebSocket.OPEN) return;
+    if (this.eventSource?.readyState === EventSource.OPEN) return;
 
-    this.ws = new WebSocket(config.wsBaseUrl);
+    // Use SSE stream endpoint
+    const url = `${config.apiBaseUrl}/events/stream`;
+    this.eventSource = new EventSource(url);
 
-    this.ws.onopen = () => {
-      console.log('[Realtime] Connected');
+    this.eventSource.onopen = () => {
+      console.log('[Realtime] Connected to SSE');
       this.reconnectAttempts = 0;
     };
 
-    this.ws.onmessage = (event) => {
+    this.eventSource.onmessage = (event) => {
       try {
         const payload = JSON.parse(event.data);
+        if (payload.event === 'keepalive') return; // Ignore ping
         const { type, data } = payload;
         this.emitLocal(type, data);
       } catch (err) {
@@ -33,8 +36,9 @@ class RealtimeClient {
       }
     };
 
-    this.ws.onclose = () => {
+    this.eventSource.onerror = () => {
       console.log('[Realtime] Disconnected');
+      this.eventSource?.close();
       this.attemptReconnect();
     };
   }

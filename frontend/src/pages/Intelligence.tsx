@@ -34,26 +34,52 @@ export function IntelligencePage() {
     clusters: true,
   });
 
+  const [error, setError] = useState<string | null>(null);
+
   // Fetch Data
-  useEffect(() => {
-    Promise.all([
+  const loadData = () => {
+    setLoading(true);
+    setError(null);
+    Promise.allSettled([
       api.getBuses(),
       api.getIssues(),
       api.getRoutes()
     ]).then(([b, i, r]) => {
-      setBuses(b);
-      setIssues(i);
-      setRoutes(r);
+      const isAllRejected = b.status === 'rejected' && i.status === 'rejected' && r.status === 'rejected';
+      if (isAllRejected) {
+        setError('Failed to load spatial intelligence data.');
+        setLoading(false);
+        return;
+      }
+      setBuses(b.status === 'fulfilled' ? b.value : []);
+      setIssues(i.status === 'fulfilled' ? i.value : []);
+      setRoutes(r.status === 'fulfilled' ? r.value : []);
       setLoading(false);
     });
+  };
+
+  useEffect(() => {
+    loadData();
   }, []);
 
   if (loading) {
     return <LoadingState message="Initializing spatial intelligence..." className="h-full" />;
   }
 
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[calc(100vh-var(--spacing-header-height))] bg-background">
+        <h2 className="font-headline-md text-on-surface">Data Unavailable</h2>
+        <p className="text-on-surface-variant mb-4">{error}</p>
+        <button onClick={loadData} className="px-4 py-2 bg-primary text-on-primary rounded hover:bg-primary/90">
+          Retry Connection
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <div className="relative w-full h-[calc(100vh-3rem)] overflow-hidden bg-black">
+    <div className="relative w-full h-[calc(100vh-var(--spacing-header-height))] overflow-hidden bg-background">
       {/* ── Main Map ──────────────────────────────────────── */}
       <CommandMap 
         buses={buses}
@@ -86,9 +112,6 @@ export function IntelligencePage() {
         issue={selectedIssue} 
         onClose={() => setSelectedIssue(null)} 
       />
-
-      {/* ── Subtle Screen Vignette ───────────────────────── */}
-      <div className="absolute inset-0 pointer-events-none z-[10] shadow-[inset_0_0_100px_rgba(0,0,0,0.8)]" />
     </div>
   );
 }

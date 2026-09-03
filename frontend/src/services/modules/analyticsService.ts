@@ -16,7 +16,7 @@ export const analyticsService = {
   // Road Health
   async getRoadSegments(): Promise<RoadSegment[]> {
     if (config.useMockData) return delay().then(() => [...mockRoadSegments]);
-    return client.get<RoadSegment[]>('/analytics/roads');
+    return client.get<RoadSegment[]>('/analytics/road-segments');
   },
   async getRoadHealthSummary(): Promise<RoadHealthSummary> {
     if (config.useMockData) return delay().then(() => mockRoadHealthSummary);
@@ -30,7 +30,7 @@ export const analyticsService = {
   // Departments
   async getDepartments(): Promise<Department[]> {
     if (config.useMockData) return delay().then(() => [...mockDepartments]);
-    return client.get<Department[]>('/analytics/departments');
+    return client.get<Department[]>('/departments');
   },
 
   // System Health

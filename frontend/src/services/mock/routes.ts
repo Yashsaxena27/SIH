@@ -5,28 +5,28 @@ import { delhiCoordinates, randomRoadName } from './generators';
 export const mockRoutes: Route[] = [
   {
     id: 'rt-1',
-    name: 'Ring Road Express',
-    // description: 'Circulates along the inner Ring Road covering major nodes.',
+    name: 'MG Road Corridor',
+    // description: 'Circulates along Trinity Circle and MG Road corridor.',
     activeBuses: 2,
     totalDetections: 145,
     healthScore: 82,
-    distance: 47,
+    distance: 14,
     waypoints: [delhiCoordinates(), delhiCoordinates(), delhiCoordinates(), delhiCoordinates()]
   },
   {
     id: 'rt-2',
-    name: 'Outer Ring Transit',
-    // description: 'Covers the Outer Ring Road connecting suburban hubs.',
+    name: 'Koramangala 100ft Arterial',
+    // description: 'Connects Koramangala Sony World junction to Indiranagar.',
     activeBuses: 2,
     totalDetections: 210,
     healthScore: 65,
-    distance: 55,
+    distance: 18,
     waypoints: [delhiCoordinates(), delhiCoordinates(), delhiCoordinates(), delhiCoordinates(), delhiCoordinates()]
   },
   {
     id: 'rt-3',
-    name: 'South Delhi Connector',
-    // description: 'Aurobindo Marg to MG Road.',
+    name: 'Outer Ring Road (ORR) Transit',
+    // description: 'Marathahalli to Bellandur Tech Corridor.',
     activeBuses: 1,
     totalDetections: 85,
     healthScore: 90,
@@ -35,12 +35,12 @@ export const mockRoutes: Route[] = [
   },
   {
     id: 'rt-4',
-    name: 'East-West Corridor',
-    // description: 'Vikas Marg to Najafgarh.',
+    name: 'Indiranagar 100ft Express',
+    // description: 'Old Airport Road to CMH Road.',
     activeBuses: 1,
     totalDetections: 320,
     healthScore: 45,
-    distance: 35,
+    distance: 12,
     waypoints: [delhiCoordinates(), delhiCoordinates(), delhiCoordinates(), delhiCoordinates()]
   },
   {
