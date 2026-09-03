@@ -37,9 +37,9 @@ def create_mock_video(output_path="mock_input.mp4"):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run ML pipeline on a video.")
     parser.add_argument("--video", type=str, help="Path to input video")
-    parser.add_argument("--bus-id", type=str, default="BUS-DEMO")
-    parser.add_argument("--lat", type=float, default=28.6139)
-    parser.add_argument("--lng", type=float, default=77.2090)
+    parser.add_argument("--bus-id", type=str, default="BUS-001")
+    parser.add_argument("--lat", type=float, default=12.9716)
+    parser.add_argument("--lng", type=float, default=77.5946)
     args = parser.parse_args()
     
     video_path = args.video

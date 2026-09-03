@@ -7,7 +7,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
-from app.core.database import async_session_maker
+from app.core.database import AsyncSessionLocal
 from app.models.domain import Bus, Department
 
 async def reset_demo_data():
@@ -17,7 +17,7 @@ async def reset_demo_data():
     print("WARNING: This will delete all detections, issues, tickets, and verifications.")
     print("Resetting demo data...")
     
-    async with async_session_maker() as session:
+    async with AsyncSessionLocal() as session:
         async with session.begin():
             # Delete in order of constraints
             await session.execute(text("DELETE FROM verifications;"))

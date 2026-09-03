@@ -15,7 +15,7 @@ import { MapContainer, TileLayer, Polyline, Marker, useMap } from 'react-leaflet
 import L from 'leaflet';
 import { GlassPanel, LoadingState, EmptyState } from '@/components/ui';
 import { api } from '@/services/api';
-import { cn, timeAgo } from '@/lib/utils';
+import { cn, timeAgo, getValidLatLng } from '@/lib/utils';
 import type { Bus, Route } from '@/types';
 import { renderToString } from 'react-dom/server';
 
@@ -89,7 +89,14 @@ function FleetMapBounds({ routes }: { routes: Route[] }) {
   useEffect(() => {
     if (!routes.length) return;
     const bounds = L.latLngBounds([]);
-    routes.forEach(r => r.waypoints.forEach(wp => bounds.extend([wp.lat, wp.lng])));
+    routes.forEach(r => {
+      if (r.waypoints && Array.isArray(r.waypoints)) {
+        r.waypoints.forEach(wp => {
+          const pos = getValidLatLng(wp);
+          if (pos) bounds.extend(pos);
+        });
+      }
+    });
     if (bounds.isValid()) map.fitBounds(bounds, { padding: [20, 20] });
   }, [routes, map]);
   return null;
@@ -136,6 +143,18 @@ export function FleetPage() {
     loadData();
   }, []);
 
+  // Handle simulation trigger (called unconditionally)
+  useEffect(() => {
+    if (simState === 1) { // Network restored
+      const t = setTimeout(() => setSimState(2), 1500); // Start syncing
+      return () => clearTimeout(t);
+    }
+    if (simState === 2) { // Syncing
+      const t = setTimeout(() => setSimState(3), 3000); // Complete
+      return () => clearTimeout(t);
+    }
+  }, [simState]);
+
   if (loading) return <LoadingState message="Connecting to mobile fleet network..." className="h-full" />;
 
   if (error) {
@@ -149,18 +168,6 @@ export function FleetPage() {
       </div>
     );
   }
-
-  // Handle simulation trigger
-  useEffect(() => {
-    if (simState === 1) { // Network restored
-      const t = setTimeout(() => setSimState(2), 1500); // Start syncing
-      return () => clearTimeout(t);
-    }
-    if (simState === 2) { // Syncing
-      const t = setTimeout(() => setSimState(3), 3000); // Complete
-      return () => clearTimeout(t);
-    }
-  }, [simState]);
 
   if (loading) return <LoadingState message="Connecting to fleet network..." className="h-full" />;
 
@@ -300,20 +307,27 @@ export function FleetPage() {
               </div>
             </div>
 
-            <MapContainer center={[28.6139, 77.2090]} zoom={12} className="w-full h-full z-0 outline-none bg-background" zoomControl={false}>
+            <MapContainer center={[12.9716, 77.5946]} zoom={12} className="w-full h-full z-0 outline-none bg-background" zoomControl={false}>
               <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png" />
-              {routes.map((route, i) => (
-                <Polyline 
-                  key={route.id} 
-                  positions={route.waypoints.map(wp => [wp.lat, wp.lng])} 
-                  pathOptions={{ 
-                    color: i % 2 === 0 ? '#a855f7' : '#ffffff', 
-                    weight: 3, 
-                    opacity: i % 2 === 0 ? 0.8 : 0.3,
-                    dashArray: i % 2 === 0 ? undefined : '10, 10'
-                  }} 
-                />
-              ))}
+              {routes.map((route, i) => {
+                if (!route.waypoints || !Array.isArray(route.waypoints)) return null;
+                const validWaypoints = route.waypoints
+                  .map(wp => getValidLatLng(wp))
+                  .filter((pos): pos is [number, number] => pos !== null);
+                if (validWaypoints.length < 2) return null;
+                return (
+                  <Polyline 
+                    key={route.id} 
+                    positions={validWaypoints} 
+                    pathOptions={{ 
+                      color: i % 2 === 0 ? '#a855f7' : '#ffffff', 
+                      weight: 3, 
+                      opacity: i % 2 === 0 ? 0.8 : 0.3,
+                      dashArray: i % 2 === 0 ? undefined : '10, 10'
+                    }} 
+                  />
+                );
+              })}
               <FleetMapBounds routes={routes} />
             </MapContainer>
           </GlassPanel>

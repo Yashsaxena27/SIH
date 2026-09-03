@@ -17,9 +17,9 @@ async def get_road_segments(session: AsyncSession = Depends(get_db)):
             "name": s.name,
             "roadType": s.road_class,
             "healthScore": s.health_score,
-            # Stub geometry for frontend
-            "startPoint": {"lat": 28.6139, "lng": 77.2090},
-            "endPoint": {"lat": 28.6140, "lng": 77.2100}
+            # Stub geometry for frontend (Bengaluru MG Road corridor)
+            "startPoint": {"lat": 12.9716, "lng": 77.5946},
+            "endPoint": {"lat": 12.9740, "lng": 77.6070}
         }
         for s in segments
     ]

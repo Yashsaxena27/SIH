@@ -1,0 +1,15 @@
+{
+  "status": "PASSED",
+  "weights_path": "ml/models/best.pt",
+  "file_size": 6246314,
+  "num_classes": 4,
+  "classes": {
+    "0": "D00",
+    "1": "D10",
+    "2": "D20",
+    "3": "D40"
+  },
+  "pothole_class_id": 3,
+  "avg_cpu_latency_ms": 45.05,
+  "gate_passed": true
+}

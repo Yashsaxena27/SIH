@@ -20,7 +20,7 @@ class SeverityEstimator:
             return "critical"
         elif ratio > 0.05:
             return "high"
-        elif ratio > 0.01:
+        elif ratio >= 0.01:
             return "medium"
         else:
             return "low"

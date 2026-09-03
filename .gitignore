@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+backend/venv/
+.pytest_cache/
+
+# Databases & local buffers
+*.db
+*.sqlite3
+events_buffer.db
+
+# Output artifacts
+annotated_output.mp4
+mock_input.mp4
+
+# Evidence storage (images are runtime artifacts)
+backend/evidence/*.jpg
+!backend/evidence/.gitkeep
+
+# Frontend build
+frontend/dist/
+frontend/node_modules/
+
+# Logs
+*.log

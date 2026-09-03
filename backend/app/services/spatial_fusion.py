@@ -31,7 +31,7 @@ async def find_nearby_issue(
     query = select(UrbanIssue).where(
         and_(
             UrbanIssue.issue_type == issue_type,
-            UrbanIssue.status.notin_([IssueStatus.verified, IssueStatus.closed]),
+            UrbanIssue.status.notin_([IssueStatus.verified]),
             # ST_DWithin with geography handles meter distances natively
             func.ST_DWithin(
                 func.Geography(UrbanIssue.location),

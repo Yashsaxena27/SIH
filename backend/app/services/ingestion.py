@@ -3,15 +3,38 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.schemas.ingestion import DetectionEvent
-from app.models.domain import Detection, Observation, UrbanIssue, Severity, IssueStatus
+from app.models.domain import Detection, Observation, UrbanIssue, Severity, IssueStatus, Bus
 from app.services.spatial_fusion import find_nearby_issue
 from app.services.lifecycle import transition_issue_state
 from app.api.v1.events import broadcast_event
+
+async def ensure_bus_exists(session: AsyncSession, bus_id: str) -> Bus:
+    """
+    Ensures the bus exists to prevent FK integrity violations.
+    Auto-registers newly reporting edge buses for resilient field operations.
+    """
+    bus = await session.get(Bus, bus_id)
+    if not bus:
+        reg_num = f"KA-01-{bus_id.replace('-', '')[:6]}"
+        bus = Bus(
+            id=bus_id,
+            registration_number=reg_num,
+            operator="BMTC-EDGE",
+            status="online",
+            camera_status="online",
+            gps_status="online",
+            edge_ai_status="online"
+        )
+        session.add(bus)
+        await session.flush()
+    return bus
 
 async def process_detection_event(session: AsyncSession, event: DetectionEvent):
     """
     Core pipeline for ingesting an ML observation from a bus.
     """
+    # 0. Ensure Bus Foreign Key exists
+    await ensure_bus_exists(session, event.bus_id)
     
     # 1. Idempotency Check
     existing_detection = await session.execute(

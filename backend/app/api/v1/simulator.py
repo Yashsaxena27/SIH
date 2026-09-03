@@ -15,8 +15,8 @@ router = APIRouter(prefix="/api/v1/demo", tags=["Simulator"])
 async def simulate_detection(
     background_tasks: BackgroundTasks,
     bus_id: str = "BUS-001",
-    lat: float = 28.6139,
-    lng: float = 77.2090,
+    lat: float = 12.9716,
+    lng: float = 77.5946,
     detection_type: str = "pothole",
     severity: str = "medium",
     confidence: float = 0.85,
@@ -76,7 +76,7 @@ async def simulate_revisit(
             event_id=f"EVT-{uuid.uuid4().hex[:8]}",
             bus_id=bus_id,
             timestamp=datetime.datetime.utcnow(),
-            location=GeoPoint(lat=28.6139, lng=77.2090), # Fallback mock
+            location=GeoPoint(lat=12.9716, lng=77.5946), # Bengaluru MG Road
             detection_type=issue.issue_type,
             severity=issue.severity.value,
             confidence=0.92,

@@ -1,0 +1,7 @@
+# RDD2022 Road Damage Dataset configuration
+path: ../dataset/road_damage
+train: images/train
+val: images/val
+
+nc: 4
+names: ['D00', 'D10', 'D20', 'D40']

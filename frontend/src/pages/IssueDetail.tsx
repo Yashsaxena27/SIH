@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { GlassPanel, LoadingState } from '@/components/ui';
 import { api } from '@/services/api';
-import { cn, timeAgo, formatDate } from '@/lib/utils';
+import { cn, timeAgo, formatDate, getValidLatLng } from '@/lib/utils';
 import type { UrbanIssue, Ticket as TicketType } from '@/types';
 
 export function IssueDetailPage() {
@@ -113,7 +113,7 @@ export function IssueDetailPage() {
             {(issue.type || 'unknown').replace(/_/g, ' ')}
           </h1>
           <div className="flex items-center gap-4 text-sm text-on-surface-variant">
-            <span className="flex items-center gap-1.5"><MapPin className="w-4 h-4" /> {issue.location.address}</span>
+            <span className="flex items-center gap-1.5"><MapPin className="w-4 h-4" /> {issue.location?.address || 'Bengaluru Municipal Road'}</span>
             <span className="w-1 h-1 rounded-full bg-outline-variant" />
             <span className="flex items-center gap-1.5"><Clock className="w-4 h-4" /> First seen {formatDate(issue.firstDetectedAt, 'long')}</span>
           </div>
@@ -169,7 +169,14 @@ export function IssueDetailPage() {
                 </div>
                 <div className="flex flex-col items-end gap-1 text-right">
                   <span className="text-on-surface text-[10px] font-data-mono bg-surface/60 px-2 py-1 rounded backdrop-blur-md border border-outline-variant">{formatDate(issue.lastObservedAt, 'long')}</span>
-                  <span className="text-on-surface-variant text-[10px] font-data-mono bg-surface/60 px-2 py-1 rounded backdrop-blur-md border border-outline-variant">GPS: {issue.location.coordinates[1].toFixed(6)}, {issue.location.coordinates[0].toFixed(6)}</span>
+                  {(() => {
+                    const pos = getValidLatLng(issue);
+                    return (
+                      <span className="text-on-surface-variant text-[10px] font-data-mono bg-surface/60 px-2 py-1 rounded backdrop-blur-md border border-outline-variant">
+                        GPS: {pos ? `${pos[0].toFixed(6)}, ${pos[1].toFixed(6)}` : 'N/A'}
+                      </span>
+                    );
+                  })()}
                 </div>
               </div>
             </div>

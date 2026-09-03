@@ -32,7 +32,7 @@ class VerificationEngine:
             "event_id": f"EVT-VER-{uuid.uuid4().hex[:8]}",
             "bus_id": "BUS-VER",
             "timestamp": datetime.datetime.utcnow().isoformat(),
-            "location": {"lat": 28.6139, "lng": 77.2090}, # Stub, would use actual GPS
+            "location": {"lat": 12.9716, "lng": 77.5946}, # Bengaluru MG Road
             "detection_type": best_det["class"],
             "confidence": best_det["confidence"],
             "severity": "medium", 

@@ -15,7 +15,7 @@ import {
   Ticket,
   UserPlus
 } from 'lucide-react';
-import { cn, timeAgo } from '@/lib/utils';
+import { cn, timeAgo, getValidLatLng } from '@/lib/utils';
 import type { UrbanIssue } from '@/types';
 
 interface IssueDrawerProps {
@@ -143,10 +143,13 @@ export function IssueDrawer({ issue, onClose }: IssueDrawerProps) {
                   <div className="flex items-center gap-2 text-on-surface-variant font-label-caps mb-1">
                     <MapPin className="w-4 h-4" /> Location Context
                   </div>
-                  <div className="text-sm font-medium text-on-surface">{issue.location.address}</div>
+                  <div className="text-sm font-medium text-on-surface">{issue.location?.address || 'Bengaluru Municipal Road'}</div>
                   <div className="text-xs text-on-surface-variant">Central Zone</div>
                   <div className="font-data-mono text-[11px] text-on-surface-variant">
-                    {issue.location.lat.toFixed(5)}, {issue.location.lng.toFixed(5)}
+                    {(() => {
+                      const pos = getValidLatLng(issue);
+                      return pos ? `${pos[0].toFixed(5)}, ${pos[1].toFixed(5)}` : 'Coordinates Pending';
+                    })()}
                   </div>
                 </div>
 

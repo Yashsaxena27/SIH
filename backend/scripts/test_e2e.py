@@ -15,7 +15,7 @@ def test_e2e_lifecycle():
         "event_id": f"E2E-{uuid.uuid4().hex[:8]}",
         "bus_id": "BUS-1",
         "timestamp": datetime.datetime.utcnow().isoformat(),
-        "location": {"lat": 28.6139, "lng": 77.2090},
+        "location": {"lat": 12.9716, "lng": 77.5946},
         "detection_type": "pothole",
         "confidence": 0.88,
         "severity": "medium",
@@ -39,7 +39,7 @@ def test_e2e_lifecycle():
         "event_id": f"E2E-{uuid.uuid4().hex[:8]}",
         "bus_id": "BUS-2",
         "timestamp": datetime.datetime.utcnow().isoformat(),
-        "location": {"lat": 28.613901, "lng": 77.209001}, # Very close
+        "location": {"lat": 12.971601, "lng": 77.594601}, # Very close
         "detection_type": "pothole",
         "confidence": 0.95,
         "severity": "high",
@@ -73,7 +73,7 @@ def test_e2e_failure_path():
         "event_id": f"E2E-FAIL-{uuid.uuid4().hex[:8]}",
         "bus_id": "BUS-3",
         "timestamp": datetime.datetime.utcnow().isoformat(),
-        "location": {"lat": 28.62, "lng": 77.21},
+        "location": {"lat": 12.9350, "lng": 77.6240},
         "detection_type": "pothole",
         "confidence": 0.90,
         "severity": "medium",
@@ -87,7 +87,7 @@ def test_e2e_failure_path():
         "event_id": f"E2E-VER-{uuid.uuid4().hex[:8]}",
         "bus_id": "BUS-4",
         "timestamp": datetime.datetime.utcnow().isoformat(),
-        "location": {"lat": 28.62, "lng": 77.21},
+        "location": {"lat": 12.9350, "lng": 77.6240},
         "detection_type": "pothole",
         "confidence": 0.85,
         "severity": "medium"

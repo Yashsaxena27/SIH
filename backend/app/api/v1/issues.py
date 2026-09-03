@@ -22,6 +22,8 @@ def _serialize_issue(issue: UrbanIssue) -> dict:
         "severity": issue.severity,
         "priority": issue.priority,
         "location": {
+            "lat": point.y if point else None,
+            "lng": point.x if point else None,
             "gps": {"lat": point.y, "lng": point.x} if point else {"lat": 0, "lng": 0},
             "snappedGps": {"lat": point.y, "lng": point.x} if point else {"lat": 0, "lng": 0},
         },

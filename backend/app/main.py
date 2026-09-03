@@ -28,6 +28,14 @@ app.include_router(verifications.router)
 app.include_router(analytics.router)
 app.include_router(events.router)
 
+import os
+from fastapi.staticfiles import StaticFiles
+
+# Evidence static files mount
+evidence_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "evidence"))
+os.makedirs(evidence_dir, exist_ok=True)
+app.mount("/evidence", StaticFiles(directory=evidence_dir), name="evidence")
+
 @app.get("/health/live", tags=["Health"])
 async def health_live():
     return {"status": "ok"}

@@ -4,7 +4,7 @@ import L from 'leaflet';
 import { renderToString } from 'react-dom/server';
 import { Bus as BusIcon, AlertTriangle, X, ShieldAlert } from 'lucide-react';
 import { GlassPanel } from './GlassPanel';
-import { cn, timeAgo } from '@/lib/utils';
+import { cn, timeAgo, getValidLatLng } from '@/lib/utils';
 import type { Bus, UrbanIssue } from '@/types';
 
 // Custom icons using Lucide and Tailwind classes via divIcon
@@ -51,8 +51,14 @@ function MapBounds({ buses, issues }: { buses: Bus[], issues: UrbanIssue[] }) {
   useEffect(() => {
     if (!buses.length && !issues.length) return;
     const bounds = L.latLngBounds([]);
-    buses.forEach(b => { if (b.currentPosition) bounds.extend([b.currentPosition.lat, b.currentPosition.lng]); });
-    issues.forEach(i => bounds.extend([i.location.lat, i.location.lng]));
+    buses.forEach(b => {
+      const pos = getValidLatLng(b);
+      if (pos) bounds.extend(pos);
+    });
+    issues.forEach(i => {
+      const pos = getValidLatLng(i);
+      if (pos) bounds.extend(pos);
+    });
     if (bounds.isValid()) {
       map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
     }
@@ -67,8 +73,8 @@ interface IntelligenceMapProps {
 
 export function IntelligenceMap({ buses, issues }: IntelligenceMapProps) {
   const [selectedIssue, setSelectedIssue] = useState<UrbanIssue | null>(null);
-  // Default to Delhi coords
-  const defaultCenter: [number, number] = [28.6139, 77.2090];
+  // Default to Bengaluru coords (matching seed_demo.py)
+  const defaultCenter: [number, number] = [12.9716, 77.5946];
 
   return (
     <div className="relative w-full h-full rounded-xl overflow-hidden border border-outline-variant shadow-2xl bg-surface-low">
@@ -85,25 +91,33 @@ export function IntelligenceMap({ buses, issues }: IntelligenceMapProps) {
         />
         
         {/* Render Buses */}
-        {buses.map(bus => bus.currentPosition && (
-          <Marker 
-            key={`bus-${bus.id}`}
-            position={[bus.currentPosition.lat, bus.currentPosition.lng]}
-            icon={createBusIcon()}
-          />
-        ))}
+        {buses.map(bus => {
+          const pos = getValidLatLng(bus);
+          if (!pos) return null;
+          return (
+            <Marker 
+              key={`bus-${bus.id}`}
+              position={pos}
+              icon={createBusIcon()}
+            />
+          );
+        })}
 
         {/* Render Issues */}
-        {issues.map(issue => (
-          <Marker 
-            key={`issue-${issue.id}`}
-            position={[issue.location.lat, issue.location.lng]}
-            icon={createIssueIcon(issue.severity, selectedIssue?.id === issue.id)}
-            eventHandlers={{
-              click: () => setSelectedIssue(issue)
-            }}
-          />
-        ))}
+        {issues.map(issue => {
+          const pos = getValidLatLng(issue);
+          if (!pos) return null;
+          return (
+            <Marker 
+              key={`issue-${issue.id}`}
+              position={pos}
+              icon={createIssueIcon(issue.severity, selectedIssue?.id === issue.id)}
+              eventHandlers={{
+                click: () => setSelectedIssue(issue)
+              }}
+            />
+          );
+        })}
         
         <MapBounds buses={buses} issues={issues} />
       </MapContainer>
@@ -137,7 +151,7 @@ export function IntelligenceMap({ buses, issues }: IntelligenceMapProps) {
               {selectedIssue.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
             </h3>
             <p className="text-xs text-white/60 mb-4 flex items-start gap-1.5">
-              <span className="mt-0.5">📍</span> {selectedIssue.location.address}
+              <span className="mt-0.5">📍</span> {selectedIssue.location?.address || 'Bengaluru Road Network'}
             </p>
 
             <div className="grid grid-cols-2 gap-2 mb-4">

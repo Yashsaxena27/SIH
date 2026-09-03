@@ -83,3 +83,92 @@ export function getHealthBg(score: number): string {
 export function delay(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
+
+/**
+ * Safely extracts valid [latitude, longitude] from any entity (UrbanIssue, Bus, Waypoint, etc.)
+ * or returns null if missing, undefined, NaN, or invalid.
+ * Validates that latitude is within [-90, 90] and longitude within [-180, 180].
+ * NEVER returns [0, 0] or silently substitutes invalid data with fake coordinates.
+ */
+export function getValidLatLng(item: any): [number, number] | null {
+  if (!item || typeof item !== 'object') return null;
+
+  let lat: any;
+  let lng: any;
+
+  // 1. Array format: [lat, lng]
+  if (Array.isArray(item)) {
+    if (item.length >= 2) {
+      lat = item[0];
+      lng = item[1];
+    }
+  } else {
+    // 2. Direct properties: item.lat, item.latitude
+    if (item.lat !== undefined) lat = item.lat;
+    else if (item.latitude !== undefined) lat = item.latitude;
+
+    if (item.lng !== undefined) lng = item.lng;
+    else if (item.longitude !== undefined) lng = item.longitude;
+
+    // 3. Nested location object: item.location
+    if ((lat === undefined || lng === undefined) && item.location) {
+      const loc = item.location;
+      if (typeof loc === 'object' && loc !== null) {
+        if (loc.gps && typeof loc.gps === 'object') {
+          lat = loc.gps.lat ?? loc.gps.latitude;
+          lng = loc.gps.lng ?? loc.gps.longitude;
+        } else if (loc.snappedGps && typeof loc.snappedGps === 'object') {
+          lat = loc.snappedGps.lat ?? loc.snappedGps.latitude;
+          lng = loc.snappedGps.lng ?? loc.snappedGps.longitude;
+        } else if (Array.isArray(loc.coordinates) && loc.coordinates.length >= 2) {
+          // GeoJSON Point: coordinates: [lng, lat]
+          lng = loc.coordinates[0];
+          lat = loc.coordinates[1];
+        } else {
+          lat = loc.lat ?? loc.latitude;
+          lng = loc.lng ?? loc.longitude;
+        }
+      }
+    }
+
+    // 4. Current position / telemetry (buses): item.currentPosition or item.position
+    if ((lat === undefined || lng === undefined) && (item.currentPosition || item.position)) {
+      const pos = item.currentPosition || item.position;
+      if (typeof pos === 'object' && pos !== null) {
+        lat = pos.lat ?? pos.latitude;
+        lng = pos.lng ?? pos.longitude;
+      }
+    }
+
+    // 5. Raw GeoJSON geometry: item.geometry
+    if ((lat === undefined || lng === undefined) && item.geometry) {
+      const geom = item.geometry;
+      if (geom && Array.isArray(geom.coordinates) && geom.coordinates.length >= 2) {
+        lng = geom.coordinates[0];
+        lat = geom.coordinates[1];
+      }
+    }
+  }
+
+  // Convert to numbers
+  const numLat = typeof lat === 'string' ? parseFloat(lat) : Number(lat);
+  const numLng = typeof lng === 'string' ? parseFloat(lng) : Number(lng);
+
+  // Validate numbers: must be finite, valid numbers within range, and not (0, 0)
+  if (
+    typeof numLat !== 'number' || 
+    typeof numLng !== 'number' || 
+    isNaN(numLat) || 
+    isNaN(numLng) ||
+    !isFinite(numLat) ||
+    !isFinite(numLng) ||
+    numLat < -90 || numLat > 90 ||
+    numLng < -180 || numLng > 180 ||
+    (Math.abs(numLat) < 0.0001 && Math.abs(numLng) < 0.0001) // Disallow Null Island (0, 0)
+  ) {
+    return null;
+  }
+
+  return [numLat, numLng];
+}
+

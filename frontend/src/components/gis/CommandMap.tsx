@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, Marker, Polyline, Circle, useMap } from 'react
 import L from 'leaflet';
 import { renderToString } from 'react-dom/server';
 import { Bus as BusIcon, ShieldAlert, AlertTriangle } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn, getValidLatLng } from '@/lib/utils';
 import type { Bus, UrbanIssue, Route } from '@/types';
 import type { MapLayers } from './LayerControls';
 import type { IntelligenceFilter } from './FilterBar';
@@ -14,8 +14,14 @@ function MapBounds({ buses, issues }: { buses: Bus[], issues: UrbanIssue[] }) {
   useEffect(() => {
     if (!buses.length && !issues.length) return;
     const bounds = L.latLngBounds([]);
-    buses.forEach(b => { if (b.currentPosition) bounds.extend([b.currentPosition.lat, b.currentPosition.lng]); });
-    issues.forEach(i => bounds.extend([i.location.lat, i.location.lng]));
+    buses.forEach(b => {
+      const pos = getValidLatLng(b);
+      if (pos) bounds.extend(pos);
+    });
+    issues.forEach(i => {
+      const pos = getValidLatLng(i);
+      if (pos) bounds.extend(pos);
+    });
     if (bounds.isValid()) {
       map.fitBounds(bounds, { padding: [100, 100], maxZoom: 15 });
     }
@@ -85,7 +91,7 @@ export function CommandMap({ buses, issues, routes, layers, filter, onIssueSelec
   return (
     <div className="absolute inset-0 z-0 bg-background">
       <MapContainer 
-        center={[28.6139, 77.2090]} 
+        center={[12.9716, 77.5946]} 
         zoom={12} 
         attributionControl={false} 
         className="w-full h-full z-0 outline-none"
@@ -97,46 +103,65 @@ export function CommandMap({ buses, issues, routes, layers, filter, onIssueSelec
         />
 
         {/* Heatmap Simulation (Subtle glow circles under everything) */}
-        {layers.heatmap && visibleIssues.map(issue => (
-          <Circle
-            key={`heat-${issue.id}`}
-            center={[issue.location.lat, issue.location.lng]}
-            radius={issue.severity === 'critical' ? 400 : 250}
-            pathOptions={{
-              stroke: false,
-              fillColor: issue.severity === 'critical' ? 'var(--color-status-critical)' : '#f97316',
-              fillOpacity: issue.severity === 'critical' ? 0.15 : 0.08
-            }}
-          />
-        ))}
+        {layers.heatmap && visibleIssues.map(issue => {
+          const pos = getValidLatLng(issue);
+          if (!pos) return null;
+          return (
+            <Circle
+              key={`heat-${issue.id}`}
+              center={pos}
+              radius={issue.severity === 'critical' ? 400 : 250}
+              pathOptions={{
+                stroke: false,
+                fillColor: issue.severity === 'critical' ? 'var(--color-status-critical)' : '#f97316',
+                fillOpacity: issue.severity === 'critical' ? 0.15 : 0.08
+              }}
+            />
+          );
+        })}
 
         {/* Routes */}
-        {layers.routes && routes.map(route => (
-          <Polyline
-            key={route.id}
-            positions={route.waypoints.map(wp => [wp.lat, wp.lng])}
-            pathOptions={{ color: '#b4c5ff', weight: 3, opacity: 0.4, dashArray: '10, 10' }}
-          />
-        ))}
+        {layers.routes && routes.map(route => {
+          if (!route.waypoints || !Array.isArray(route.waypoints)) return null;
+          const validWaypoints = route.waypoints
+            .map(wp => getValidLatLng(wp))
+            .filter((pos): pos is [number, number] => pos !== null);
+          if (validWaypoints.length < 2) return null;
+          return (
+            <Polyline
+              key={route.id}
+              positions={validWaypoints}
+              pathOptions={{ color: '#b4c5ff', weight: 3, opacity: 0.4, dashArray: '10, 10' }}
+            />
+          );
+        })}
 
         {/* Civic Issues */}
-        {layers.issues && visibleIssues.map(issue => (
-          <Marker 
-            key={`issue-${issue.id}`}
-            position={[issue.location.lat, issue.location.lng]}
-            icon={createIssueIcon(issue.severity, issue.observationCount, layers.clusters)}
-            eventHandlers={{ click: () => onIssueSelect(issue) }}
-          />
-        ))}
+        {layers.issues && visibleIssues.map(issue => {
+          const pos = getValidLatLng(issue);
+          if (!pos) return null;
+          return (
+            <Marker 
+              key={`issue-${issue.id}`}
+              position={pos}
+              icon={createIssueIcon(issue.severity, issue.observationCount, layers.clusters)}
+              eventHandlers={{ click: () => onIssueSelect(issue) }}
+            />
+          );
+        })}
 
         {/* Active Fleet */}
-        {layers.buses && buses.filter(b => b.currentPosition).map(bus => (
-          <Marker 
-            key={`bus-${bus.id}`}
-            position={[bus.currentPosition!.lat, bus.currentPosition!.lng]}
-            icon={createBusIcon()}
-          />
-        ))}
+        {layers.buses && buses.map(bus => {
+          const pos = getValidLatLng(bus);
+          if (!pos) return null;
+          return (
+            <Marker 
+              key={`bus-${bus.id}`}
+              position={pos}
+              icon={createBusIcon()}
+            />
+          );
+        })}
         
         <MapBounds buses={buses} issues={issues} />
       </MapContainer>
