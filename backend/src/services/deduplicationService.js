@@ -9,11 +9,8 @@ const SEVERITY_RANK = {
   CRITICAL: 4,
 };
 
-/**
- * Process spatial deduplication for incoming bus observations
- * @param {Object} observation - Saved Mongoose observation document
- * @returns {Object} - Object containing processed observation and associated issue
- */
+
+
 const processObservationDeduplication = async (observation) => {
   const { _id, busId, detectionType, severity, latitude, longitude, timestamp, evidenceUrl, confidence } = observation;
 
