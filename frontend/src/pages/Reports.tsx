@@ -62,7 +62,7 @@ export function ReportsPage() {
           >
             <GlassPanel hover className="p-6 h-full flex flex-col">
               <div className="flex items-start justify-between mb-4">
-                <div className="p-3 bg-black/5 rounded-xl">
+                <div className="p-3 bg-white/5 rounded-xl">
                   <report.icon className={cn("w-6 h-6", report.color)} />
                 </div>
               </div>
@@ -72,7 +72,7 @@ export function ReportsPage() {
                 {report.description}
               </p>
               
-              <button className="w-full py-2.5 px-4 rounded-lg bg-black/5 hover:bg-black/10 border border-black/10 transition-colors flex items-center justify-center space-x-2 text-sm font-medium">
+              <button className="w-full py-2.5 px-4 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition-colors flex items-center justify-center space-x-2 text-sm font-medium">
                 <Download className="w-4 h-4" />
                 <span>Generate Report</span>
               </button>

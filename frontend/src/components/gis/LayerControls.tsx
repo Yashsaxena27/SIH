@@ -35,11 +35,11 @@ export function LayerControls({ layers, onLayerToggle }: LayerControlsProps) {
       transition={{ delay: 0.4, duration: 0.4 }}
       className="absolute left-6 top-1/2 -translate-y-1/2 z-[400]"
     >
-      <div className="flex flex-col bg-surface-elevated/90 backdrop-blur-3xl border border-black/[0.1] rounded-2xl shadow-2xl overflow-hidden w-12 hover:w-48 transition-all duration-300 group">
+      <div className="flex flex-col bg-surface-elevated/90 backdrop-blur-3xl border border-white/[0.1] rounded-2xl shadow-2xl overflow-hidden w-12 hover:w-48 transition-all duration-300 group">
         
-        <div className="h-12 flex items-center px-3.5 border-b border-black/[0.06] bg-black/[0.02]">
-          <Layers className="w-5 h-5 text-black/40 flex-shrink-0" />
-          <span className="ml-3 text-xs font-bold text-black/70 uppercase tracking-widest whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="h-12 flex items-center px-3.5 border-b border-white/[0.06] bg-white/[0.02]">
+          <Layers className="w-5 h-5 text-white/40 flex-shrink-0" />
+          <span className="ml-3 text-xs font-bold text-white/70 uppercase tracking-widest whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity">
             Map Layers
           </span>
         </div>
@@ -51,22 +51,22 @@ export function LayerControls({ layers, onLayerToggle }: LayerControlsProps) {
               <button
                 key={ctrl.id}
                 onClick={() => onLayerToggle(ctrl.id as keyof MapLayers)}
-                className="w-full h-10 flex items-center px-3.5 hover:bg-black/[0.04] transition-colors relative"
+                className="w-full h-10 flex items-center px-3.5 hover:bg-white/[0.04] transition-colors relative"
               >
                 <ctrl.icon className={cn(
                   "w-5 h-5 flex-shrink-0 transition-colors", 
-                  isActive ? ctrl.color : "text-black/20"
+                  isActive ? ctrl.color : "text-white/20"
                 )} />
                 <span className={cn(
                   "ml-3 text-xs font-medium whitespace-nowrap transition-all",
-                  isActive ? "text-black/90" : "text-black/40"
+                  isActive ? "text-white/90" : "text-white/40"
                 )}>
                   {ctrl.label}
                 </span>
 
                 {/* Active indicator bar */}
                 {isActive && (
-                  <div className="absolute left-0 top-2 bottom-2 w-0.5 rounded-r bg-black" />
+                  <div className="absolute left-0 top-2 bottom-2 w-0.5 rounded-r bg-white" />
                 )}
               </button>
             );

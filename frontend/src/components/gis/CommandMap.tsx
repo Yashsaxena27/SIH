@@ -53,7 +53,7 @@ const createIssueIcon = (severity: string, observationCount: number, showCluster
       
       {/* Clustering Indicator Badge */}
       {showClusters && observationCount > 1 && (
-        <div className="absolute -top-2 -right-2 bg-accent-primary text-black text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-[#0f0f12] shadow-md z-10">
+        <div className="absolute -top-2 -right-2 bg-accent-primary text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-[#0f0f12] shadow-md z-10">
           {observationCount}
         </div>
       )}

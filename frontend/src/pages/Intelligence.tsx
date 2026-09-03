@@ -53,7 +53,7 @@ export function IntelligencePage() {
   }
 
   return (
-    <div className="relative w-full h-[calc(100vh-3rem)] overflow-hidden bg-black">
+    <div className="relative w-full h-[calc(100vh-3rem)] overflow-hidden bg-white">
       {/* ── Main Map ──────────────────────────────────────── */}
       <CommandMap 
         buses={buses}

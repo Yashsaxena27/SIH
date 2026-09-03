@@ -32,7 +32,7 @@ export function FilterBar({ activeFilter, onFilterChange }: FilterBarProps) {
       transition={{ delay: 0.2, duration: 0.4 }}
       className="absolute top-6 left-1/2 -translate-x-1/2 z-[400] flex flex-col items-center"
     >
-      <div className="flex items-center p-1.5 rounded-full bg-surface-elevated/80 backdrop-blur-3xl border border-black/[0.1] shadow-2xl">
+      <div className="flex items-center p-1.5 rounded-full bg-surface-elevated/80 backdrop-blur-3xl border border-white/[0.1] shadow-2xl">
         {filters.map(filter => {
           const isActive = activeFilter === filter.id;
           return (
@@ -41,13 +41,13 @@ export function FilterBar({ activeFilter, onFilterChange }: FilterBarProps) {
               onClick={() => onFilterChange(filter.id)}
               className={cn(
                 "relative flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold transition-colors duration-200",
-                isActive ? "text-black" : "text-black/40 hover:text-black/70"
+                isActive ? "text-white" : "text-white/40 hover:text-white/70"
               )}
             >
               {isActive && (
                 <motion.div 
                   layoutId="filter-active-pill"
-                  className="absolute inset-0 bg-black/[0.1] border border-black/[0.05] rounded-full"
+                  className="absolute inset-0 bg-white/[0.1] border border-white/[0.05] rounded-full"
                   transition={{ type: "spring", stiffness: 400, damping: 30 }}
                 />
               )}
@@ -57,13 +57,13 @@ export function FilterBar({ activeFilter, onFilterChange }: FilterBarProps) {
           );
         })}
 
-        <div className="w-px h-6 bg-black/[0.1] mx-2" />
+        <div className="w-px h-6 bg-white/[0.1] mx-2" />
         
         <button 
           onClick={() => setExpanded(!expanded)}
           className={cn(
             "p-2 rounded-full transition-colors",
-            expanded ? "bg-black/[0.1] text-black" : "text-black/40 hover:text-black hover:bg-black/[0.05]"
+            expanded ? "bg-white/[0.1] text-white" : "text-white/40 hover:text-white hover:bg-white/[0.05]"
           )}
         >
           <Filter className="w-4 h-4" />
@@ -80,23 +80,23 @@ export function FilterBar({ activeFilter, onFilterChange }: FilterBarProps) {
         }}
         className="overflow-hidden"
       >
-        <div className="flex items-center gap-4 px-6 py-3 rounded-2xl bg-surface-elevated/95 backdrop-blur-3xl border border-black/[0.1] shadow-2xl">
+        <div className="flex items-center gap-4 px-6 py-3 rounded-2xl bg-surface-elevated/95 backdrop-blur-3xl border border-white/[0.1] shadow-2xl">
           <div className="space-y-1">
-            <span className="text-[10px] font-bold text-black/30 uppercase tracking-widest">Severity</span>
+            <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Severity</span>
             <div className="flex gap-2">
               {['Critical', 'High', 'Medium'].map(sev => (
-                <button key={sev} className="px-3 py-1 rounded-md bg-black/[0.04] hover:bg-black/[0.08] text-[11px] text-black/60 font-medium border border-black/[0.05]">
+                <button key={sev} className="px-3 py-1 rounded-md bg-white/[0.04] hover:bg-white/[0.08] text-[11px] text-white/60 font-medium border border-white/[0.05]">
                   {sev}
                 </button>
               ))}
             </div>
           </div>
-          <div className="w-px h-8 bg-black/[0.1]" />
+          <div className="w-px h-8 bg-white/[0.1]" />
           <div className="space-y-1">
-            <span className="text-[10px] font-bold text-black/30 uppercase tracking-widest">Status</span>
+            <span className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Status</span>
             <div className="flex gap-2">
               {['Open', 'Verifying', 'Resolved'].map(stat => (
-                <button key={stat} className="px-3 py-1 rounded-md bg-black/[0.04] hover:bg-black/[0.08] text-[11px] text-black/60 font-medium border border-black/[0.05]">
+                <button key={stat} className="px-3 py-1 rounded-md bg-white/[0.04] hover:bg-white/[0.08] text-[11px] text-white/60 font-medium border border-white/[0.05]">
                   {stat}
                 </button>
               ))}

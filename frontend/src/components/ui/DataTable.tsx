@@ -27,9 +27,9 @@ export function DataTable<T extends Record<string, any>>({
   className,
 }: DataTableProps<T>) {
   return (
-    <div className={cn('w-full overflow-x-auto rounded-xl border border-black/[0.06] bg-black/[0.03]', className)}>
-      <table className="w-full text-left text-sm text-black/90">
-        <thead className="border-b border-black/[0.06] bg-black/[0.02] text-xs uppercase text-black/56">
+    <div className={cn('w-full overflow-x-auto rounded-xl border border-white/[0.06] bg-white/[0.03]', className)}>
+      <table className="w-full text-left text-sm text-white/90">
+        <thead className="border-b border-white/[0.06] bg-white/[0.02] text-xs uppercase text-white/56">
           <tr>
             {columns.map((col) => (
               <th
@@ -47,10 +47,10 @@ export function DataTable<T extends Record<string, any>>({
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-black/[0.06]">
+        <tbody className="divide-y divide-white/[0.06]">
           {loading ? (
             <tr>
-              <td colSpan={columns.length} className="px-6 py-8 text-center text-black/56">
+              <td colSpan={columns.length} className="px-6 py-8 text-center text-white/56">
                 <div className="flex items-center justify-center space-x-2">
                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-accent-primary border-t-transparent" />
                   <span>Loading data...</span>
@@ -59,7 +59,7 @@ export function DataTable<T extends Record<string, any>>({
             </tr>
           ) : data.length === 0 ? (
             <tr>
-              <td colSpan={columns.length} className="px-6 py-8 text-center text-black/56">
+              <td colSpan={columns.length} className="px-6 py-8 text-center text-white/56">
                 {emptyMessage}
               </td>
             </tr>
@@ -68,7 +68,7 @@ export function DataTable<T extends Record<string, any>>({
               <tr
                 key={rowIndex}
                 onClick={() => onRowClick?.(item)}
-                className={cn('transition-colors hover:bg-black/[0.04]', {
+                className={cn('transition-colors hover:bg-white/[0.04]', {
                   'cursor-pointer': !!onRowClick,
                 })}
               >

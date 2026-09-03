@@ -34,7 +34,7 @@ export function ActivityFeed({ events, maxItems, className }: ActivityFeedProps)
 
   return (
     <div className={cn('relative pl-3', className)}>
-      <div className="absolute left-3 top-2 bottom-2 w-px bg-black/[0.08]" />
+      <div className="absolute left-3 top-2 bottom-2 w-px bg-white/[0.08]" />
       <div className="space-y-6">
         {displayEvents.map((event, index) => (
           <motion.div
@@ -49,10 +49,10 @@ export function ActivityFeed({ events, maxItems, className }: ActivityFeedProps)
             </div>
             <div className="flex flex-col gap-1">
               <div className="flex items-center justify-between gap-4">
-                <h4 className="text-sm font-medium text-black/90">{event.title}</h4>
-                <time className="text-xs text-black/36 whitespace-nowrap">{event.timestamp}</time>
+                <h4 className="text-sm font-medium text-white/90">{event.title}</h4>
+                <time className="text-xs text-white/36 whitespace-nowrap">{event.timestamp}</time>
               </div>
-              {event.description && <p className="text-sm text-black/56">{event.description}</p>}
+              {event.description && <p className="text-sm text-white/56">{event.description}</p>}
             </div>
           </motion.div>
         ))}

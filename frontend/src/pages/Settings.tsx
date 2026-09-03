@@ -33,12 +33,12 @@ export function SettingsPage() {
             className="cursor-pointer"
           >
             <div className="flex items-start gap-3">
-              <div className="w-9 h-9 rounded-lg bg-black/[0.04] flex items-center justify-center flex-shrink-0">
-                <section.icon className="w-4 h-4 text-black/40" />
+              <div className="w-9 h-9 rounded-lg bg-white/[0.04] flex items-center justify-center flex-shrink-0">
+                <section.icon className="w-4 h-4 text-white/40" />
               </div>
               <div>
-                <h3 className="text-sm font-medium text-black/80">{section.label}</h3>
-                <p className="text-xs text-black/40 mt-0.5">{section.description}</p>
+                <h3 className="text-sm font-medium text-white/80">{section.label}</h3>
+                <p className="text-xs text-white/40 mt-0.5">{section.description}</p>
               </div>
             </div>
           </GlassPanel>

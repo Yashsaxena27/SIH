@@ -1,9 +1,3 @@
-// ============================================================
-// GlassPanel / Surface Component
-// Audited: Reduced glassmorphism. Defaults to solid surfaces for grounding.
-// Glass is reserved for floating elements (drawers, modals).
-// ============================================================
-
 import { HTMLAttributes, ElementType } from 'react';
 import { cn } from '@/lib/utils';
 
@@ -11,7 +5,7 @@ export interface GlassPanelProps extends HTMLAttributes<HTMLDivElement> {
   as?: ElementType;
   padding?: 'none' | 'sm' | 'md' | 'lg';
   hover?: boolean;
-  glass?: boolean; // explicitly request glass
+  glass?: boolean;
 }
 
 export function GlassPanel({ 
@@ -20,7 +14,7 @@ export function GlassPanel({
   as: Component = 'div',
   padding = 'md',
   hover = false,
-  glass = false,
+  glass = true,
   ...props 
 }: GlassPanelProps) {
   const paddingStyles = {
@@ -34,12 +28,10 @@ export function GlassPanel({
     <Component
       className={cn(
         "rounded-xl border",
-        // Solid vs Glass logic
-        glass 
-          ? "bg-black/[0.03] backdrop-blur-2xl border-black/[0.1] shadow-xl" 
-          : "bg-[#0f0f12] border-black/[0.06] shadow-sm",
+        // Universal Dark Glassmorphism Effect
+        "bg-white/[0.03] backdrop-blur-2xl border-white/[0.08] shadow-[inset_0_1px_1px_rgba(255,255,255,0.05),0_4px_20px_rgba(0,0,0,0.5)]",
         // Hover interaction
-        hover && "transition-colors duration-200 hover:border-black/[0.1] hover:bg-[#141419]",
+        hover && "transition-colors duration-200 hover:border-white/[0.2] hover:bg-white/[0.06]",
         paddingStyles[padding],
         className
       )}

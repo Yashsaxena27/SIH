@@ -82,14 +82,14 @@ export function AnalyticsPage() {
       {/* ── Header & Actions ────────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-black/95 tracking-tight flex items-center gap-3">
+          <h1 className="text-3xl font-bold text-white/95 tracking-tight flex items-center gap-3">
             Urban Intelligence Analytics
           </h1>
-          <p className="text-sm text-black/40 mt-1 font-medium">Long-term infrastructure health and operational performance.</p>
+          <p className="text-sm text-white/40 mt-1 font-medium">Long-term infrastructure health and operational performance.</p>
         </div>
         
         <div className="flex items-center gap-3">
-          <div className="px-4 py-2 rounded-lg bg-black/[0.02] border border-black/[0.08] text-sm text-black/60">
+          <div className="px-4 py-2 rounded-lg bg-white/[0.02] border border-white/[0.08] text-sm text-white/60">
             Last 6 Months
           </div>
           <button 
@@ -112,15 +112,15 @@ export function AnalyticsPage() {
         
         {/* Main Score Card */}
         <GlassPanel className="xl:col-span-4 flex flex-col justify-center">
-          <div className="flex items-center gap-2 mb-6 text-black/50">
+          <div className="flex items-center gap-2 mb-6 text-white/50">
             <Activity className="w-4 h-4" />
             <span className="text-xs font-bold uppercase tracking-widest">City Road Health Index</span>
           </div>
           <div className="flex items-end gap-4 mb-4">
-            <div className="text-7xl font-bold tracking-tighter text-black/95 leading-none">
+            <div className="text-7xl font-bold tracking-tighter text-white/95 leading-none">
               {((healthSummary as any)?.averageScore ?? 0).toFixed(0)}
             </div>
-            <div className="text-2xl text-black/30 font-light mb-1">/ 100</div>
+            <div className="text-2xl text-white/30 font-light mb-1">/ 100</div>
           </div>
           <div className="flex items-center gap-2 text-emerald-400">
             <TrendingUp className="w-4 h-4" />
@@ -130,13 +130,13 @@ export function AnalyticsPage() {
 
         {/* Health Distribution */}
         <GlassPanel className="xl:col-span-8 flex flex-col justify-center">
-          <div className="flex items-center gap-2 mb-6 text-black/50">
+          <div className="flex items-center gap-2 mb-6 text-white/50">
             <MapPin className="w-4 h-4" />
             <span className="text-xs font-bold uppercase tracking-widest">Network Surface Condition</span>
           </div>
           
           <div className="flex flex-col gap-4">
-            <div className="h-4 flex rounded-full overflow-hidden bg-black/[0.04]">
+            <div className="h-4 flex rounded-full overflow-hidden bg-white/[0.04]">
               <div style={{ width: `${(((healthSummary as any)?.segmentDistribution?.excellent ?? 0) / Math.max(healthSummary.totalSegments || 1, 1)) * 100}%` }} className="bg-emerald-500 hover:opacity-80 transition-opacity cursor-pointer" />
               <div style={{ width: `${(((healthSummary as any)?.segmentDistribution?.good ?? 0) / Math.max(healthSummary.totalSegments || 1, 1)) * 100}%` }} className="bg-blue-500 hover:opacity-80 transition-opacity cursor-pointer" />
               <div style={{ width: `${(((healthSummary as any)?.segmentDistribution?.fair ?? 0) / Math.max(healthSummary.totalSegments || 1, 1)) * 100}%` }} className="bg-yellow-500 hover:opacity-80 transition-opacity cursor-pointer" />
@@ -152,7 +152,7 @@ export function AnalyticsPage() {
               ].map(d => (
                 <div key={d.label}>
                   <div className={cn("text-xl font-bold", d.color)}>{d.val}</div>
-                  <div className="text-[10px] text-black/40 uppercase font-bold tracking-widest">{d.label}</div>
+                  <div className="text-[10px] text-white/40 uppercase font-bold tracking-widest">{d.label}</div>
                 </div>
               ))}
             </div>
@@ -164,7 +164,7 @@ export function AnalyticsPage() {
       {/* ── Historical Trend ────────────────────────────────── */}
       <GlassPanel>
         <div className="flex justify-between items-center mb-6">
-          <div className="flex items-center gap-2 text-black/50">
+          <div className="flex items-center gap-2 text-white/50">
             <Activity className="w-4 h-4" />
             <span className="text-xs font-bold uppercase tracking-widest">6-Month Health Trend</span>
           </div>
@@ -196,20 +196,20 @@ export function AnalyticsPage() {
         
         {/* Lowest Ranked Roads */}
         <GlassPanel>
-          <div className="flex items-center justify-between mb-6 border-b border-black/[0.06] pb-4">
-            <span className="text-xs font-bold uppercase tracking-widest text-black/50">Top Priority Segments</span>
-            <span className="text-xs text-accent-secondary hover:text-black cursor-pointer transition-colors">View All</span>
+          <div className="flex items-center justify-between mb-6 border-b border-white/[0.06] pb-4">
+            <span className="text-xs font-bold uppercase tracking-widest text-white/50">Top Priority Segments</span>
+            <span className="text-xs text-accent-secondary hover:text-white cursor-pointer transition-colors">View All</span>
           </div>
           
           <div className="space-y-2">
             {bottomSegments.map((seg, i) => (
-              <div key={seg.id} className="flex items-center justify-between p-3 rounded-lg bg-black/[0.02] border border-black/[0.04]">
+              <div key={seg.id} className="flex items-center justify-between p-3 rounded-lg bg-white/[0.02] border border-white/[0.04]">
                 <div className="flex items-center gap-4">
-                  <div className="w-6 h-6 rounded bg-black/[0.05] flex items-center justify-center text-xs font-mono font-bold text-black/40">
+                  <div className="w-6 h-6 rounded bg-white/[0.05] flex items-center justify-center text-xs font-mono font-bold text-white/40">
                     {i+1}
                   </div>
                   <div>
-                    <div className="text-sm font-bold text-black/90">{seg.name}</div>
+                    <div className="text-sm font-bold text-white/90">{seg.name}</div>
                     <div className={cn(
                       "text-[10px] font-bold uppercase tracking-widest mt-0.5",
                       (seg as any).score < 50 ? "text-red-400" : "text-yellow-400"
@@ -218,7 +218,7 @@ export function AnalyticsPage() {
                     </div>
                   </div>
                 </div>
-                <div className="text-2xl font-bold font-mono text-black/90">{(seg as any).score}</div>
+                <div className="text-2xl font-bold font-mono text-white/90">{(seg as any).score}</div>
               </div>
             ))}
           </div>
@@ -226,8 +226,8 @@ export function AnalyticsPage() {
 
         {/* Deterioration Watchlist */}
         <GlassPanel>
-          <div className="flex items-center justify-between mb-6 border-b border-black/[0.06] pb-4">
-            <span className="text-xs font-bold uppercase tracking-widest text-black/50">Deterioration Watchlist</span>
+          <div className="flex items-center justify-between mb-6 border-b border-white/[0.06] pb-4">
+            <span className="text-xs font-bold uppercase tracking-widest text-white/50">Deterioration Watchlist</span>
             <AlertTriangle className="w-4 h-4 text-orange-400" />
           </div>
           
@@ -235,8 +235,8 @@ export function AnalyticsPage() {
             {deteriorating.map((road) => (
               <div key={road.name} className="flex items-center justify-between">
                 <div>
-                  <div className="text-sm font-bold text-black/90">{road.name}</div>
-                  <div className="flex items-center gap-3 text-[10px] text-black/40 mt-1">
+                  <div className="text-sm font-bold text-white/90">{road.name}</div>
+                  <div className="flex items-center gap-3 text-[10px] text-white/40 mt-1">
                     <span>{road.defects} active defects</span>
                     {road.recurring && <span className="text-orange-400">Recurring issues</span>}
                   </div>
@@ -246,7 +246,7 @@ export function AnalyticsPage() {
                     <TrendingDown className="w-3 h-3" />
                     <span className="text-xs font-bold">{road.current - road.prev}</span>
                   </div>
-                  <div className="px-2 py-1 bg-black/[0.04] rounded border border-black/[0.08] text-sm font-mono font-bold">
+                  <div className="px-2 py-1 bg-white/[0.04] rounded border border-white/[0.08] text-sm font-mono font-bold">
                     {road.current}
                   </div>
                 </div>
@@ -262,7 +262,7 @@ export function AnalyticsPage() {
         
         {/* Department SLA */}
         <GlassPanel>
-          <div className="flex items-center gap-2 mb-6 text-black/50 border-b border-black/[0.06] pb-4">
+          <div className="flex items-center gap-2 mb-6 text-white/50 border-b border-white/[0.06] pb-4">
             <Building2 className="w-4 h-4" />
             <span className="text-xs font-bold uppercase tracking-widest">Department Performance (Demo Data)</span>
           </div>
@@ -271,13 +271,13 @@ export function AnalyticsPage() {
             {departments.slice(0, 3).map(dept => (
               <div key={dept.id}>
                 <div className="flex justify-between items-end mb-2">
-                  <div className="text-sm font-bold text-black/90">{dept.name}</div>
+                  <div className="text-sm font-bold text-white/90">{dept.name}</div>
                   <div className="flex items-center gap-4 text-xs font-mono">
-                    <span className="text-black/40">Avg: {(dept as any).performance.averageResolutionTimeDays}d</span>
+                    <span className="text-white/40">Avg: {(dept as any).performance.averageResolutionTimeDays}d</span>
                     <span className="text-emerald-400">{(dept as any).performance.slaComplianceRate}% SLA</span>
                   </div>
                 </div>
-                <div className="h-1.5 w-full bg-black/[0.04] rounded-full overflow-hidden flex">
+                <div className="h-1.5 w-full bg-white/[0.04] rounded-full overflow-hidden flex">
                   {/* Visualizing resolved vs unresolved vs reopened */}
                   <div style={{ width: `${((dept as any).performance.issuesResolved / (dept as any).performance.issuesHandled) * 100}%` }} className="bg-emerald-500" />
                   <div style={{ width: '10%' }} className="bg-yellow-500" />
@@ -287,7 +287,7 @@ export function AnalyticsPage() {
             ))}
           </div>
 
-          <div className="mt-6 flex justify-between text-[10px] uppercase font-bold tracking-widest text-black/40 pt-4 border-t border-black/[0.06]">
+          <div className="mt-6 flex justify-between text-[10px] uppercase font-bold tracking-widest text-white/40 pt-4 border-t border-white/[0.06]">
             <span className="flex items-center gap-1"><div className="w-2 h-2 rounded bg-emerald-500" /> Resolved</span>
             <span className="flex items-center gap-1"><div className="w-2 h-2 rounded bg-yellow-500" /> Pending</span>
             <span className="flex items-center gap-1"><div className="w-2 h-2 rounded bg-red-500" /> Reopened</span>
@@ -296,18 +296,18 @@ export function AnalyticsPage() {
 
         {/* Traffic Intelligence */}
         <GlassPanel>
-          <div className="flex items-center gap-2 mb-6 text-black/50 border-b border-black/[0.06] pb-4">
+          <div className="flex items-center gap-2 mb-6 text-white/50 border-b border-white/[0.06] pb-4">
             <Car className="w-4 h-4" />
             <span className="text-xs font-bold uppercase tracking-widest">Traffic Intelligence</span>
           </div>
           
           <div className="grid grid-cols-2 gap-4 mb-6">
-            <div className="p-3 bg-black/[0.02] border border-black/[0.04] rounded-lg">
-              <div className="text-[10px] text-black/40 uppercase font-bold tracking-widest mb-1">Peak Volume</div>
-              <div className="text-xl font-bold text-black/90 font-mono">5,200 <span className="text-xs text-black/40 font-sans font-normal">veh/hr</span></div>
+            <div className="p-3 bg-white/[0.02] border border-white/[0.04] rounded-lg">
+              <div className="text-[10px] text-white/40 uppercase font-bold tracking-widest mb-1">Peak Volume</div>
+              <div className="text-xl font-bold text-white/90 font-mono">5,200 <span className="text-xs text-white/40 font-sans font-normal">veh/hr</span></div>
             </div>
-            <div className="p-3 bg-black/[0.02] border border-black/[0.04] rounded-lg">
-              <div className="text-[10px] text-black/40 uppercase font-bold tracking-widest mb-1">Congestion Impact</div>
+            <div className="p-3 bg-white/[0.02] border border-white/[0.04] rounded-lg">
+              <div className="text-[10px] text-white/40 uppercase font-bold tracking-widest mb-1">Congestion Impact</div>
               <div className="text-xl font-bold text-orange-400 font-mono">High</div>
             </div>
           </div>

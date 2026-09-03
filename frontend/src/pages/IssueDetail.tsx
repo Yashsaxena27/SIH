@@ -49,7 +49,7 @@ export function IssueDetailPage() {
   };
 
   if (loading) return <LoadingState message="Loading issue intelligence..." className="h-full" />;
-  if (!issue) return <div className="p-8 text-center text-black/50">Issue not found</div>;
+  if (!issue) return <div className="p-8 text-center text-white/50">Issue not found</div>;
 
   const isCritical = issue.severity === 'critical';
 
@@ -60,7 +60,7 @@ export function IssueDetailPage() {
       <div className="flex items-start gap-4">
         <button 
           onClick={() => navigate('/issues')}
-          className="p-2 rounded-lg bg-black/[0.03] border border-black/[0.08] text-black/50 hover:text-black hover:bg-black/[0.08] transition-colors mt-1"
+          className="p-2 rounded-lg bg-white/[0.03] border border-white/[0.08] text-white/50 hover:text-white hover:bg-white/[0.08] transition-colors mt-1"
         >
           <ArrowLeft className="w-4 h-4" />
         </button>
@@ -76,7 +76,7 @@ export function IssueDetailPage() {
               {isCritical ? <ShieldAlert className="w-3.5 h-3.5" /> : <AlertTriangle className="w-3.5 h-3.5" />}
               {issue.severity} Severity
             </span>
-            <span className="text-xs text-black/40 font-mono tracking-wider">#{issue.id}</span>
+            <span className="text-xs text-white/40 font-mono tracking-wider">#{issue.id}</span>
             <span className={cn(
               "ml-auto px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest",
               issue.status === 'verified' ? 'bg-emerald-500/20 text-emerald-400' :
@@ -85,12 +85,12 @@ export function IssueDetailPage() {
               Status: {(issue.status || 'unknown').replace(/_/g, ' ')}
             </span>
           </div>
-          <h1 className="text-3xl font-bold text-black/95 capitalize tracking-tight mb-2">
+          <h1 className="text-3xl font-bold text-white/95 capitalize tracking-tight mb-2">
             {(issue.type || 'unknown').replace(/_/g, ' ')}
           </h1>
-          <div className="flex items-center gap-4 text-sm text-black/50">
+          <div className="flex items-center gap-4 text-sm text-white/50">
             <span className="flex items-center gap-1.5"><MapPin className="w-4 h-4" /> {issue.location.address}</span>
-            <span className="w-1 h-1 rounded-full bg-black/20" />
+            <span className="w-1 h-1 rounded-full bg-white/20" />
             <span className="flex items-center gap-1.5"><Clock className="w-4 h-4" /> First seen {formatDate(issue.firstDetectedAt, 'long')}</span>
           </div>
         </div>
@@ -110,7 +110,7 @@ export function IssueDetailPage() {
               <div className="absolute inset-0 shadow-[inset_0_0_100px_rgba(0,0,0,0.8)]" />
               
               {/* Abstract representation of the road */}
-              <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-black/5 to-transparent" />
+              <div className="absolute bottom-0 left-0 right-0 h-1/2 bg-gradient-to-t from-white/5 to-transparent" />
               
               {/* Bounding Box Overlay */}
               <motion.div 
@@ -118,7 +118,7 @@ export function IssueDetailPage() {
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.2 }}
                 className={cn(
-                  "absolute top-[40%] left-[35%] w-[30%] h-[25%] border-2 bg-black/20 flex flex-col justify-between",
+                  "absolute top-[40%] left-[35%] w-[30%] h-[25%] border-2 bg-white/20 flex flex-col justify-between",
                   isCritical ? 'border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.5)]' : 'border-accent-primary shadow-[0_0_20px_rgba(99,102,241,0.5)]'
                 )}
               >
@@ -130,7 +130,7 @@ export function IssueDetailPage() {
                 
                 {/* Label */}
                 <div className={cn(
-                  "absolute -top-6 left-0 px-2 py-0.5 text-[10px] font-mono font-bold text-black uppercase",
+                  "absolute -top-6 left-0 px-2 py-0.5 text-[10px] font-mono font-bold text-white uppercase",
                   isCritical ? 'bg-red-500' : 'bg-accent-primary'
                 )}>
                   {(issue.type || 'unknown').replace(/_/g, ' ')} · {((issue.confidence ?? 0) * 100).toFixed(1)}%
@@ -141,11 +141,11 @@ export function IssueDetailPage() {
               <div className="absolute top-4 left-4 right-4 flex justify-between items-start pointer-events-none">
                 <div className="flex flex-col gap-1">
                   <span className="flex items-center gap-1.5 text-red-500 text-[10px] font-bold font-mono tracking-widest"><div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" /> REC</span>
-                  <span className="text-black/70 text-[10px] font-mono bg-black/40 px-2 py-1 rounded backdrop-blur-md border border-black/[0.05]">CAM_FR_01</span>
+                  <span className="text-white/70 text-[10px] font-mono bg-white/40 px-2 py-1 rounded backdrop-blur-md border border-white/[0.05]">CAM_FR_01</span>
                 </div>
                 <div className="flex flex-col items-end gap-1 text-right">
-                  <span className="text-black/90 text-[10px] font-mono bg-black/40 px-2 py-1 rounded backdrop-blur-md border border-black/[0.05]">{formatDate(issue.lastObservedAt, 'long')}</span>
-                  <span className="text-black/60 text-[10px] font-mono bg-black/40 px-2 py-1 rounded backdrop-blur-md border border-black/[0.05]">GPS: {issue.location.coordinates[1].toFixed(6)}, {issue.location.coordinates[0].toFixed(6)}</span>
+                  <span className="text-white/90 text-[10px] font-mono bg-white/40 px-2 py-1 rounded backdrop-blur-md border border-white/[0.05]">{formatDate(issue.lastObservedAt, 'long')}</span>
+                  <span className="text-white/60 text-[10px] font-mono bg-white/40 px-2 py-1 rounded backdrop-blur-md border border-white/[0.05]">GPS: {issue.location.coordinates[1].toFixed(6)}, {issue.location.coordinates[0].toFixed(6)}</span>
                 </div>
               </div>
             </div>
@@ -154,25 +154,25 @@ export function IssueDetailPage() {
           {/* Observations */}
           <GlassPanel>
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-sm font-bold text-black/90 uppercase tracking-widest flex items-center gap-2">
+              <h3 className="text-sm font-bold text-white/90 uppercase tracking-widest flex items-center gap-2">
                 <GitMerge className="w-4 h-4 text-accent-secondary" /> Clustered Observations
               </h3>
-              <div className="px-3 py-1 rounded-full bg-black/[0.04] border border-black/[0.08] text-xs font-medium text-black/70">
+              <div className="px-3 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] text-xs font-medium text-white/70">
                 {issue.observationCount} Total Captures
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
               {Array.from({ length: Math.min(issue.observationCount, 6) }).map((_, i) => (
-                <div key={i} className="p-3 rounded-xl bg-black/[0.02] border border-black/[0.06] hover:bg-black/[0.04] transition-colors">
+                <div key={i} className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] hover:bg-white/[0.04] transition-colors">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="flex items-center gap-1.5 text-xs font-mono text-black/70 bg-black/[0.05] px-2 py-0.5 rounded-md">
+                    <span className="flex items-center gap-1.5 text-xs font-mono text-white/70 bg-white/[0.05] px-2 py-0.5 rounded-md">
                       <Bus className="w-3 h-3 text-accent-primary" /> BUS-0{Math.floor(Math.random() * 90) + 10}
                     </span>
-                    <span className="text-[10px] text-black/40">{timeAgo(new Date(issue.lastObservedAt).getTime() - (i * 3600000))}</span>
+                    <span className="text-[10px] text-white/40">{timeAgo(new Date(issue.lastObservedAt).getTime() - (i * 3600000))}</span>
                   </div>
                   <div className="flex justify-between items-end text-xs">
-                    <span className="text-black/40 flex items-center gap-1"><Camera className="w-3 h-3"/> Image Logged</span>
+                    <span className="text-white/40 flex items-center gap-1"><Camera className="w-3 h-3"/> Image Logged</span>
                     <span className="text-emerald-400 font-mono">{(90 + Math.random() * 9).toFixed(1)}%</span>
                   </div>
                 </div>
@@ -187,19 +187,19 @@ export function IssueDetailPage() {
           
           {/* Action Panel */}
           <GlassPanel className="border-accent-primary/20 bg-accent-primary/[0.02]">
-            <h3 className="text-xs font-bold text-black/60 uppercase tracking-widest mb-4">Command Actions (Demo)</h3>
+            <h3 className="text-xs font-bold text-white/60 uppercase tracking-widest mb-4">Command Actions (Demo)</h3>
             <div className="space-y-3">
               <button 
                 onClick={() => handleAction('assign', 'assigned')}
                 disabled={!!actionLoading}
-                className="w-full flex items-center gap-3 p-3 rounded-lg bg-black/[0.04] hover:bg-black/[0.08] border border-black/[0.08] text-sm font-medium text-black/90 transition-all text-left group"
+                className="w-full flex items-center gap-3 p-3 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-sm font-medium text-white/90 transition-all text-left group"
               >
                 <div className="w-8 h-8 rounded-md bg-purple-500/20 text-purple-400 flex items-center justify-center group-hover:scale-110 transition-transform">
                   <Ticket className="w-4 h-4" />
                 </div>
                 <div className="flex-1">
                   <div>Assign Department</div>
-                  <div className="text-[10px] text-black/40 font-normal">Route to appropriate municipal body</div>
+                  <div className="text-[10px] text-white/40 font-normal">Route to appropriate municipal body</div>
                 </div>
                 {actionLoading === 'assign' && <div className="w-4 h-4 border-2 border-purple-400 border-t-transparent rounded-full animate-spin" />}
               </button>
@@ -207,14 +207,14 @@ export function IssueDetailPage() {
               <button 
                 onClick={() => handleAction('verify', 'verifying')}
                 disabled={!!actionLoading}
-                className="w-full flex items-center gap-3 p-3 rounded-lg bg-black/[0.04] hover:bg-black/[0.08] border border-black/[0.08] text-sm font-medium text-black/90 transition-all text-left group"
+                className="w-full flex items-center gap-3 p-3 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] text-sm font-medium text-white/90 transition-all text-left group"
               >
                 <div className="w-8 h-8 rounded-md bg-emerald-500/20 text-emerald-400 flex items-center justify-center group-hover:scale-110 transition-transform">
                   <ShieldCheck className="w-4 h-4" />
                 </div>
                 <div className="flex-1">
                   <div>Start Verification</div>
-                  <div className="text-[10px] text-black/40 font-normal">Queue buses to inspect repair status</div>
+                  <div className="text-[10px] text-white/40 font-normal">Queue buses to inspect repair status</div>
                 </div>
                 {actionLoading === 'verify' && <div className="w-4 h-4 border-2 border-emerald-400 border-t-transparent rounded-full animate-spin" />}
               </button>
@@ -224,7 +224,7 @@ export function IssueDetailPage() {
           {/* Connected Ticket */}
           <GlassPanel>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xs font-bold text-black/60 uppercase tracking-widest">Connected Ticket</h3>
+              <h3 className="text-xs font-bold text-white/60 uppercase tracking-widest">Connected Ticket</h3>
               {ticket && (
                 <span className={cn("text-[10px] px-2 py-0.5 rounded font-bold uppercase", 
                   ticket.slaStatus === 'breached' ? 'bg-red-500/20 text-red-400' : 'bg-emerald-500/20 text-emerald-400'
@@ -236,25 +236,25 @@ export function IssueDetailPage() {
             
             {ticket ? (
               <div className="space-y-4">
-                <div className="flex items-center justify-between pb-3 border-b border-black/[0.06]">
-                  <span className="text-black/40 text-sm">Ticket ID</span>
-                  <span className="text-black/90 font-mono font-medium">{ticket.id}</span>
+                <div className="flex items-center justify-between pb-3 border-b border-white/[0.06]">
+                  <span className="text-white/40 text-sm">Ticket ID</span>
+                  <span className="text-white/90 font-mono font-medium">{ticket.id}</span>
                 </div>
-                <div className="flex items-center justify-between pb-3 border-b border-black/[0.06]">
-                  <span className="text-black/40 text-sm">Department</span>
-                  <span className="text-black/90 font-medium">{ticket.departmentId}</span>
+                <div className="flex items-center justify-between pb-3 border-b border-white/[0.06]">
+                  <span className="text-white/40 text-sm">Department</span>
+                  <span className="text-white/90 font-medium">{ticket.departmentId}</span>
                 </div>
-                <div className="flex items-center justify-between pb-3 border-b border-black/[0.06]">
-                  <span className="text-black/40 text-sm">Assigned To</span>
-                  <span className="text-black/90 font-medium">{ticket.assignedTo || 'Unassigned'}</span>
+                <div className="flex items-center justify-between pb-3 border-b border-white/[0.06]">
+                  <span className="text-white/40 text-sm">Assigned To</span>
+                  <span className="text-white/90 font-medium">{ticket.assignedTo || 'Unassigned'}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-black/40 text-sm">Status</span>
-                  <span className="text-black/90 font-medium uppercase text-xs">{(ticket.status || 'unknown').replace(/_/g, ' ')}</span>
+                  <span className="text-white/40 text-sm">Status</span>
+                  <span className="text-white/90 font-medium uppercase text-xs">{(ticket.status || 'unknown').replace(/_/g, ' ')}</span>
                 </div>
               </div>
             ) : (
-              <div className="text-center py-6 text-black/40 text-sm">
+              <div className="text-center py-6 text-white/40 text-sm">
                 No active ticket associated.
               </div>
             )}
@@ -262,10 +262,10 @@ export function IssueDetailPage() {
 
           {/* Timeline */}
           <GlassPanel>
-            <h3 className="text-xs font-bold text-black/60 uppercase tracking-widest mb-6">Issue Lifecycle</h3>
+            <h3 className="text-xs font-bold text-white/60 uppercase tracking-widest mb-6">Issue Lifecycle</h3>
             
             <div className="relative pl-4 space-y-6">
-              <div className="absolute left-[23px] top-4 bottom-4 w-0.5 bg-black/[0.06]" />
+              <div className="absolute left-[23px] top-4 bottom-4 w-0.5 bg-white/[0.06]" />
 
               {[
                 { label: 'Issue Resolved', active: issue.status === 'verified', icon: CheckCircle, color: 'text-emerald-400' },
@@ -278,14 +278,14 @@ export function IssueDetailPage() {
                 <div key={idx} className="relative pl-8">
                   <div className={cn(
                     "absolute left-[-11px] top-[-2px] w-7 h-7 rounded-full flex items-center justify-center border-2 bg-surface-raised",
-                    step.active ? `border-black/[0.1] ${step.color}` : "border-black/[0.04] text-black/20"
+                    step.active ? `border-white/[0.1] ${step.color}` : "border-white/[0.04] text-white/20"
                   )}>
                     <step.icon className="w-3.5 h-3.5" />
                   </div>
-                  <div className={cn("text-sm font-medium", step.active ? "text-black/90" : "text-black/30")}>
+                  <div className={cn("text-sm font-medium", step.active ? "text-white/90" : "text-white/30")}>
                     {step.label}
                   </div>
-                  {step.active && idx > 3 && <div className="text-[10px] text-black/40 mt-0.5">{timeAgo(issue.firstDetectedAt)}</div>}
+                  {step.active && idx > 3 && <div className="text-[10px] text-white/40 mt-0.5">{timeAgo(issue.firstDetectedAt)}</div>}
                 </div>
               ))}
             </div>

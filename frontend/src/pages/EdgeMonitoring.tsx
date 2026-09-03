@@ -48,7 +48,7 @@ export function EdgeMonitoringPage() {
             <GlassPanel hover className="p-5 space-y-4">
               <div className="flex justify-between items-start">
                 <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-black/5 rounded-lg">
+                  <div className="p-2 bg-white/5 rounded-lg">
                     <Server className="w-5 h-5 text-brand-blue" />
                   </div>
                   <div>
@@ -62,7 +62,7 @@ export function EdgeMonitoringPage() {
                 />
               </div>
 
-              <div className="pt-4 border-t border-black/10 grid grid-cols-2 gap-4">
+              <div className="pt-4 border-t border-white/10 grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-xs text-foreground/60 mb-1">Detections Today</p>
                   <p className="text-lg font-medium">{bus.detectionsToday || 0}</p>

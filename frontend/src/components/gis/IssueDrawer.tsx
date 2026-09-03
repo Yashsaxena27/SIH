@@ -34,7 +34,7 @@ export function IssueDrawer({ issue, onClose }: IssueDrawerProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="fixed inset-0 z-[400] bg-black/20 backdrop-blur-[2px] md:hidden"
+            className="fixed inset-0 z-[400] bg-white/20 backdrop-blur-[2px] md:hidden"
             onClick={onClose}
           />
           <motion.div
@@ -44,7 +44,7 @@ export function IssueDrawer({ issue, onClose }: IssueDrawerProps) {
             transition={{ type: 'spring', stiffness: 300, damping: 30 }}
             className="absolute right-0 top-0 bottom-0 z-[500] w-full md:w-[400px] flex flex-col pointer-events-auto"
           >
-            <div className="h-full flex flex-col bg-surface-raised/95 backdrop-blur-3xl border-l border-black/[0.08] shadow-2xl relative overflow-hidden">
+            <div className="h-full flex flex-col bg-surface-raised/95 backdrop-blur-3xl border-l border-white/[0.08] shadow-2xl relative overflow-hidden">
               
               {/* Background Glow */}
               <div className={cn(
@@ -55,7 +55,7 @@ export function IssueDrawer({ issue, onClose }: IssueDrawerProps) {
               )} />
 
               {/* Header */}
-              <div className="flex items-center justify-between px-6 py-5 border-b border-black/[0.06] relative z-10 bg-surface-raised/50">
+              <div className="flex items-center justify-between px-6 py-5 border-b border-white/[0.06] relative z-10 bg-surface-raised/50">
                 <div>
                   <div className="flex items-center gap-2 mb-1">
                     <span className={cn(
@@ -67,15 +67,15 @@ export function IssueDrawer({ issue, onClose }: IssueDrawerProps) {
                     )}>
                       {issue.severity} Severity
                     </span>
-                    <span className="text-[10px] text-black/40 font-mono tracking-wider">#{issue.id.split('-')[1]}</span>
+                    <span className="text-[10px] text-white/40 font-mono tracking-wider">#{issue.id.split('-')[1]}</span>
                   </div>
-                  <h2 className="text-xl font-bold text-black/95 tracking-tight capitalize">
+                  <h2 className="text-xl font-bold text-white/95 tracking-tight capitalize">
                     {issue.type.replace(/_/g, ' ')}
                   </h2>
                 </div>
                 <button 
                   onClick={onClose}
-                  className="p-2 rounded-lg text-black/40 hover:text-black/80 hover:bg-black/[0.06] transition-colors"
+                  className="p-2 rounded-lg text-white/40 hover:text-white/80 hover:bg-white/[0.06] transition-colors"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -88,14 +88,14 @@ export function IssueDrawer({ issue, onClose }: IssueDrawerProps) {
                   {/* Location & Confidence */}
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
-                      <div className="text-[10px] font-semibold text-black/30 uppercase tracking-widest flex items-center gap-1.5">
+                      <div className="text-[10px] font-semibold text-white/30 uppercase tracking-widest flex items-center gap-1.5">
                         <MapPin className="w-3 h-3" /> Location
                       </div>
-                      <div className="text-sm font-medium text-black/80">{issue.location.address}</div>
-                      <div className="text-[10px] text-black/40 font-mono">{issue.location.lat.toFixed(5)}, {issue.location.lng.toFixed(5)}</div>
+                      <div className="text-sm font-medium text-white/80">{issue.location.address}</div>
+                      <div className="text-[10px] text-white/40 font-mono">{issue.location.lat.toFixed(5)}, {issue.location.lng.toFixed(5)}</div>
                     </div>
                     <div className="space-y-1">
-                      <div className="text-[10px] font-semibold text-black/30 uppercase tracking-widest flex items-center gap-1.5">
+                      <div className="text-[10px] font-semibold text-white/30 uppercase tracking-widest flex items-center gap-1.5">
                         <AlertTriangle className="w-3 h-3" /> AI Confidence
                       </div>
                       <div className="text-2xl font-bold text-accent-primary-hover">
@@ -106,34 +106,34 @@ export function IssueDrawer({ issue, onClose }: IssueDrawerProps) {
 
                   {/* Spatial Clustering Visualization */}
                   <div className="relative">
-                    <div className="text-[10px] font-semibold text-black/30 uppercase tracking-widest mb-4">
+                    <div className="text-[10px] font-semibold text-white/30 uppercase tracking-widest mb-4">
                       Observation Clustering
                     </div>
                     
-                    <div className="p-4 rounded-xl border border-black/[0.06] bg-gradient-to-b from-black/[0.02] to-transparent relative overflow-hidden">
+                    <div className="p-4 rounded-xl border border-white/[0.06] bg-gradient-to-b from-white/[0.02] to-transparent relative overflow-hidden">
                       <div className="flex flex-col items-center">
                         <div className="flex flex-wrap justify-center gap-2 mb-3 z-10 relative">
                           {Array.from({ length: Math.min(issue.observationCount, 6) }).map((_, i) => (
-                            <div key={i} className="flex items-center gap-1.5 px-2 py-1 rounded bg-black/[0.04] border border-black/[0.06]">
+                            <div key={i} className="flex items-center gap-1.5 px-2 py-1 rounded bg-white/[0.04] border border-white/[0.06]">
                               <Bus className="w-3 h-3 text-accent-secondary" />
-                              <span className="text-[10px] text-black/60 font-mono">BUS-{Math.floor(Math.random() * 90) + 10}</span>
+                              <span className="text-[10px] text-white/60 font-mono">BUS-{Math.floor(Math.random() * 90) + 10}</span>
                             </div>
                           ))}
                           {issue.observationCount > 6 && (
-                            <div className="flex items-center justify-center px-2 py-1 rounded bg-black/[0.02] border border-black/[0.04] text-[10px] text-black/40">
+                            <div className="flex items-center justify-center px-2 py-1 rounded bg-white/[0.02] border border-white/[0.04] text-[10px] text-white/40">
                               +{issue.observationCount - 6} more
                             </div>
                           )}
                         </div>
                         
-                        <div className="flex flex-col items-center text-black/20 mb-3 relative z-10">
+                        <div className="flex flex-col items-center text-white/20 mb-3 relative z-10">
                           <GitMerge className="w-5 h-5 mb-1" />
                           <ArrowDown className="w-4 h-4" />
                         </div>
 
                         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-accent-primary/10 border border-accent-primary/20 z-10 relative">
                           <ShieldCheck className="w-4 h-4 text-accent-primary-hover" />
-                          <span className="text-sm font-bold text-black/90">1 Verified Civic Issue</span>
+                          <span className="text-sm font-bold text-white/90">1 Verified Civic Issue</span>
                         </div>
                       </div>
                       
@@ -144,13 +144,13 @@ export function IssueDrawer({ issue, onClose }: IssueDrawerProps) {
 
                   {/* Timeline */}
                   <div>
-                    <div className="text-[10px] font-semibold text-black/30 uppercase tracking-widest mb-4 flex items-center gap-1.5">
+                    <div className="text-[10px] font-semibold text-white/30 uppercase tracking-widest mb-4 flex items-center gap-1.5">
                       <Clock className="w-3 h-3" /> Event Timeline
                     </div>
                     
                     <div className="space-y-4 pl-3 relative">
                       {/* Line */}
-                      <div className="absolute left-[17px] top-2 bottom-2 w-px bg-black/[0.06]" />
+                      <div className="absolute left-[17px] top-2 bottom-2 w-px bg-white/[0.06]" />
                       
                       {[
                         { title: 'Ticket Assigned', desc: `Assigned to ${issue.assignedDepartmentId || 'PWD'}`, time: timeAgo(new Date(issue.firstDetectedAt).getTime() + 14400000), icon: Ticket, color: 'text-purple-400' },
@@ -159,12 +159,12 @@ export function IssueDrawer({ issue, onClose }: IssueDrawerProps) {
                         { title: 'First Detection', desc: 'Initial anomaly flagged', time: timeAgo(issue.firstDetectedAt), icon: AlertTriangle, color: 'text-orange-400' },
                       ].map((evt, i) => (
                         <div key={i} className="relative pl-8">
-                          <div className="absolute left-[-5px] top-0.5 w-[20px] h-[20px] rounded-full bg-surface-raised border border-black/[0.1] flex items-center justify-center">
+                          <div className="absolute left-[-5px] top-0.5 w-[20px] h-[20px] rounded-full bg-surface-raised border border-white/[0.1] flex items-center justify-center">
                             <evt.icon className={cn("w-2.5 h-2.5", evt.color)} />
                           </div>
-                          <div className="text-[10px] text-black/40 mb-0.5">{evt.time}</div>
-                          <div className="text-sm font-medium text-black/85">{evt.title}</div>
-                          <div className="text-xs text-black/50">{evt.desc}</div>
+                          <div className="text-[10px] text-white/40 mb-0.5">{evt.time}</div>
+                          <div className="text-sm font-medium text-white/85">{evt.title}</div>
+                          <div className="text-xs text-white/50">{evt.desc}</div>
                         </div>
                       ))}
                     </div>
@@ -174,8 +174,8 @@ export function IssueDrawer({ issue, onClose }: IssueDrawerProps) {
               </div>
 
               {/* Footer Actions */}
-              <div className="p-4 border-t border-black/[0.06] bg-surface-raised/80 backdrop-blur-xl relative z-10">
-                <button className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-black/[0.05] hover:bg-black/[0.08] border border-black/[0.1] text-black/90 text-sm font-medium transition-colors">
+              <div className="p-4 border-t border-white/[0.06] bg-surface-raised/80 backdrop-blur-xl relative z-10">
+                <button className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-white/[0.05] hover:bg-white/[0.08] border border-white/[0.1] text-white/90 text-sm font-medium transition-colors">
                   <Wrench className="w-4 h-4" />
                   View Ticket & SLA Actions
                 </button>
