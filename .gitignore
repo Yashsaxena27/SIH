@@ -1,3 +1,7 @@
+
+# Node.js
+**/node_modules/
+
 # Python
 venv/
 __pycache__/
@@ -25,5 +29,3 @@ cropped_detections/
 
 # Jupyter
 .ipynb_checkpoints/
-git init
-git status
