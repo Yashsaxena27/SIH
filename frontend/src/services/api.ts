@@ -43,6 +43,7 @@ export const api = {
   getRoadSegments: analyticsService.getRoadSegments,
   getRoadHealthSummary: analyticsService.getRoadHealthSummary,
   getRoadHealthHistory: analyticsService.getRoadHealthHistory,
+  getHotspots: analyticsService.getHotspots,
   
   // Departments
   getDepartments: analyticsService.getDepartments,

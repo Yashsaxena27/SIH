@@ -23,7 +23,11 @@ function MapBounds({ buses, issues }: { buses: Bus[], issues: UrbanIssue[] }) {
       if (pos) bounds.extend(pos);
     });
     if (bounds.isValid()) {
-      map.fitBounds(bounds, { padding: [100, 100], maxZoom: 15 });
+      try {
+        map.fitBounds(bounds, { padding: [100, 100], maxZoom: 15 });
+      } catch (e) {
+        // Prevent map size timing exceptions
+      }
     }
   }, [buses, issues, map]);
   return null;

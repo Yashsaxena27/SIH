@@ -2,7 +2,7 @@
 import type { RoadSegment, RoadHealth, RoadHealthSummary } from '@/types/road';
 import { delhiCoordinates, randomRoadName, generateDate } from './generators';
 
-export const mockRoadSegments: RoadSegment[] = Array.from({ lengthKm: 10 }).map((_, i) => {
+export const mockRoadSegments: RoadSegment[] = Array.from({ length: 10 }).map((_, i) => {
   return {
     id: `rs-${i + 1}`,
     name: randomRoadName(),
@@ -32,7 +32,7 @@ export const mockRoadHealthSummary: RoadHealthSummary = {
   }
 };
 
-export const mockRoadHealthHistory: RoadHealth[] = Array.from({ lengthKm: 30 }).map((_, i) => {
+export const mockRoadHealthHistory: RoadHealth[] = Array.from({ length: 30 }).map((_, i) => {
   const date = new Date();
   date.setDate(date.getDate() - (30 - i));
   return {

@@ -38,27 +38,32 @@ export function IntelligencePage() {
   const [error, setError] = useState<string | null>(null);
 
   // Fetch Data
-  const loadData = () => {
+  const loadData = async () => {
     setLoading(true);
     setError(null);
-    Promise.allSettled([
-      api.getBuses(),
-      api.getIssues(),
-      api.getRoutes(),
-      api.getHotspots()
-    ]).then(([b, i, r, h]) => {
-      const isAllRejected = b.status === 'rejected' && i.status === 'rejected' && r.status === 'rejected';
-      if (isAllRejected) {
-        setError('Failed to load spatial intelligence data.');
-        setLoading(false);
-        return;
-      }
-      setBuses(b.status === 'fulfilled' ? b.value : []);
-      setIssues(i.status === 'fulfilled' ? i.value : []);
-      setRoutes(r.status === 'fulfilled' ? r.value : []);
-      setHotspots(h.status === 'fulfilled' ? h.value : []);
+    try {
+      const [b, i, r, h] = await Promise.allSettled([
+        api.getBuses ? api.getBuses() : Promise.resolve([]),
+        api.getIssues ? api.getIssues() : Promise.resolve([]),
+        api.getRoutes ? api.getRoutes() : Promise.resolve([]),
+        api.getHotspots ? api.getHotspots() : Promise.resolve([])
+      ]);
+      
+      const loadedBuses = b.status === 'fulfilled' && Array.isArray(b.value) ? b.value : [];
+      const loadedIssues = i.status === 'fulfilled' && Array.isArray(i.value) ? i.value : [];
+      const loadedRoutes = r.status === 'fulfilled' && Array.isArray(r.value) ? r.value : [];
+      const loadedHotspots = h.status === 'fulfilled' && Array.isArray(h.value) ? h.value : [];
+
+      setBuses(loadedBuses);
+      setIssues(loadedIssues);
+      setRoutes(loadedRoutes);
+      setHotspots(loadedHotspots);
+    } catch (err) {
+      console.error('Error initializing map data:', err);
+      setError('Failed to load spatial intelligence data.');
+    } finally {
       setLoading(false);
-    });
+    }
   };
 
   useEffect(() => {
