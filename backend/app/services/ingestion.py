@@ -6,6 +6,7 @@ from app.schemas.ingestion import DetectionEvent
 from app.models.domain import Detection, Observation, UrbanIssue, Severity, IssueStatus, Bus
 from app.services.spatial_fusion import find_nearby_issue
 from app.services.lifecycle import transition_issue_state
+from app.services.road_segment_linker import link_issue_to_segment
 from app.api.v1.events import broadcast_event
 
 async def ensure_bus_exists(session: AsyncSession, bus_id: str) -> Bus:
@@ -84,6 +85,10 @@ async def process_detection_event(session: AsyncSession, event: DetectionEvent):
         if not existing_bus_obs.scalar_one_or_none():
             issue.unique_bus_count += 1
             
+        # Link to road segment if not yet linked
+        if not issue.road_segment_id:
+            await link_issue_to_segment(session, issue, point_wkt)
+            
     else:
         # Create new issue
         issue_id = f"iss_{uuid.uuid4().hex[:12]}"
@@ -100,6 +105,8 @@ async def process_detection_event(session: AsyncSession, event: DetectionEvent):
             confidence=event.confidence
         )
         session.add(issue)
+        await session.flush()  # Ensure issue.id is available
+        await link_issue_to_segment(session, issue, point_wkt)
 
     # 4. Save Validated Observation
     observation = Observation(

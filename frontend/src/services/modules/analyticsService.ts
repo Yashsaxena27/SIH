@@ -26,6 +26,10 @@ export const analyticsService = {
     if (config.useMockData) return delay().then(() => [...mockRoadHealthHistory]);
     return client.get<RoadHealth[]>('/analytics/roads/history', segmentId ? { segmentId } : undefined);
   },
+  async getHotspots(): Promise<any[]> {
+    if (config.useMockData) return delay().then(() => []);
+    return client.get<any[]>('/analytics/hotspots');
+  },
 
   // Departments
   async getDepartments(): Promise<Department[]> {

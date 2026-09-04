@@ -42,8 +42,15 @@ router = APIRouter(prefix="/api/v1/inspection", tags=["AI Road Inspection"])
 MAX_UPLOAD_SIZE = 100 * 1024 * 1024  # 100 MB max video
 ALLOWED_EXTENSIONS = {".mp4", ".mov", ".avi", ".mkv"}
 
-# In-memory thread-safe state store for active inspections
-inspection_jobs: Dict[str, Dict[str, Any]] = {}
+from app.models.domain import InspectionJob
+
+async def _update_job(job_id: str, updates: dict):
+    async with AsyncSessionLocal() as session:
+        job = await session.get(InspectionJob, job_id)
+        if job:
+            for k, v in updates.items():
+                setattr(job, k, v)
+            await session.commit()
 
 async def run_inspection_background(
     inspection_id: str,
@@ -60,14 +67,14 @@ async def run_inspection_background(
     evidence cropping, PostGIS ingestion, and lifecycle updates.
     """
     start_time = time.time()
-    job = inspection_jobs.get(inspection_id)
-    if not job:
-        return
-
+    
+    await _update_job(inspection_id, {
+        "status": "running",
+        "stage": "sampling",
+        "progress": 15
+    })
+    
     try:
-        job["status"] = "running"
-        job["stage"] = "sampling"
-        job["progress"] = 15
 
         # 1. Inspect video metadata
         if cv2 is None or VideoProcessor is None:
@@ -84,7 +91,7 @@ async def run_inspection_background(
         duration = round(total_frames / fps, 2) if fps > 0 else 0.0
         cap.release()
 
-        job["video_metadata"] = {
+        video_metadata = {
             "filename": filename,
             "duration": duration,
             "fps": round(fps, 2),
@@ -92,6 +99,7 @@ async def run_inspection_background(
             "total_frames": total_frames,
             "sampled_frames": max(1, int(duration * sample_fps))
         }
+        await _update_job(inspection_id, {"video_metadata": video_metadata})
 
         # 2. Output annotated video path
         annotated_video_url = None
@@ -105,11 +113,14 @@ async def run_inspection_background(
 
         # 3. Define progress callback
         def on_progress(pct: int, stage: str, cur_frame: int, tot_frames: int):
-            job["progress"] = min(80, 15 + int(pct * 0.7))
-            job["stage"] = "inference" if pct < 70 else "tracking"
+            # Fire and forget update (can't easily await inside sync callback without loop trickery)
+            progress_val = min(80, 15 + int(pct * 0.7))
+            stage_val = "inference" if pct < 70 else "tracking"
+            asyncio.create_task(_update_job(inspection_id, {"progress": progress_val, "stage": stage_val}))
 
         # 4. Instantiate VideoProcessor and run in background threadpool
-        job["stage"] = "inference"
+        await _update_job(inspection_id, {"stage": "inference"})
+
         processor = VideoProcessor(output_path=annotated_video_path)
         
         # Execute processing in threadpool so asyncio loop remains responsive to polling
@@ -128,8 +139,7 @@ async def run_inspection_background(
             raise ValueError(ml_result.get("error") or "ML video processing encountered an error")
 
         raw_events = ml_result.get("events", [])
-        job["stage"] = "ingestion"
-        job["progress"] = 85
+        await _update_job(inspection_id, {"stage": "ingestion", "progress": 85})
 
         # 5. Persist events safely into PostgreSQL/PostGIS through existing lifecycle
         processed_events = []
@@ -163,28 +173,32 @@ async def run_inspection_background(
 
         # 6. Finalize inspection status
         elapsed = round(time.time() - start_time, 2)
-        job["status"] = "completed"
-        job["stage"] = "complete"
-        job["progress"] = 100
-        job["events"] = processed_events
-        job["annotated_video_url"] = annotated_video_url if (annotated_video_path and os.path.exists(annotated_video_path)) else None
-        job["statistics"] = {
-            "total_frames": total_frames,
-            "sampled_frames": ml_result.get("sampled_frames", 0),
-            "raw_detections": ml_result.get("detections_raw", 0),
-            "filtered_detections": ml_result.get("detections_filtered", 0),
-            "tracks": ml_result.get("tracks", 0),
-            "emitted_events": len(processed_events),
-            "processing_time": elapsed
-        }
+        await _update_job(inspection_id, {
+            "status": "completed",
+            "stage": "complete",
+            "progress": 100,
+            # "events": processed_events, # We don't save events to the job DB for now to save space
+            "annotated_video_url": annotated_video_url if (annotated_video_path and os.path.exists(annotated_video_path)) else None,
+            "statistics": {
+                "total_frames": total_frames,
+                "sampled_frames": ml_result.get("sampled_frames", 0),
+                "raw_detections": ml_result.get("detections_raw", 0),
+                "filtered_detections": ml_result.get("detections_filtered", 0),
+                "tracks": ml_result.get("tracks", 0),
+                "emitted_events": len(processed_events),
+                "processing_time": elapsed
+            }
+        })
         logger.info(f"AI Inspection {inspection_id} completed successfully in {elapsed}s. {len(processed_events)} events detected.")
 
     except Exception as e:
         logger.error(f"AI Inspection {inspection_id} failed: {e}", exc_info=True)
-        job["status"] = "failed"
-        job["stage"] = "error"
-        job["progress"] = 100
-        job["error"] = str(e)
+        await _update_job(inspection_id, {
+            "status": "failed",
+            "stage": "error",
+            "progress": 100,
+            "error": str(e)
+        })
     finally:
         # 7. Clean up temporary uploaded video file
         if os.path.exists(temp_video_path):
@@ -239,21 +253,17 @@ async def upload_inspection_video(
                 )
             f.write(chunk)
 
-    # 4. Initialize Job record
-    inspection_jobs[inspection_id] = {
-        "inspection_id": inspection_id,
-        "filename": video.filename,
-        "bus_id": bus_id,
-        "status": "pending",
-        "stage": "upload",
-        "progress": 5,
-        "video_metadata": None,
-        "statistics": None,
-        "events": [],
-        "annotated_video_url": None,
-        "error": None,
-        "created_at": time.time()
-    }
+    # 4. Initialize Job record in DB
+    new_job = InspectionJob(
+        id=inspection_id,
+        filename=video.filename,
+        bus_id=bus_id,
+        status="pending",
+        stage="upload",
+        progress=5
+    )
+    session.add(new_job)
+    await session.commit()
 
     # 5. Dispatch background task
     background_tasks.add_task(
@@ -275,46 +285,78 @@ async def upload_inspection_video(
     }
 
 @router.get("/{inspection_id}")
-async def get_inspection_status(inspection_id: str):
+async def get_inspection_status(inspection_id: str, session: AsyncSession = Depends(get_db)):
     """
     Returns real-time status, progress, pipeline stage, statistics, and detected events.
     """
-    job = inspection_jobs.get(inspection_id)
+    job = await session.get(InspectionJob, inspection_id)
     if not job:
         raise HTTPException(status_code=404, detail=f"Inspection '{inspection_id}' not found")
-    return job
+    
+    return {
+        "inspection_id": job.id,
+        "filename": job.filename,
+        "bus_id": job.bus_id,
+        "status": job.status,
+        "stage": job.stage,
+        "progress": job.progress,
+        "video_metadata": job.video_metadata,
+        "statistics": job.statistics,
+        "annotated_video_url": job.annotated_video_url,
+        "error": job.error,
+        "created_at": job.created_at.isoformat() if job.created_at else None,
+        "events": [] # We don't return events here to save payload size, they are fetched via issues API
+    }
 
+from sqlalchemy import select
 @router.get("")
-async def list_recent_inspections():
+async def list_recent_inspections(session: AsyncSession = Depends(get_db)):
     """
     Returns list of all recent inspection runs.
     """
-    sorted_jobs = sorted(
-        inspection_jobs.values(),
-        key=lambda x: x.get("created_at", 0),
-        reverse=True
+    result = await session.execute(
+        select(InspectionJob).order_by(InspectionJob.created_at.desc()).limit(20)
     )
-    return sorted_jobs[:20]
+    jobs = result.scalars().all()
+    return [{
+        "inspection_id": job.id,
+        "filename": job.filename,
+        "bus_id": job.bus_id,
+        "status": job.status,
+        "stage": job.stage,
+        "progress": job.progress,
+        "created_at": job.created_at.isoformat() if job.created_at else None
+    } for job in jobs]
 
 @router.get("/{inspection_id}/stream")
 async def stream_inspection_status(inspection_id: str):
     """
     Server-Sent Events (SSE) stream for live inspection progress.
     """
-    job = inspection_jobs.get(inspection_id)
-    if not job:
-        raise HTTPException(status_code=404, detail=f"Inspection '{inspection_id}' not found")
+    # Quick check if exists
+    async with AsyncSessionLocal() as check_session:
+        job = await check_session.get(InspectionJob, inspection_id)
+        if not job:
+            raise HTTPException(status_code=404, detail=f"Inspection '{inspection_id}' not found")
 
     import json
     async def event_generator():
         while True:
-            current_job = inspection_jobs.get(inspection_id)
-            if not current_job:
-                break
-            data = json.dumps(current_job)
-            yield f"data: {data}\n\n"
-            if current_job["status"] in ("completed", "failed"):
-                break
+            async with AsyncSessionLocal() as session:
+                current_job = await session.get(InspectionJob, inspection_id)
+                if not current_job:
+                    break
+                data = json.dumps({
+                    "inspection_id": current_job.id,
+                    "status": current_job.status,
+                    "stage": current_job.stage,
+                    "progress": current_job.progress,
+                    "statistics": current_job.statistics,
+                    "annotated_video_url": current_job.annotated_video_url
+                })
+                yield f"data: {data}\n\n"
+                if current_job.status in ("completed", "failed"):
+                    break
             await asyncio.sleep(0.5)
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")

@@ -72,12 +72,13 @@ interface CommandMapProps {
   buses: Bus[];
   issues: UrbanIssue[];
   routes: Route[];
+  hotspots?: any[];
   layers: MapLayers;
   filter: IntelligenceFilter;
   onIssueSelect: (issue: UrbanIssue) => void;
 }
 
-export function CommandMap({ buses, issues, routes, layers, filter, onIssueSelect }: CommandMapProps) {
+export function CommandMap({ buses, issues, routes, hotspots = [], layers, filter, onIssueSelect }: CommandMapProps) {
   // Apply filters
   const visibleIssues = issues.filter(i => {
     if (filter === 'ALL') return true;
@@ -136,6 +137,25 @@ export function CommandMap({ buses, issues, routes, layers, filter, onIssueSelec
           );
         })}
 
+        {/* Hotspots (Cluster DBSCAN from DB) */}
+        {layers.clusters && hotspots.map(spot => {
+          if (!spot.center) return null;
+          return (
+            <Circle
+              key={spot.id}
+              center={[spot.center.lat, spot.center.lng]}
+              radius={spot.radius || 50}
+              pathOptions={{
+                stroke: true,
+                color: spot.severity === 'critical' ? '#ef4444' : '#f97316',
+                weight: 2,
+                fillColor: spot.severity === 'critical' ? '#ef4444' : '#f97316',
+                fillOpacity: 0.3
+              }}
+            />
+          );
+        })}
+
         {/* Civic Issues */}
         {layers.issues && visibleIssues.map(issue => {
           const pos = getValidLatLng(issue);
@@ -144,7 +164,7 @@ export function CommandMap({ buses, issues, routes, layers, filter, onIssueSelec
             <Marker 
               key={`issue-${issue.id}`}
               position={pos}
-              icon={createIssueIcon(issue.severity, issue.observationCount, layers.clusters)}
+              icon={createIssueIcon(issue.severity, issue.observationCount, false)}
               eventHandlers={{ click: () => onIssueSelect(issue) }}
             />
           );

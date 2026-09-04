@@ -19,7 +19,11 @@ async def process_verification_revisit(session: AsyncSession, issue: UrbanIssue,
         # Issue is not ready for verification
         return issue
         
-    ticket = issue.ticket
+    from sqlalchemy import select as sa_select
+    ticket_result = await session.execute(
+        sa_select(Ticket).where(Ticket.issue_id == issue.id)
+    )
+    ticket = ticket_result.scalar_one_or_none()
     if not ticket:
         return issue
 

@@ -26,6 +26,22 @@ export const ticketService = {
   async getTicketSummary(): Promise<TicketSummary> {
     if (config.useMockData) return delay().then(() => mockTicketSummary);
     return client.get<TicketSummary>('/tickets/summary');
+  },
+
+  async updateTicketStatus(id: string, status: string): Promise<any> {
+    if (config.useMockData) {
+      await delay(200);
+      return { id, status };
+    }
+    return client.put(`/tickets/${id}/status`, { status });
+  },
+
+  async assignTicket(id: string, assignedTo: string): Promise<any> {
+    if (config.useMockData) {
+      await delay(200);
+      return { id, status: 'assigned', assignedTo };
+    }
+    return client.post(`/tickets/${id}/assign`, { assigned_to: assignedTo });
   }
 };
 

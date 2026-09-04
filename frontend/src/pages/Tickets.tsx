@@ -4,7 +4,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Ticket, Clock, Building2, AlertCircle, CheckCircle2, RotateCcw } from 'lucide-react';
+import { Ticket, Clock, Building2, AlertCircle, CheckCircle2, RotateCcw, UserPlus, Play, Check, Send } from 'lucide-react';
 import { PageHeader, GlassPanel, SeverityBadge, LoadingState, EmptyState } from '@/components/ui';
 import { api } from '@/services/api';
 import { cn, timeAgo } from '@/lib/utils';
@@ -31,6 +31,7 @@ const ticketStatusIcons: Record<string, typeof CheckCircle2> = {
 export function TicketsPage() {
   const [tickets, setTickets] = useState<TicketType[]>([]);
   const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   const [error, setError] = useState<string | null>(null);
 
@@ -46,6 +47,29 @@ export function TicketsPage() {
         setError('Failed to load tickets.');
         setLoading(false);
       });
+  };
+
+  const handleTicketAction = async (ticketId: string, action: string) => {
+    setActionLoading(ticketId);
+    try {
+      if (action === 'assign') {
+        await api.assignTicket(ticketId, 'OP-001'); // Hardcoded operator for demo
+      } else if (action === 'start') {
+        await api.updateTicketStatus(ticketId, 'in_progress');
+      } else if (action === 'report_repair') {
+        await api.updateTicketStatus(ticketId, 'repair_reported');
+      } else if (action === 'send_verification') {
+        await api.updateTicketStatus(ticketId, 'verifying');
+      }
+      
+      // Reload tickets to get latest state
+      const updated = await api.getTickets();
+      setTickets(updated);
+    } catch (err) {
+      console.error('Failed to update ticket', err);
+    } finally {
+      setActionLoading(null);
+    }
   };
 
   useEffect(() => {
@@ -129,11 +153,60 @@ export function TicketsPage() {
                       </div>
                     </div>
 
-                    <div className={cn(
-                      'text-right flex-shrink-0 text-xs font-medium',
-                      slaColors[sla] || 'text-status-healthy'
-                    )}>
-                      SLA: {sla.replace('_', ' ')}
+                    <div className="flex flex-col items-end justify-between gap-3 flex-shrink-0">
+                      <div className={cn(
+                        'text-right text-xs font-medium',
+                        slaColors[sla] || 'text-status-healthy'
+                      )}>
+                        SLA: {sla.replace('_', ' ')}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {ticket.status === 'open' && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleTicketAction(ticket.id, 'assign'); }}
+                            disabled={actionLoading === ticket.id}
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-primary/20 text-primary hover:bg-primary/30 rounded border border-primary/30 transition-colors disabled:opacity-50"
+                          >
+                            <UserPlus className="w-3.5 h-3.5" /> Assign
+                          </button>
+                        )}
+                        {ticket.status === 'assigned' && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleTicketAction(ticket.id, 'start'); }}
+                            disabled={actionLoading === ticket.id}
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 rounded border border-blue-500/30 transition-colors disabled:opacity-50"
+                          >
+                            <Play className="w-3.5 h-3.5" /> Start Work
+                          </button>
+                        )}
+                        {ticket.status === 'in_progress' && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleTicketAction(ticket.id, 'report_repair'); }}
+                            disabled={actionLoading === ticket.id}
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 rounded border border-emerald-500/30 transition-colors disabled:opacity-50"
+                          >
+                            <Check className="w-3.5 h-3.5" /> Report Repair
+                          </button>
+                        )}
+                        {ticket.status === 'repair_reported' && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleTicketAction(ticket.id, 'send_verification'); }}
+                            disabled={actionLoading === ticket.id}
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 rounded border border-purple-500/30 transition-colors disabled:opacity-50"
+                          >
+                            <Send className="w-3.5 h-3.5" /> Send for Verification
+                          </button>
+                        )}
+                        {ticket.status === 'reopened' && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleTicketAction(ticket.id, 'start'); }}
+                            disabled={actionLoading === ticket.id}
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-orange-500/20 text-orange-400 hover:bg-orange-500/30 rounded border border-orange-500/30 transition-colors disabled:opacity-50"
+                          >
+                            <Play className="w-3.5 h-3.5" /> Resume Work
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </GlassPanel>

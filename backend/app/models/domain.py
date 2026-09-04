@@ -52,6 +52,18 @@ class VerificationResult(str, enum.Enum):
     inconclusive = "inconclusive"
     pending_review = "pending_review"
 
+class ComplaintSource(str, enum.Enum):
+    ai_detected = "ai_detected"
+    citizen_reported = "citizen_reported"
+    operator_created = "operator_created"
+
+class ComplaintStatus(str, enum.Enum):
+    open = "open"
+    under_review = "under_review"
+    linked_to_issue = "linked_to_issue"
+    resolved = "resolved"
+    closed = "closed"
+
 
 class Department(Base, TimestampMixin):
     __tablename__ = "departments"
@@ -191,3 +203,39 @@ class Alert(Base, TimestampMixin):
     acknowledged = Column(Boolean, default=False)
     related_entity_id = Column(String(50))
     related_entity_type = Column(String(50))
+
+class Complaint(Base, TimestampMixin):
+    __tablename__ = "complaints"
+    id = Column(String(50), primary_key=True)
+    urban_issue_id = Column(String(50), ForeignKey("urban_issues.id"), nullable=True)
+    title = Column(String(255), nullable=False)
+    description = Column(String(1000))
+    source = Column(Enum(ComplaintSource), nullable=False, default=ComplaintSource.citizen_reported)
+    status = Column(Enum(ComplaintStatus), nullable=False, default=ComplaintStatus.open)
+    
+    issue = relationship("UrbanIssue")
+
+class InspectionJob(Base, TimestampMixin):
+    __tablename__ = "inspection_jobs"
+    id = Column(String(50), primary_key=True)
+    filename = Column(String(255), nullable=False)
+    bus_id = Column(String(50), ForeignKey("buses.id"), nullable=False)
+    status = Column(String(50), nullable=False, default="pending")
+    stage = Column(String(50), nullable=False, default="upload")
+    progress = Column(Integer, default=0)
+    video_metadata = Column(JSON, nullable=True)
+    statistics = Column(JSON, nullable=True)
+    annotated_video_url = Column(String(500), nullable=True)
+    error = Column(String(1000), nullable=True)
+
+class TimelineEvent(Base, TimestampMixin):
+    __tablename__ = "timeline_events"
+    id = Column(String(50), primary_key=True)
+    entity_id = Column(String(50), nullable=False) # issue_id or ticket_id
+    entity_type = Column(String(50), nullable=False) # 'issue' or 'ticket'
+    event_type = Column(String(50), nullable=False) # 'status_change', 'assigned', 'verified'
+    title = Column(String(255), nullable=False)
+    description = Column(String(1000))
+    actor = Column(String(50), default="SYSTEM")
+    metadata_json = Column(JSON, nullable=True)
+

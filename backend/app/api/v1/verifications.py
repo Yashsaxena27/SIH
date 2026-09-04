@@ -33,15 +33,18 @@ async def get_verification_summary(session: AsyncSession = Depends(get_db)):
     total = await session.scalar(select(func.count()).select_from(Verification))
     resolved = await session.scalar(select(func.count()).select_from(Verification).where(Verification.result == VerificationResult.resolved))
     unresolved = await session.scalar(select(func.count()).select_from(Verification).where(Verification.result == VerificationResult.unresolved))
+    partial = await session.scalar(select(func.count()).select_from(Verification).where(Verification.result == VerificationResult.partially_resolved))
+    inconclusive = await session.scalar(select(func.count()).select_from(Verification).where(Verification.result == VerificationResult.inconclusive))
+    pending = await session.scalar(select(func.count()).select_from(Verification).where(Verification.result == VerificationResult.pending_review))
     
     return {
         "totalVerifications": total or 0,
         "resolved": resolved or 0,
         "unresolved": unresolved or 0,
-        "partiallyResolved": 0,
-        "inconclusive": 0,
-        "pendingReview": 0,
-        "verificationRate": (resolved / total * 100) if total else 0,
-        "averageVerificationDays": 1,
-        "accuracyRate": 95
+        "partiallyResolved": partial or 0,
+        "inconclusive": inconclusive or 0,
+        "pendingReview": pending or 0,
+        "verificationRate": round((resolved / total * 100), 1) if total and resolved else 0,
+        "averageVerificationDays": None,
+        "accuracyRate": None
     }

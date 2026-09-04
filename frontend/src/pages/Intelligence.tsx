@@ -22,6 +22,7 @@ export function IntelligencePage() {
   const [buses, setBuses] = useState<Bus[]>([]);
   const [issues, setIssues] = useState<UrbanIssue[]>([]);
   const [routes, setRoutes] = useState<Route[]>([]);
+  const [hotspots, setHotspots] = useState<any[]>([]);
   
   // UI State
   const [selectedIssue, setSelectedIssue] = useState<UrbanIssue | null>(null);
@@ -43,8 +44,9 @@ export function IntelligencePage() {
     Promise.allSettled([
       api.getBuses(),
       api.getIssues(),
-      api.getRoutes()
-    ]).then(([b, i, r]) => {
+      api.getRoutes(),
+      api.getHotspots()
+    ]).then(([b, i, r, h]) => {
       const isAllRejected = b.status === 'rejected' && i.status === 'rejected' && r.status === 'rejected';
       if (isAllRejected) {
         setError('Failed to load spatial intelligence data.');
@@ -54,6 +56,7 @@ export function IntelligencePage() {
       setBuses(b.status === 'fulfilled' ? b.value : []);
       setIssues(i.status === 'fulfilled' ? i.value : []);
       setRoutes(r.status === 'fulfilled' ? r.value : []);
+      setHotspots(h.status === 'fulfilled' ? h.value : []);
       setLoading(false);
     });
   };
@@ -85,6 +88,7 @@ export function IntelligencePage() {
         buses={buses}
         issues={issues}
         routes={routes}
+        hotspots={hotspots}
         layers={layers}
         filter={activeFilter}
         onIssueSelect={setSelectedIssue}
