@@ -111,22 +111,18 @@ export function TopBar({ className, onMenuClick, onCommandPaletteOpen }: TopBarP
 
       {/* ── Center: Location / View Selector ───────────────── */}
       <div className="hidden md:flex items-center gap-4">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-surface-container border border-outline-variant text-xs">
           <MapPin className="w-3.5 h-3.5 text-primary" />
-          <button className="relative px-2 py-1 text-[13px] font-semibold text-on-surface">
-            Bengaluru Central
-            {/* Active underline */}
-            <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-primary rounded-full" />
-          </button>
+          <span className="font-semibold text-on-surface">Bengaluru Municipal Zone</span>
         </div>
 
-        {/* Live update indicator */}
-        <div className="flex items-center gap-1.5">
-          <div className="relative w-[5px] h-[5px]">
-            <div className="absolute inset-0 rounded-full bg-status-healthy" />
-            <div className="absolute inset-0 rounded-full bg-status-healthy/40 animate-ping" />
-          </div>
-          <span className="text-[11px] text-on-surface-variant">Updated 2 min ago</span>
+        {/* Live operational status indicator */}
+        <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-emerald-950/40 border border-emerald-500/25 text-emerald-400 text-[11px] font-medium font-data-mono">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+          </span>
+          <span className="tracking-wide uppercase font-semibold">SYSTEM OPERATIONAL</span>
         </div>
       </div>
 

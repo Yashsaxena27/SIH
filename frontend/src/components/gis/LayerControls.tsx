@@ -23,63 +23,74 @@ export function LayerControls({ layers, onLayerToggle }: LayerControlsProps) {
   const [showLayers, setShowLayers] = useState(false);
 
   const controls = [
-    { id: 'buses', label: 'Active Fleet', icon: Bus },
-    { id: 'issues', label: 'Civic Issues', icon: AlertTriangle },
-    { id: 'heatmap', label: 'Density Heatmap', icon: Activity },
-    { id: 'clusters', label: 'Smart Clusters', icon: Target },
-    { id: 'routes', label: 'Bus Routes', icon: RouteIcon },
+    { id: 'buses', label: 'Active Fleet', icon: Bus, color: 'text-cyan-400' },
+    { id: 'issues', label: 'Civic Issues', icon: AlertTriangle, color: 'text-amber-400' },
+    { id: 'heatmap', label: 'Density Heatmap', icon: Activity, color: 'text-rose-400' },
+    { id: 'clusters', label: 'Smart Clusters', icon: Target, color: 'text-purple-400' },
+    { id: 'routes', label: 'Transit Routes', icon: RouteIcon, color: 'text-indigo-400' },
   ] as const;
 
   return (
-    <div className="absolute right-[var(--spacing-margin-panel)] top-1/2 -translate-y-1/2 z-[400] flex flex-col gap-1 items-end">
-      {/* Zoom In */}
-      <button className="w-8 h-8 rounded bg-surface-container/90 backdrop-blur-md border border-outline-variant text-on-surface-variant hover:bg-surface-high hover:text-on-surface flex items-center justify-center transition-colors">
-        <Plus className="w-4 h-4" />
-      </button>
-      
-      {/* Zoom Out */}
-      <button className="w-8 h-8 rounded bg-surface-container/90 backdrop-blur-md border border-outline-variant text-on-surface-variant hover:bg-surface-high hover:text-on-surface flex items-center justify-center transition-colors">
-        <Minus className="w-4 h-4" />
-      </button>
-      
-      {/* Recenter */}
-      <button className="w-8 h-8 rounded bg-surface-container/90 backdrop-blur-md border border-outline-variant text-on-surface-variant hover:bg-surface-high hover:text-on-surface flex items-center justify-center transition-colors">
-        <Locate className="w-4 h-4" />
-      </button>
+    <div className="absolute right-4 top-4 z-[400] flex flex-col gap-1.5 items-end">
+      {/* Action Controls Cluster */}
+      <div className="flex flex-col gap-1 p-1 rounded-xl bg-[#141519]/90 backdrop-blur-xl border border-white/[0.08] shadow-2xl">
+        <button 
+          className="w-8 h-8 rounded-lg hover:bg-white/[0.08] text-on-surface-variant/80 hover:text-white flex items-center justify-center transition-colors"
+          title="Zoom In"
+        >
+          <Plus className="w-4 h-4" />
+        </button>
+        
+        <button 
+          className="w-8 h-8 rounded-lg hover:bg-white/[0.08] text-on-surface-variant/80 hover:text-white flex items-center justify-center transition-colors"
+          title="Zoom Out"
+        >
+          <Minus className="w-4 h-4" />
+        </button>
+        
+        <button 
+          className="w-8 h-8 rounded-lg hover:bg-white/[0.08] text-on-surface-variant/80 hover:text-white flex items-center justify-center transition-colors border-t border-white/[0.06] pt-1"
+          title="Recenter Map"
+        >
+          <Locate className="w-4 h-4" />
+        </button>
 
-      {/* Layers Toggle */}
-      <button 
-        onClick={() => setShowLayers(!showLayers)}
-        className={cn(
-          "w-8 h-8 rounded backdrop-blur-md border border-outline-variant flex items-center justify-center transition-colors",
-          showLayers 
-            ? "bg-surface-high text-on-surface" 
-            : "bg-surface-container/90 text-on-surface-variant hover:bg-surface-high hover:text-on-surface"
-        )}
-      >
-        <Layers className="w-4 h-4" />
-      </button>
+        <button 
+          onClick={() => setShowLayers(!showLayers)}
+          className={cn(
+            "w-8 h-8 rounded-lg flex items-center justify-center transition-colors border-t border-white/[0.06] pt-1",
+            showLayers 
+              ? "bg-primary text-on-primary shadow-sm" 
+              : "hover:bg-white/[0.08] text-on-surface-variant/80 hover:text-white"
+          )}
+          title="Toggle Layers"
+        >
+          <Layers className="w-4 h-4" />
+        </button>
+      </div>
 
       {/* Layers Panel */}
       {showLayers && (
-        <div className="mt-2 w-48 bg-surface/90 backdrop-blur-md border border-outline-variant rounded shadow-[0_0_15px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col">
-          <div className="px-3 py-2 border-b border-outline-variant font-label-caps text-on-surface-variant bg-surface-container/50">
-            Map Layers
+        <div className="mt-1 w-52 bg-[#141519]/95 backdrop-blur-2xl border border-white/[0.08] rounded-xl shadow-2xl overflow-hidden flex flex-col">
+          <div className="px-3 py-2 border-b border-white/[0.06] text-[10px] font-mono font-bold text-on-surface-variant/70 uppercase tracking-wider bg-white/[0.02]">
+            Spatial Overlay Layers
           </div>
-          <div className="py-1">
+          <div className="p-1.5 space-y-1">
             {controls.map(ctrl => {
               const isActive = layers[ctrl.id as keyof MapLayers];
+              const Icon = ctrl.icon;
               return (
                 <button
                   key={ctrl.id}
                   onClick={() => onLayerToggle(ctrl.id as keyof MapLayers)}
-                  className="w-full px-3 py-2 flex items-center gap-3 hover:bg-surface-high transition-colors text-left"
+                  className={cn(
+                    "w-full px-3 py-2 rounded-lg flex items-center gap-2.5 transition-colors text-left text-xs font-mono select-none",
+                    isActive ? "bg-white/[0.06] text-white font-semibold" : "hover:bg-white/[0.03] text-on-surface-variant/70"
+                  )}
                 >
-                  <ctrl.icon className={cn("w-4 h-4", isActive ? "text-secondary" : "text-on-surface-variant")} />
-                  <span className={cn("text-sm", isActive ? "text-on-surface font-medium" : "text-on-surface-variant")}>
-                    {ctrl.label}
-                  </span>
-                  {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-secondary" />}
+                  <Icon className={cn("w-4 h-4", isActive ? ctrl.color : "text-on-surface-variant/50")} />
+                  <span className="flex-1">{ctrl.label}</span>
+                  {isActive && <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />}
                 </button>
               );
             })}

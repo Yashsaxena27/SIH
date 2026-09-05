@@ -123,11 +123,11 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: Side
                 onMouseEnter={() => setHoveredItem(item.path)}
                 onMouseLeave={() => setHoveredItem(null)}
                 className={cn(
-                  'group relative flex items-center rounded transition-all duration-200 ease-in-out',
+                  'group relative flex items-center rounded-lg transition-all duration-200 ease-in-out',
                   collapsed ? 'justify-center px-0 py-2.5 mx-1' : 'gap-3 px-3 py-2',
                   active
-                    ? 'bg-secondary-container text-on-secondary-container'
-                    : 'text-on-surface-variant hover:bg-surface-highest hover:text-on-surface'
+                    ? 'bg-primary/10 text-primary-hover font-semibold border-l-2 border-primary shadow-[inset_0_0_12px_rgba(190,198,224,0.06)]'
+                    : 'text-on-surface-variant/80 hover:bg-white/[0.04] hover:text-on-surface'
                 )}
               >
                 {/* Icon */}
@@ -135,16 +135,16 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: Side
                   className={cn(
                     'flex-shrink-0 transition-colors duration-200',
                     collapsed ? 'w-5 h-5' : 'w-[18px] h-[18px]',
-                    active && 'fill-current'
+                    active ? 'text-primary' : 'text-on-surface-variant/70 group-hover:text-on-surface'
                   )}
-                  {...(active ? { fill: 'currentColor', strokeWidth: 1.5 } : {})}
+                  strokeWidth={1.75}
                 />
 
                 {/* Label */}
                 {!collapsed && (
                   <span className={cn(
                     'text-[13px] font-medium whitespace-nowrap flex-1',
-                    active && 'font-semibold'
+                    active && 'font-semibold text-white'
                   )}>
                     {item.label}
                   </span>
@@ -157,8 +157,8 @@ export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: Side
                       <span className={cn(
                         'ml-auto text-[10px] font-semibold px-[6px] py-[1px] rounded-full min-w-[18px] text-center leading-relaxed',
                         active
-                          ? 'bg-on-secondary-container/20 text-on-secondary-container'
-                          : 'bg-surface-highest text-on-surface-variant'
+                          ? 'bg-primary/20 text-primary-hover border border-primary/30'
+                          : 'bg-white/[0.06] text-on-surface-variant border border-white/[0.08]'
                       )}>
                         {item.badge}
                       </span>

@@ -33,12 +33,12 @@ function MapBounds({ buses, issues }: { buses: Bus[], issues: UrbanIssue[] }) {
   return null;
 }
 
-// Markers (similar to Overview but slightly more refined for fullscreen)
+// Markers (Refined dark command center icons)
 const createBusIcon = () => {
   const html = renderToString(
-    <div className="relative flex items-center justify-center w-8 h-8">
-      <div className="absolute inset-0 bg-cyan-500/20 rounded-full animate-ping" />
-      <div className="relative flex items-center justify-center w-6 h-6 bg-surface-low border border-cyan-500 rounded-full shadow-[0_0_12px_rgba(6,182,212,0.6)]">
+    <div className="relative flex items-center justify-center w-8 h-8 group cursor-pointer">
+      <div className="absolute inset-0 bg-cyan-500/25 rounded-full animate-ping" />
+      <div className="relative flex items-center justify-center w-7 h-7 bg-[#141519] border border-cyan-400 rounded-full shadow-[0_0_14px_rgba(6,182,212,0.7)] group-hover:scale-110 transition-transform">
         <BusIcon className="w-3.5 h-3.5 text-cyan-400" />
       </div>
     </div>
@@ -48,22 +48,27 @@ const createBusIcon = () => {
 
 const createIssueIcon = (severity: string, observationCount: number, showClusters: boolean) => {
   const isCritical = severity === 'critical';
+  const isHigh = severity === 'high';
   
   const html = renderToString(
     <div className="relative flex items-center justify-center group cursor-pointer">
       {isCritical && <div className="absolute inset-[-4px] rounded-full bg-red-500/30 animate-ping" />}
       <div className={cn(
         "relative flex items-center justify-center rounded-full border shadow-lg transition-transform group-hover:scale-110",
-        isCritical ? 'w-7 h-7 bg-surface-low border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.5)]' :
-        severity === 'high' ? 'w-6 h-6 bg-surface-low border-orange-500 shadow-[0_0_10px_rgba(249,115,22,0.4)]' :
-        'w-5 h-5 bg-surface-low border-yellow-500 shadow-[0_0_8px_rgba(234,179,8,0.3)]'
+        isCritical ? 'w-7 h-7 bg-[#141519] border-red-500 shadow-[0_0_16px_rgba(239,68,68,0.7)]' :
+        isHigh ? 'w-6 h-6 bg-[#141519] border-orange-500 shadow-[0_0_12px_rgba(249,115,22,0.6)]' :
+        'w-5.5 h-5.5 bg-[#141519] border-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.5)]'
       )}>
-        {isCritical ? <ShieldAlert className="w-3.5 h-3.5 text-red-500" /> : <AlertTriangle className={cn("w-3 h-3", severity === 'high' ? 'text-orange-500' : 'text-yellow-500')} />}
+        {isCritical ? (
+          <ShieldAlert className="w-3.5 h-3.5 text-red-500" />
+        ) : (
+          <AlertTriangle className={cn("w-3.5 h-3.5", isHigh ? 'text-orange-500' : 'text-amber-400')} />
+        )}
       </div>
       
       {/* Clustering Indicator Badge */}
       {showClusters && observationCount > 1 && (
-        <div className="absolute -top-2 -right-2 bg-secondary-container text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full border border-[#0f0f12] shadow-md z-10">
+        <div className="absolute -top-2 -right-2 bg-cyan-500 text-black font-mono font-bold text-[9px] px-1.5 py-0.2 rounded-full border border-black shadow-md z-10">
           {observationCount}
         </div>
       )}
@@ -94,7 +99,7 @@ export function CommandMap({ buses, issues, routes, hotspots = [], layers, filte
   });
 
   return (
-    <div className="absolute inset-0 z-0 bg-background">
+    <div className="absolute inset-0 z-0 bg-[#0d0e11]">
       <MapContainer 
         center={[12.9716, 77.5946]} 
         zoom={12} 
@@ -118,7 +123,7 @@ export function CommandMap({ buses, issues, routes, hotspots = [], layers, filte
               radius={issue.severity === 'critical' ? 400 : 250}
               pathOptions={{
                 stroke: false,
-                fillColor: issue.severity === 'critical' ? 'var(--color-status-critical)' : '#f97316',
+                fillColor: issue.severity === 'critical' ? '#ef4444' : '#f97316',
                 fillOpacity: issue.severity === 'critical' ? 0.15 : 0.08
               }}
             />
@@ -136,7 +141,7 @@ export function CommandMap({ buses, issues, routes, hotspots = [], layers, filte
             <Polyline
               key={route.id}
               positions={validWaypoints}
-              pathOptions={{ color: '#b4c5ff', weight: 3, opacity: 0.4, dashArray: '10, 10' }}
+              pathOptions={{ color: '#6366f1', weight: 3, opacity: 0.4, dashArray: '8, 8' }}
             />
           );
         })}

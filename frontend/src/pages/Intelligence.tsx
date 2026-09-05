@@ -15,6 +15,7 @@ import {
 import { LoadingState } from '@/components/ui';
 import { api } from '@/services/api';
 import type { Bus, UrbanIssue, Route } from '@/types';
+import { MapPin, Bus as BusIcon, AlertTriangle, Activity, RefreshCw } from 'lucide-react';
 
 export function IntelligencePage() {
   // Data State
@@ -71,23 +72,36 @@ export function IntelligencePage() {
   }, []);
 
   if (loading) {
-    return <LoadingState message="Initializing spatial intelligence..." className="h-full" />;
-  }
-
-  if (error) {
     return (
-      <div className="flex flex-col items-center justify-center h-[calc(100vh-var(--spacing-header-height))] bg-background">
-        <h2 className="font-headline-md text-on-surface">Data Unavailable</h2>
-        <p className="text-on-surface-variant mb-4">{error}</p>
-        <button onClick={loadData} className="px-4 py-2 bg-primary text-on-primary rounded hover:bg-primary/90">
-          Retry Connection
-        </button>
+      <div className="flex flex-col items-center justify-center h-[calc(100vh-var(--spacing-header-height))] bg-[#0d0e11] text-white">
+        <LoadingState message="Initializing spatial GIS intelligence stream..." className="h-auto" />
       </div>
     );
   }
 
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[calc(100vh-var(--spacing-header-height))] bg-[#0d0e11] text-white p-6">
+        <div className="p-6 rounded-2xl bg-[#141519] border border-red-500/30 text-center max-w-md space-y-4 shadow-2xl">
+          <AlertTriangle className="w-10 h-10 text-red-400 mx-auto" />
+          <h2 className="text-base font-bold text-white">Spatial Telemetry Unavailable</h2>
+          <p className="text-xs text-on-surface-variant/70 font-mono">{error}</p>
+          <button 
+            onClick={loadData} 
+            className="px-4 py-2 bg-primary text-on-primary rounded-lg text-xs font-semibold hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 mx-auto"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>Retry Connection</span>
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const criticalCount = issues.filter(i => i.severity === 'critical').length;
+
   return (
-    <div className="relative w-full h-[calc(100vh-var(--spacing-header-height))] overflow-hidden bg-background">
+    <div className="relative w-full h-[calc(100vh-var(--spacing-header-height))] overflow-hidden bg-[#0d0e11]">
       {/* ── Main Map ──────────────────────────────────────── */}
       <CommandMap 
         buses={buses}
@@ -99,24 +113,58 @@ export function IntelligencePage() {
         onIssueSelect={setSelectedIssue}
       />
 
+      {/* ── Floating Top Operational GIS Banner (Center-Left) ── */}
+      <div className="absolute top-4 left-80 right-20 z-[390] hidden xl:flex items-center justify-between pointer-events-none">
+        <div className="px-4 py-2 rounded-xl bg-[#141519]/90 backdrop-blur-xl border border-white/[0.08] shadow-2xl flex items-center gap-4 pointer-events-auto">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-xs font-mono font-bold text-white uppercase tracking-wider">
+              Bengaluru Municipal GIS
+            </span>
+          </div>
+
+          <div className="h-4 w-px bg-white/[0.1]" />
+
+          <div className="flex items-center gap-3 text-xs font-mono">
+            <span className="text-on-surface-variant/70 flex items-center gap-1">
+              <BusIcon className="w-3.5 h-3.5 text-cyan-400" />
+              <strong className="text-white">{buses.length}</strong> Active Vehicles
+            </span>
+            <span>•</span>
+            <span className="text-on-surface-variant/70 flex items-center gap-1">
+              <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+              <strong className="text-white">{issues.length}</strong> Anomalies
+            </span>
+            {criticalCount > 0 && (
+              <>
+                <span>•</span>
+                <span className="text-red-400 font-bold bg-red-500/10 px-2 py-0.5 rounded border border-red-500/20">
+                  {criticalCount} Critical
+                </span>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* ── Floating Overlays ─────────────────────────────── */}
       
-      {/* Top Filter Bar */}
+      {/* Left Filter Bar */}
       <FilterBar 
         activeFilter={activeFilter} 
         onFilterChange={setActiveFilter} 
       />
 
-      {/* Left Layer Controls */}
+      {/* Right Layer Controls */}
       <LayerControls 
         layers={layers} 
         onLayerToggle={(layer) => setLayers(prev => ({ ...prev, [layer]: !prev[layer] }))} 
       />
 
-      {/* Bottom Timeline Playback */}
+      {/* Bottom Time Scrubber */}
       <TimeScrubber />
 
-      {/* Right Drawer (Contextual Details) */}
+      {/* Right Contextual Issue Drawer */}
       <IssueDrawer 
         issue={selectedIssue} 
         onClose={() => setSelectedIssue(null)} 

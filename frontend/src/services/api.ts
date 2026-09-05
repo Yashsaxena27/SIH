@@ -34,6 +34,8 @@ export const api = {
   getTickets: ticketService.getTickets,
   getTicket: ticketService.getTicket,
   getTicketSummary: ticketService.getTicketSummary,
+  updateTicketStatus: ticketService.updateTicketStatus,
+  assignTicket: ticketService.assignTicket,
   
   // Verification
   getVerifications: verificationService.getVerifications,

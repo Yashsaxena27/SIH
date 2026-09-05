@@ -10,9 +10,9 @@ import {
 } from 'recharts';
 import { 
   Download, TrendingUp, TrendingDown, Activity, 
-  MapPin, Car, Building2, AlertTriangle, CheckCircle, Clock
+  MapPin, Car, Building2, AlertTriangle, Clock
 } from 'lucide-react';
-import { GlassPanel, LoadingState } from '@/components/ui';
+import { PageHeader, GlassPanel, LoadingState } from '@/components/ui';
 import { api } from '@/services/api';
 import { cn } from '@/lib/utils';
 import type { RoadSegment, RoadHealthSummary, Department } from '@/types';
@@ -76,12 +76,20 @@ export function AnalyticsPage() {
 
   if (error && !segments.length && !healthSummary) {
     return (
-      <div className="flex flex-col items-center justify-center h-[calc(100vh-var(--spacing-header-height))] bg-background">
-        <h2 className="font-headline-md text-on-surface">Data Unavailable</h2>
-        <p className="text-on-surface-variant mb-4">{error}</p>
-        <button onClick={loadData} className="px-4 py-2 bg-primary text-on-primary rounded hover:bg-primary/90">
-          Retry Connection
-        </button>
+      <div className="flex flex-col items-center justify-center min-h-[60vh] p-6 bg-background">
+        <GlassPanel padding="lg" className="max-w-md text-center space-y-4 border-red-500/20 shadow-2xl">
+          <div className="w-12 h-12 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto text-status-critical">
+            <AlertTriangle className="w-6 h-6" />
+          </div>
+          <h2 className="text-lg font-bold text-on-surface">Data Telemetry Unavailable</h2>
+          <p className="text-xs text-on-surface-variant leading-relaxed">{error}</p>
+          <button 
+            onClick={loadData} 
+            className="px-4 py-2 bg-primary text-on-primary hover:bg-primary/90 rounded-xl text-xs font-bold uppercase tracking-wider transition-colors inline-flex items-center gap-2"
+          >
+            Retry Connection
+          </button>
+        </GlassPanel>
       </div>
     );
   }
@@ -113,7 +121,6 @@ export function AnalyticsPage() {
 
   // Derived
   const bottomSegments = segments.slice(0, 3);
-  const topSegments = [...segments].sort((a, b) => (b.healthScore || (b as any).score || 0) - (a.healthScore || (a as any).score || 0)).slice(0, 3);
   
   // Monitored deterioration list (Bengaluru municipal corridors)
   const deteriorating = [
@@ -126,82 +133,83 @@ export function AnalyticsPage() {
   const distribution = summary.segmentDistribution || { excellent: 40, good: 50, fair: 18, critical: 12 };
 
   return (
-    <div className="p-4 sm:p-6 space-y-6 max-w-[1920px] mx-auto pb-20">
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6 max-w-[1920px] mx-auto pb-20">
       
       {/* ── Header & Actions ────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-on-surface tracking-tight flex items-center gap-3">
-            Urban Intelligence Analytics
-          </h1>
-          <p className="text-sm text-on-surface-variant mt-1 font-medium">Long-term infrastructure health and operational performance.</p>
-        </div>
-        
-        <div className="flex items-center gap-3">
-          <div className="px-4 py-2 rounded-lg bg-white/[0.02] border border-outline-variant text-sm text-white/60">
-            Last 6 Months
+      <PageHeader
+        title="Urban Intelligence Analytics"
+        subtitle="Long-term infrastructure health and operational performance metrics."
+        breadcrumbs={[{ label: 'Intelligence' }, { label: 'Analytics' }]}
+        action={
+          <div className="flex items-center gap-3">
+            <div className="px-3.5 py-1.5 rounded-xl bg-surface-container border border-outline-variant/60 text-xs font-mono font-medium text-on-surface-variant">
+              Last 6 Months
+            </div>
+            <motion.button 
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={handleExport}
+              disabled={exporting}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-primary text-on-primary hover:bg-primary/90 text-xs font-bold uppercase tracking-wider transition-all shadow-sm disabled:opacity-50"
+            >
+              {exporting ? (
+                <div className="w-3.5 h-3.5 border-2 border-on-primary border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <Download className="w-3.5 h-3.5" />
+              )}
+              {exporting ? 'Compiling PDF...' : 'Export Report'}
+            </motion.button>
           </div>
-          <button 
-            onClick={handleExport}
-            disabled={exporting}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 hover:bg-primary/20 border border-primary/30 text-primary-hover text-sm font-bold uppercase tracking-widest transition-all"
-          >
-            {exporting ? (
-              <div className="w-4 h-4 border-2 border-primary-hover border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <Download className="w-4 h-4" />
-            )}
-            {exporting ? 'Compiling PDF...' : 'Export Report'}
-          </button>
-        </div>
-      </div>
+        }
+      />
 
       {/* ── Top Overview: Road Health ───────────────────────── */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
         
         {/* Main Score Card */}
-        <GlassPanel className="xl:col-span-4 flex flex-col justify-center">
-          <div className="flex items-center gap-2 mb-6 text-on-surface-variant">
-            <Activity className="w-4 h-4" />
-            <span className="font-label-caps">City Road Health Index</span>
+        <GlassPanel padding="lg" className="xl:col-span-4 flex flex-col justify-center border-outline-variant/80 shadow-lg relative overflow-hidden group">
+          <div className="flex items-center gap-2 mb-4 text-on-surface-variant">
+            <Activity className="w-4 h-4 text-primary" />
+            <span className="font-mono text-xs font-bold uppercase tracking-wider">City Road Health Index</span>
           </div>
-          <div className="flex items-end gap-4 mb-4">
-            <div className="text-7xl font-display-metrics text-on-surface leading-none">
+          <div className="flex items-end gap-3 mb-3">
+            <div className="text-6xl sm:text-7xl font-mono font-black text-on-surface leading-none tracking-tight">
               {(summary.averageScore ?? summary.averageHealth ?? 76.5).toFixed(0)}
             </div>
-            <div className="text-2xl text-on-surface-variant/60 font-light mb-1">/ 100</div>
+            <div className="text-2xl text-on-surface-variant/60 font-mono font-light mb-1">/ 100</div>
           </div>
-          <div className="flex items-center gap-2 text-status-healthy">
+          <div className="flex items-center gap-2 text-emerald-400 font-mono text-xs font-bold">
             <TrendingUp className="w-4 h-4" />
-            <span className="text-sm font-bold">+4.2% this month</span>
+            <span>+4.2% index gain this month</span>
           </div>
+          <div className="absolute right-0 top-0 bottom-0 w-1 bg-gradient-to-b from-primary/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
         </GlassPanel>
 
         {/* Health Distribution */}
-        <GlassPanel className="xl:col-span-8 flex flex-col justify-center">
-          <div className="flex items-center gap-2 mb-6 text-on-surface-variant">
-            <MapPin className="w-4 h-4" />
-            <span className="font-label-caps">Network Surface Condition</span>
+        <GlassPanel padding="lg" className="xl:col-span-8 flex flex-col justify-center border-outline-variant/80 shadow-lg">
+          <div className="flex items-center gap-2 mb-5 text-on-surface-variant">
+            <MapPin className="w-4 h-4 text-primary" />
+            <span className="font-mono text-xs font-bold uppercase tracking-wider">Network Surface Condition</span>
           </div>
           
           <div className="flex flex-col gap-4">
-            <div className="h-4 flex rounded-full overflow-hidden bg-surface-container">
-              <div style={{ width: `${((distribution.excellent ?? 0) / totalSegs) * 100}%` }} className="bg-status-healthy hover:opacity-80 transition-opacity cursor-pointer" />
-              <div style={{ width: `${((distribution.good ?? 0) / totalSegs) * 100}%` }} className="bg-blue-500 hover:opacity-80 transition-opacity cursor-pointer" />
-              <div style={{ width: `${((distribution.fair ?? 0) / totalSegs) * 100}%` }} className="bg-yellow-500 hover:opacity-80 transition-opacity cursor-pointer" />
-              <div style={{ width: `${((distribution.critical ?? 0) / totalSegs) * 100}%` }} className="bg-red-500 hover:opacity-80 transition-opacity cursor-pointer" />
+            <div className="h-4 flex rounded-xl overflow-hidden bg-surface-container-high p-0.5 border border-outline-variant/40">
+              <div style={{ width: `${((distribution.excellent ?? 0) / totalSegs) * 100}%` }} className="bg-emerald-500 rounded-l-lg hover:brightness-110 transition-all cursor-pointer" />
+              <div style={{ width: `${((distribution.good ?? 0) / totalSegs) * 100}%` }} className="bg-blue-500 hover:brightness-110 transition-all cursor-pointer" />
+              <div style={{ width: `${((distribution.fair ?? 0) / totalSegs) * 100}%` }} className="bg-amber-500 hover:brightness-110 transition-all cursor-pointer" />
+              <div style={{ width: `${((distribution.critical ?? 0) / totalSegs) * 100}%` }} className="bg-rose-500 rounded-r-lg hover:brightness-110 transition-all cursor-pointer" />
             </div>
             
-            <div className="grid grid-cols-4 gap-4 pt-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-1 font-mono">
               {[
-                { label: 'Excellent', val: distribution.excellent ?? 0, color: 'text-status-healthy' },
-                { label: 'Good', val: distribution.good ?? 0, color: 'text-blue-400' },
-                { label: 'Attention', val: distribution.fair ?? 0, color: 'text-yellow-400' },
-                { label: 'Critical', val: distribution.critical ?? 0, color: 'text-red-400' },
+                { label: 'Excellent', val: distribution.excellent ?? 0, color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20' },
+                { label: 'Good', val: distribution.good ?? 0, color: 'text-blue-400', bg: 'bg-blue-500/10 border-blue-500/20' },
+                { label: 'Attention', val: distribution.fair ?? 0, color: 'text-amber-400', bg: 'bg-amber-500/10 border-amber-500/20' },
+                { label: 'Critical', val: distribution.critical ?? 0, color: 'text-rose-400', bg: 'bg-rose-500/10 border-rose-500/20' },
               ].map(d => (
-                <div key={d.label}>
-                  <div className={cn("text-xl font-bold", d.color)}>{d.val}</div>
-                  <div className="text-[10px] text-on-surface-variant uppercase font-bold tracking-widest">{d.label}</div>
+                <div key={d.label} className={cn("p-3 rounded-xl border flex flex-col justify-between", d.bg)}>
+                  <div className="text-xs text-on-surface-variant uppercase font-bold tracking-wider">{d.label}</div>
+                  <div className={cn("text-2xl font-black mt-1", d.color)}>{d.val}</div>
                 </div>
               ))}
             </div>
@@ -211,30 +219,35 @@ export function AnalyticsPage() {
       </div>
 
       {/* ── Historical Trend ────────────────────────────────── */}
-      <GlassPanel>
+      <GlassPanel padding="lg" className="border-outline-variant/80 shadow-lg">
         <div className="flex justify-between items-center mb-6">
-          <div className="flex items-center gap-2 text-on-surface-variant">
-            <Activity className="w-4 h-4" />
-            <span className="font-label-caps">6-Month Health Trend</span>
+          <div className="flex items-center gap-2 text-on-surface-variant font-mono">
+            <Activity className="w-4 h-4 text-primary" />
+            <span className="text-xs font-bold uppercase tracking-wider">6-Month Network Health Trend</span>
           </div>
         </div>
         
         <div className="h-64 w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={healthTrend} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+            <AreaChart data={healthTrend} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
               <defs>
                 <linearGradient id="colorScore" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4}/>
+                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
                 </linearGradient>
               </defs>
-              <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 12 }} dy={10} />
-              <YAxis domain={[0, 100]} axisLine={false} tickLine={false} tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 12 }} />
+              <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 11 }} dy={10} />
+              <YAxis domain={[0, 100]} axisLine={false} tickLine={false} tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 11 }} />
               <Tooltip 
-                contentStyle={{ backgroundColor: '#1a1a21', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }}
-                itemStyle={{ color: '#fff' }}
+                contentStyle={{ 
+                  backgroundColor: 'rgba(18, 18, 26, 0.95)', 
+                  border: '1px solid rgba(255,255,255,0.15)', 
+                  borderRadius: '12px',
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.5)'
+                }}
+                itemStyle={{ color: '#fff', fontSize: '12px', fontWeight: 'bold' }}
               />
-              <Area type="monotone" dataKey="score" stroke="#6366f1" strokeWidth={3} fillOpacity={1} fill="url(#colorScore)" />
+              <Area type="monotone" dataKey="score" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorScore)" />
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -244,58 +257,58 @@ export function AnalyticsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         {/* Lowest Ranked Roads */}
-        <GlassPanel>
-          <div className="flex items-center justify-between mb-6 border-b border-outline-variant pb-4">
-            <span className="font-label-caps text-on-surface-variant">Top Priority Segments</span>
-            <span className="text-xs text-secondary hover:text-white cursor-pointer transition-colors">View All</span>
+        <GlassPanel padding="lg" className="border-outline-variant/80 shadow-lg">
+          <div className="flex items-center justify-between mb-5 border-b border-outline-variant/60 pb-3 font-mono">
+            <span className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Top Priority Segments</span>
+            <span className="text-xs text-primary hover:text-primary/80 font-bold cursor-pointer transition-colors">View All</span>
           </div>
           
-          <div className="space-y-2">
+          <div className="space-y-2.5">
             {bottomSegments.map((seg, i) => (
-              <div key={seg.id} className="flex items-center justify-between p-3 rounded-lg bg-white/[0.02] border border-white/[0.04]">
-                <div className="flex items-center gap-4">
-                  <div className="w-6 h-6 rounded bg-white/[0.05] flex items-center justify-center text-xs font-data-mono font-bold text-on-surface-variant">
+              <div key={seg.id} className="flex items-center justify-between p-3.5 rounded-xl bg-surface-container/60 border border-outline-variant/40 hover:border-primary/40 transition-colors">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-7 h-7 rounded-lg bg-surface-container-high border border-outline-variant/60 flex items-center justify-center text-xs font-mono font-bold text-on-surface-variant">
                     {i+1}
                   </div>
                   <div>
                     <div className="text-sm font-bold text-on-surface">{seg.name}</div>
                     <div className={cn(
-                      "font-label-caps text-[10px] mt-0.5",
-                      (seg.healthScore ?? (seg as any).score ?? 75) < 50 ? "text-red-400" : "text-yellow-400"
+                      "font-mono text-[11px] font-bold uppercase tracking-wider mt-0.5",
+                      (seg.healthScore ?? (seg as any).score ?? 75) < 50 ? "text-rose-400" : "text-amber-400"
                     )}>
                       {(seg.healthScore ?? (seg as any).score ?? 75) < 50 ? 'Critical' : 'Attention'}
                     </div>
                   </div>
                 </div>
-                <div className="text-2xl font-bold font-data-mono text-on-surface">{seg.healthScore ?? (seg as any).score ?? 75}</div>
+                <div className="text-2xl font-mono font-black text-on-surface">{seg.healthScore ?? (seg as any).score ?? 75}</div>
               </div>
             ))}
           </div>
         </GlassPanel>
 
         {/* Deterioration Watchlist */}
-        <GlassPanel>
-          <div className="flex items-center justify-between mb-6 border-b border-outline-variant pb-4">
-            <span className="font-label-caps text-on-surface-variant">Deterioration Watchlist</span>
-            <AlertTriangle className="w-4 h-4 text-orange-400" />
+        <GlassPanel padding="lg" className="border-outline-variant/80 shadow-lg">
+          <div className="flex items-center justify-between mb-5 border-b border-outline-variant/60 pb-3 font-mono">
+            <span className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">Deterioration Watchlist</span>
+            <AlertTriangle className="w-4 h-4 text-amber-400" />
           </div>
           
           <div className="space-y-4">
             {deteriorating.map((road) => (
-              <div key={road.name} className="flex items-center justify-between">
+              <div key={road.name} className="flex items-center justify-between p-3 rounded-xl bg-surface-container/40 border border-outline-variant/30">
                 <div>
                   <div className="text-sm font-bold text-on-surface">{road.name}</div>
-                  <div className="flex items-center gap-3 text-[10px] text-on-surface-variant mt-1">
+                  <div className="flex items-center gap-3 text-[11px] font-mono text-on-surface-variant mt-1">
                     <span>{road.defects} active defects</span>
-                    {road.recurring && <span className="text-orange-400">Recurring issues</span>}
+                    {road.recurring && <span className="text-amber-400 font-semibold">• Recurring issues</span>}
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-1 text-red-400">
-                    <TrendingDown className="w-3 h-3" />
-                    <span className="text-xs font-bold">{road.current - road.prev}</span>
+                <div className="flex items-center gap-3 font-mono">
+                  <div className="flex items-center gap-1 text-rose-400 font-bold text-xs">
+                    <TrendingDown className="w-3.5 h-3.5" />
+                    <span>{road.current - road.prev}</span>
                   </div>
-                  <div className="px-2 py-1 bg-surface-container rounded border border-outline-variant text-sm font-data-mono font-bold">
+                  <div className="px-3 py-1 bg-surface-container-high rounded-lg border border-outline-variant/60 text-sm font-bold text-on-surface">
                     {road.current}
                   </div>
                 </div>
@@ -310,10 +323,10 @@ export function AnalyticsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
         {/* Department SLA */}
-        <GlassPanel>
-          <div className="flex items-center gap-2 mb-6 text-on-surface-variant border-b border-outline-variant pb-4">
-            <Building2 className="w-4 h-4" />
-            <span className="font-label-caps">Department Performance (Demo Data)</span>
+        <GlassPanel padding="lg" className="border-outline-variant/80 shadow-lg">
+          <div className="flex items-center gap-2 mb-5 text-on-surface-variant border-b border-outline-variant/60 pb-3 font-mono">
+            <Building2 className="w-4 h-4 text-primary" />
+            <span className="text-xs font-bold uppercase tracking-wider">Department Performance</span>
           </div>
           
           <div className="space-y-5">
@@ -338,20 +351,20 @@ export function AnalyticsPage() {
                 : 0;
 
               return (
-                <div key={dept.id}>
-                  <div className="flex justify-between items-end mb-2">
+                <div key={dept.id} className="space-y-1.5">
+                  <div className="flex justify-between items-end mb-1">
                     <div className="text-sm font-bold text-on-surface">{dept.name}</div>
-                    <div className="flex items-center gap-4 text-xs font-data-mono">
+                    <div className="flex items-center gap-3 text-xs font-mono">
                       <span className="text-on-surface-variant">Avg: {avgTime}</span>
-                      <span className={hasPerf ? "text-status-healthy" : "text-on-surface-variant/60"}>{slaRate}</span>
+                      <span className={hasPerf ? "text-emerald-400 font-bold" : "text-on-surface-variant/60"}>{slaRate}</span>
                     </div>
                   </div>
-                  <div className="h-1.5 w-full bg-surface-container rounded-full overflow-hidden flex">
+                  <div className="h-2 w-full bg-surface-container-high rounded-full overflow-hidden flex border border-outline-variant/30">
                     {canCalculateResolution ? (
                       <>
-                        <div style={{ width: `${resolutionRatio}%` }} className="bg-status-healthy" />
-                        <div style={{ width: `${Math.min(100 - resolutionRatio, 10)}%` }} className="bg-yellow-500" />
-                        <div style={{ width: `${Math.max(0, 100 - resolutionRatio - 10)}%` }} className="bg-red-500" />
+                        <div style={{ width: `${resolutionRatio}%` }} className="bg-emerald-500" />
+                        <div style={{ width: `${Math.min(100 - resolutionRatio, 10)}%` }} className="bg-amber-500" />
+                        <div style={{ width: `${Math.max(0, 100 - resolutionRatio - 10)}%` }} className="bg-rose-500" />
                       </>
                     ) : (
                       <div style={{ width: '100%' }} className="bg-white/5" />
@@ -362,42 +375,47 @@ export function AnalyticsPage() {
             })}
           </div>
 
-          <div className="mt-6 flex justify-between font-label-caps text-[10px] text-on-surface-variant pt-4 border-t border-outline-variant">
-            <span className="flex items-center gap-1"><div className="w-2 h-2 rounded bg-status-healthy" /> Resolved</span>
-            <span className="flex items-center gap-1"><div className="w-2 h-2 rounded bg-yellow-500" /> Pending</span>
-            <span className="flex items-center gap-1"><div className="w-2 h-2 rounded bg-red-500" /> Reopened</span>
+          <div className="mt-6 flex justify-between font-mono text-[11px] text-on-surface-variant pt-4 border-t border-outline-variant/60">
+            <span className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-emerald-500" /> Resolved</span>
+            <span className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-amber-500" /> Pending</span>
+            <span className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-rose-500" /> Reopened</span>
           </div>
         </GlassPanel>
 
         {/* Traffic Intelligence */}
-        <GlassPanel>
-          <div className="flex items-center gap-2 mb-6 text-on-surface-variant border-b border-outline-variant pb-4">
-            <Car className="w-4 h-4" />
-            <span className="font-label-caps">Traffic Intelligence</span>
+        <GlassPanel padding="lg" className="border-outline-variant/80 shadow-lg">
+          <div className="flex items-center gap-2 mb-5 text-on-surface-variant border-b border-outline-variant/60 pb-3 font-mono">
+            <Car className="w-4 h-4 text-primary" />
+            <span className="text-xs font-bold uppercase tracking-wider">Traffic Telemetry & Volume</span>
           </div>
           
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            <div className="p-3 bg-white/[0.02] border border-white/[0.04] rounded-lg">
-              <div className="text-[10px] text-on-surface-variant uppercase font-bold tracking-widest mb-1">Peak Volume</div>
-              <div className="text-xl font-bold text-on-surface font-data-mono">5,200 <span className="text-xs text-on-surface-variant font-sans font-normal">veh/hr</span></div>
+          <div className="grid grid-cols-2 gap-4 mb-5 font-mono">
+            <div className="p-3.5 bg-surface-container/60 border border-outline-variant/40 rounded-xl">
+              <div className="text-[11px] text-on-surface-variant uppercase font-bold tracking-wider mb-1">Peak Volume</div>
+              <div className="text-xl font-black text-on-surface">5,200 <span className="text-xs text-on-surface-variant font-sans font-normal">veh/hr</span></div>
             </div>
-            <div className="p-3 bg-white/[0.02] border border-white/[0.04] rounded-lg">
-              <div className="text-[10px] text-on-surface-variant uppercase font-bold tracking-widest mb-1">Congestion Impact</div>
-              <div className="text-xl font-bold text-orange-400 font-data-mono">High</div>
+            <div className="p-3.5 bg-surface-container/60 border border-outline-variant/40 rounded-xl">
+              <div className="text-[11px] text-on-surface-variant uppercase font-bold tracking-wider mb-1">Congestion Impact</div>
+              <div className="text-xl font-black text-amber-400">High</div>
             </div>
           </div>
 
           <div className="h-32 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={trafficTrend} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                <XAxis dataKey="hour" axisLine={false} tickLine={false} tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 10 }} dy={10} />
+                <XAxis dataKey="hour" axisLine={false} tickLine={false} tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 10 }} dy={10} />
                 <Tooltip 
                   cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                  contentStyle={{ backgroundColor: '#1a1a21', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px' }}
+                  contentStyle={{ 
+                    backgroundColor: 'rgba(18, 18, 26, 0.95)', 
+                    border: '1px solid rgba(255,255,255,0.15)', 
+                    borderRadius: '12px',
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.5)'
+                  }}
                 />
-                <Bar dataKey="volume" radius={[4, 4, 0, 0]}>
+                <Bar dataKey="volume" radius={[6, 6, 0, 0]}>
                   {trafficTrend.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.volume > 4000 ? '#f97316' : '#3b82f6'} />
+                    <Cell key={`cell-${index}`} fill={entry.volume > 4000 ? '#f59e0b' : '#3b82f6'} />
                   ))}
                 </Bar>
               </BarChart>

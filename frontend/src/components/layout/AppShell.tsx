@@ -16,7 +16,7 @@ export function AppShell() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <div className="flex h-screen bg-background text-on-surface overflow-hidden selection:bg-secondary-container/30">
+    <div className="flex h-screen bg-[#0d0e11] bg-[radial-gradient(ellipse_70%_60%_at_50%_-10%,rgba(30,41,69,0.18),rgba(13,14,17,0))] text-on-surface overflow-hidden selection:bg-secondary-container/30">
       
       <Sidebar 
         collapsed={sidebarCollapsed} 
@@ -37,12 +37,12 @@ export function AppShell() {
         />
         
         {/* Main Content Area */}
-        <main className="flex-1 overflow-y-auto scrollbar-none focus:outline-none bg-background">
+        <main className="flex-1 overflow-y-auto scrollbar-none focus:outline-none bg-transparent">
           <Outlet />
         </main>
       </div>
 
-      <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
+      <CommandPalette isOpen={paletteOpen} onClose={() => setPaletteOpen(false)} />
     </div>
   );
 }
