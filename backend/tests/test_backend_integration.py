@@ -1,4 +1,5 @@
 import pytest
+from pathlib import Path
 import datetime
 from fastapi.testclient import TestClient
 
@@ -35,7 +36,8 @@ def test_evidence_static_mount():
     assert res_live.status_code == 200
 
     # Test evidence static endpoint
-    res_evidence = client.get("/evidence/BUS001_EVT-86eb082c_1788417689.jpg")
+    evidence_file = next(Path("backend/evidence").glob("*.jpg"))
+    res_evidence = client.get(f"/evidence/{evidence_file.name}")
     assert res_evidence.status_code == 200
     assert res_evidence.headers["content-type"] == "image/jpeg"
 
@@ -131,4 +133,3 @@ def test_issue_serialization_coordinate_shape():
     assert loc["gps"]["lng"] == 77.5946
     assert loc["snappedGps"]["lat"] == 12.9716
     assert loc["snappedGps"]["lng"] == 77.5946
-
