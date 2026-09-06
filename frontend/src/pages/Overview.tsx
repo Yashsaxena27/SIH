@@ -224,7 +224,7 @@ export function OverviewPage() {
         <div className="flex items-center gap-3 self-start md:self-auto text-xs font-mono text-on-surface-variant/70">
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.06]">
             <MapPin className="w-3.5 h-3.5 text-primary" />
-            <span>Bengaluru Zone</span>
+            <span>Delhi-NCR Zone</span>
           </div>
           <button 
             onClick={loadData}
@@ -297,7 +297,7 @@ export function OverviewPage() {
                 Live Spatial Intelligence & Vehicle Telemetry
               </span>
               <span className="hidden sm:inline-block text-[10px] font-mono text-on-surface-variant/60">
-                • BBMP Municipal Corridor
+                • Delhi-NCR Municipal Corridor
               </span>
             </div>
 

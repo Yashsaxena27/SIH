@@ -16,27 +16,24 @@ export function RoadHealthPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const loadData = () => {
+  const loadData = async () => {
     setLoading(true);
     setError(null);
-    Promise.allSettled([
-      api.getRoadSegments(),
-      api.getRoadHealthSummary()
-    ]).then(([segRes, sumRes]) => {
-      if (segRes.status === 'rejected' && sumRes.status === 'rejected') {
-        setError('Failed to connect to road intelligence service.');
-        setLoading(false);
-        return;
+    try {
+      // Fetch sequentially so both views observe the same persisted recalculation.
+      const segmentData = await api.getRoadSegments();
+      const summaryData = await api.getRoadHealthSummary();
+      if (Array.isArray(segmentData)) {
+        setSegments(segmentData);
       }
-
-      if (segRes.status === 'fulfilled' && Array.isArray(segRes.value)) {
-        setSegments(segRes.value);
-      }
-      if (sumRes.status === 'fulfilled' && sumRes.value) {
-        setSummary(sumRes.value);
+      if (summaryData) {
+        setSummary(summaryData);
       }
       setLoading(false);
-    });
+    } catch {
+      setError('Failed to connect to road intelligence service.');
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -76,7 +73,7 @@ export function RoadHealthPage() {
       {/* Header Section */}
       <PageHeader
         title="Road Network Health"
-        subtitle="Real-time condition assessment and pavement quality index across Bengaluru"
+        subtitle="Real-time condition assessment and pavement quality index across Delhi-NCR"
         breadcrumbs={[{ label: 'Intelligence' }, { label: 'Road Health' }]}
         action={
           <button 
@@ -168,7 +165,7 @@ export function RoadHealthPage() {
             <h3 className="text-base font-bold text-on-surface tracking-tight flex items-center gap-2">
               <MapPin className="w-4.5 h-4.5 text-primary" /> Monitored Road Corridors
             </h3>
-            <p className="text-xs text-on-surface-variant mt-0.5">Bengaluru municipal arterial road segments and condition scores</p>
+            <p className="text-xs text-on-surface-variant mt-0.5">Delhi-NCR municipal arterial road segments and condition scores</p>
           </div>
           <span className="px-3 py-1 rounded-lg bg-surface-container border border-outline-variant text-xs font-mono font-bold text-on-surface shadow-inner">
             {segments.length} segments
@@ -229,7 +226,7 @@ export function RoadHealthPage() {
                         {seg.name}
                       </h4>
                       <span className="text-[11px] text-on-surface-variant font-mono tracking-wider uppercase font-semibold">
-                        {seg.roadType || 'Arterial'} • Zone: Bengaluru Central
+                        {seg.roadType || 'Arterial'} • Zone: Delhi Central
                       </span>
                     </div>
                   </div>
@@ -256,4 +253,3 @@ export function RoadHealthPage() {
     </div>
   );
 }
-

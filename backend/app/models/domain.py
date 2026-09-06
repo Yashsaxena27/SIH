@@ -225,6 +225,7 @@ class InspectionJob(Base, TimestampMixin):
     progress = Column(Integer, default=0)
     video_metadata = Column(JSON, nullable=True)
     statistics = Column(JSON, nullable=True)
+    events = Column(JSON, nullable=True)
     annotated_video_url = Column(String(500), nullable=True)
     error = Column(String(1000), nullable=True)
 
@@ -238,4 +239,3 @@ class TimelineEvent(Base, TimestampMixin):
     description = Column(String(1000))
     actor = Column(String(50), default="SYSTEM")
     metadata_json = Column(JSON, nullable=True)
-

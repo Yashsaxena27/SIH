@@ -16,6 +16,19 @@ async def transition_issue_state(session: AsyncSession, issue: UrbanIssue) -> Ur
     # Recalculate priority
     new_priority = calculate_priority(issue)
     issue.priority = new_priority
+
+    # Route every detected issue to the configured maintenance authority, even
+    # when its priority does not yet warrant automatic ticket creation.
+    if not issue.assigned_department_id:
+        dept_result = await session.execute(
+            select(Department).where(Department.is_active == True).order_by(
+                case((Department.department_type == "maintenance", 0), else_=1),
+                Department.id.asc()
+            ).limit(1)
+        )
+        department = dept_result.scalar_one_or_none()
+        if department:
+            issue.assigned_department_id = department.id
     
     # 1. NEW -> CONFIRMED
     # Rule: If observed by >1 unique bus, or observation_count >= 3

@@ -7,6 +7,7 @@ from app.models.domain import Detection, Observation, UrbanIssue, Severity, Issu
 from app.services.spatial_fusion import find_nearby_issue
 from app.services.lifecycle import transition_issue_state
 from app.services.road_segment_linker import link_issue_to_segment
+from app.services.road_health import update_segment_health_for_issue
 from app.api.v1.events import broadcast_event
 
 async def ensure_bus_exists(session: AsyncSession, bus_id: str) -> Bus:
@@ -16,11 +17,11 @@ async def ensure_bus_exists(session: AsyncSession, bus_id: str) -> Bus:
     """
     bus = await session.get(Bus, bus_id)
     if not bus:
-        reg_num = f"KA-01-{bus_id.replace('-', '')[:6]}"
+        reg_num = f"DL-01-{bus_id.replace('-', '')[:6]}"
         bus = Bus(
             id=bus_id,
             registration_number=reg_num,
-            operator="BMTC-EDGE",
+            operator="DTC-EDGE",
             status="online",
             camera_status="online",
             gps_status="online",
@@ -122,8 +123,11 @@ async def process_detection_event(session: AsyncSession, event: DetectionEvent):
     
     # 5. Lifecycle & Priority transitions
     await transition_issue_state(session, issue)
-    
+
     detection.processing_status = "fused"
+    # Persist the active issue burden immediately so Road Health reflects new detections
+    # before a later repair verification recalculates the same segment.
+    await update_segment_health_for_issue(session, issue)
     await session.commit()
     
     # Fire realtime event to frontend

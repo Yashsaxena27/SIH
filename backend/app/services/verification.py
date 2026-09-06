@@ -3,7 +3,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.schemas.ingestion import DetectionEvent
-from app.models.domain import UrbanIssue, Ticket, Verification, VerificationResult, IssueStatus, TicketStatus
+from app.models.domain import UrbanIssue, Ticket, Verification, VerificationResult, IssueStatus, TicketStatus, Observation
+from app.services.road_health import update_segment_health_for_issue
 
 async def process_verification_revisit(session: AsyncSession, issue: UrbanIssue, new_detection: DetectionEvent = None):
     """
@@ -28,6 +29,13 @@ async def process_verification_revisit(session: AsyncSession, issue: UrbanIssue,
         return issue
 
     verification_id = f"ver_{uuid.uuid4().hex[:12]}"
+    observation_result = await session.execute(
+        select(Observation.bus_id)
+        .where(Observation.issue_id == issue.id)
+        .order_by(Observation.created_at.asc())
+        .limit(1)
+    )
+    revisit_bus_id = observation_result.scalar_one_or_none() or "BUS-001"
 
     if new_detection:
         # The bus still detected the pothole
@@ -57,7 +65,7 @@ async def process_verification_revisit(session: AsyncSession, issue: UrbanIssue,
             id=verification_id,
             issue_id=issue.id,
             ticket_id=ticket.id,
-            bus_id="SYSTEM",  # Placeholder
+            bus_id=revisit_bus_id,
             timestamp=timestamp,
             result=VerificationResult.resolved,
             confidence=0.99,
@@ -71,4 +79,5 @@ async def process_verification_revisit(session: AsyncSession, issue: UrbanIssue,
         ticket.verified_at = timestamp
         
     await session.commit()
+    await update_segment_health_for_issue(session, issue)
     return issue

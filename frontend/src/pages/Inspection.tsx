@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { PageHeader, GlassPanel, SeverityBadge } from '@/components/ui';
 import { api } from '@/services/api';
+import { config } from '@/services/core/config';
 import { cn } from '@/lib/utils';
 import type { InspectionJob, InspectionEvent } from '@/services/modules/inspectionService';
 
@@ -20,7 +21,7 @@ import type { InspectionJob, InspectionEvent } from '@/services/modules/inspecti
 const PIPELINE_STEPS = [
   { key: 'upload', stepNo: '01', label: 'Video Upload', desc: 'Ingest footage', icon: UploadCloud },
   { key: 'sampling', stepNo: '02', label: 'Frame Extraction', desc: 'Downsample FPS', icon: FileVideo },
-  { key: 'inference', stepNo: '03', label: 'YOLO 4-Class AI', desc: 'Neural inference', icon: Cpu },
+  { key: 'inference', stepNo: '03', label: 'YOLO Road-Defect AI', desc: 'Neural inference', icon: Cpu },
   { key: 'tracking', stepNo: '04', label: 'Centroid Tracker', desc: 'IoU trajectories', icon: Layers },
   { key: 'severity', stepNo: '05', label: 'Severity & Evidence', desc: 'Area calc & crop', icon: Eye },
   { key: 'gps', stepNo: '06', label: 'GPS Fusion', desc: 'Route telemetry', icon: MapPin },
@@ -34,6 +35,11 @@ export function InspectionPage() {
   // Form State
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [busId, setBusId] = useState<string>('BUS-001');
+  const [routeId, setRouteId] = useState('DEL-NCR-01');
+  const [routeName, setRouteName] = useState('Delhi - Noida Corridor');
+  const [startPoint, setStartPoint] = useState('28.6139,77.2090');
+  const [endPoint, setEndPoint] = useState('28.5355,77.3910');
+  const [captureStartedAt, setCaptureStartedAt] = useState('');
   const [sampleFps, setSampleFps] = useState<number>(1);
   const [confThreshold, setConfThreshold] = useState<number>(0.10);
   const [stabilityFrames, setStabilityFrames] = useState<number>(1);
@@ -97,13 +103,29 @@ export function InspectionPage() {
     setUploadError(null);
 
     try {
+      const parsePoint = (value: string) => {
+        const [lat, lng] = value.split(',').map(Number);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+          throw new Error('Route points must use latitude,longitude format.');
+        }
+        return { lat, lng };
+      };
+      const start = parsePoint(startPoint);
+      const end = parsePoint(endPoint);
       const res = await api.uploadInspectionVideo(
         selectedFile,
         busId,
         sampleFps,
         confThreshold,
         stabilityFrames,
-        generateAnnotated
+        generateAnnotated,
+        routeId,
+        routeName,
+        start.lat,
+        start.lng,
+        end.lat,
+        end.lng,
+        captureStartedAt
       );
 
       setActiveJob({
@@ -305,6 +327,29 @@ export function InspectionPage() {
                     <option value="BUS-002" className="bg-[#141519] text-white">BUS-002 (Route 12)</option>
                     <option value="BUS-003" className="bg-[#141519] text-white">BUS-003 (Route 88)</option>
                   </select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2.5">
+                  <label className="text-[10px] font-mono font-semibold text-on-surface-variant/70 uppercase tracking-wider">
+                    Route ID
+                    <input value={routeId} onChange={(e) => setRouteId(e.target.value)} className="mt-1 w-full px-2.5 py-1.5 text-xs normal-case rounded-lg bg-white/[0.03] border border-white/[0.08] text-white" />
+                  </label>
+                  <label className="text-[10px] font-mono font-semibold text-on-surface-variant/70 uppercase tracking-wider">
+                    Route name
+                    <input value={routeName} onChange={(e) => setRouteName(e.target.value)} className="mt-1 w-full px-2.5 py-1.5 text-xs normal-case rounded-lg bg-white/[0.03] border border-white/[0.08] text-white" />
+                  </label>
+                  <label className="text-[10px] font-mono font-semibold text-on-surface-variant/70 uppercase tracking-wider">
+                    Start (lat,lng)
+                    <input value={startPoint} onChange={(e) => setStartPoint(e.target.value)} className="mt-1 w-full px-2.5 py-1.5 text-xs normal-case rounded-lg bg-white/[0.03] border border-white/[0.08] text-white" />
+                  </label>
+                  <label className="text-[10px] font-mono font-semibold text-on-surface-variant/70 uppercase tracking-wider">
+                    End (lat,lng)
+                    <input value={endPoint} onChange={(e) => setEndPoint(e.target.value)} className="mt-1 w-full px-2.5 py-1.5 text-xs normal-case rounded-lg bg-white/[0.03] border border-white/[0.08] text-white" />
+                  </label>
+                  <label className="col-span-2 text-[10px] font-mono font-semibold text-on-surface-variant/70 uppercase tracking-wider">
+                    Capture date/time
+                    <input type="datetime-local" value={captureStartedAt} onChange={(e) => setCaptureStartedAt(e.target.value)} className="mt-1 w-full px-2.5 py-1.5 text-xs normal-case rounded-lg bg-white/[0.03] border border-white/[0.08] text-white" />
+                  </label>
                 </div>
 
                 <div>
@@ -556,7 +601,7 @@ export function InspectionPage() {
                 {activeVideoTab === 'annotated' && activeJob?.annotated_video_url ? (
                   <>
                     <video 
-                      src={activeJob.annotated_video_url} 
+                      src={config.assetUrl(activeJob.annotated_video_url)}
                       controls 
                       autoPlay 
                       loop 
@@ -614,7 +659,7 @@ export function InspectionPage() {
               </div>
               <div>
                 <h3 className="text-base font-bold text-white flex items-center gap-2">
-                  Inspection Completed — {activeJob.events.length > 0 ? `${activeJob.events.length} Road Damage Anomalies Detected` : 'No Damage Detected'}
+                  Processing completed — {activeJob.events.length > 0 ? `${activeJob.events.length} road defects detected` : 'no road defects detected'}
                 </h3>
                 <p className="text-xs text-on-surface-variant/70 mt-1 font-mono">
                   {activeJob.statistics?.total_frames ?? 0} total frames • {activeJob.statistics?.sampled_frames ?? 0} sampled frames • Execution time: {activeJob.statistics?.processing_time ?? 0}s
@@ -646,7 +691,7 @@ export function InspectionPage() {
               <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 mx-auto mb-3">
                 <CheckCircle2 className="w-7 h-7" />
               </div>
-              <h4 className="text-base font-bold text-white">No Road Defects Detected</h4>
+              <h4 className="text-base font-bold text-white">Processing completed — no road defects detected.</h4>
               <p className="text-xs text-on-surface-variant/70 max-w-md mx-auto mt-1 font-mono">
                 The YOLOv8 neural model inspected all sampled frames and detected zero structural road hazards exceeding confidence threshold.
               </p>
@@ -662,8 +707,8 @@ export function InspectionPage() {
                     {/* Evidence Image Box */}
                     <div className="relative aspect-video bg-black/80 overflow-hidden flex items-center justify-center">
                       {!hasFailedImage && ev.evidence_url ? (
-                        <img 
-                          src={ev.evidence_url} 
+                        <img
+                          src={config.assetUrl(ev.evidence_url)}
                           alt={label}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                           onError={() => handleImageError(ev.event_id || String(idx))}
@@ -708,7 +753,7 @@ export function InspectionPage() {
 
                         {ev.issue_id && (
                           <button
-                            onClick={() => navigate('/issues')}
+                            onClick={() => navigate(`/issues/${ev.issue_id}`)}
                             className="px-2.5 py-1 rounded-md text-[11px] font-mono font-semibold bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 flex items-center gap-1 transition-colors"
                           >
                             <span>Ticket</span>
@@ -720,7 +765,7 @@ export function InspectionPage() {
                       <div className="pt-2.5 border-t border-white/[0.06] flex items-center justify-between text-xs text-on-surface-variant/70 font-mono">
                         <span className="flex items-center gap-1 text-[11px]">
                           <MapPin className="w-3.5 h-3.5 text-blue-400" />
-                          {formatCoords(ev.location)}
+                          {formatCoords(ev.location)} • {ev.location_source || 'Interpolated from configured route'}
                         </span>
                         <span className="text-emerald-400 font-semibold uppercase text-[10px] bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">
                           {ev.issue_status || 'Registered'}

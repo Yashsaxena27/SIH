@@ -122,7 +122,7 @@ export function AnalyticsPage() {
   // Derived
   const bottomSegments = segments.slice(0, 3);
   
-  // Monitored deterioration list (Bengaluru municipal corridors)
+  // Monitored deterioration list for Delhi-NCR municipal corridors.
   const deteriorating = [
     { name: 'MG Road Corridor', current: 62, prev: 78, defects: 14, recurring: true },
     { name: 'Koramangala 80ft Road', current: 54, prev: 65, defects: 9, recurring: false },

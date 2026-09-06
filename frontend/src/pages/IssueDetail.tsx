@@ -12,6 +12,8 @@ import {
 } from 'lucide-react';
 import { GlassPanel, LoadingState } from '@/components/ui';
 import { api } from '@/services/api';
+import { simulator } from '@/services/api';
+import { config } from '@/services/core/config';
 import { cn, timeAgo, formatDate, getValidLatLng } from '@/lib/utils';
 import type { UrbanIssue, Ticket as TicketType } from '@/types';
 
@@ -25,6 +27,7 @@ export function IssueDetailPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   const [error, setError] = useState<string | null>(null);
+  const [demoMessage, setDemoMessage] = useState<string | null>(null);
 
   const fetchData = () => {
     if (!id) return;
@@ -72,10 +75,34 @@ export function IssueDetailPage() {
     setActionLoading(null);
   };
 
+  const handleCreateTicket = async () => {
+    if (!issue) return;
+    setActionLoading('ticket');
+    await api.createTicket(issue.id);
+    await fetchData();
+    setActionLoading(null);
+  };
+
+  const handleDemoRevisit = async (fixed: boolean) => {
+    if (!issue || !ticket) return;
+    setActionLoading(fixed ? 'revisit-fixed' : 'revisit-present');
+    setDemoMessage(null);
+    try {
+      await simulator.simulateRevisit(issue.id, fixed);
+      setDemoMessage(fixed ? 'Controlled demo revisit completed: defect marked fixed.' : 'Controlled demo revisit completed: defect still present.');
+      await fetchData();
+    } catch (revisitError) {
+      setDemoMessage(revisitError instanceof Error ? revisitError.message : 'Controlled demo revisit failed.');
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   if (loading) return <LoadingState message="Loading issue intelligence..." className="h-full" />;
   if (!issue) return <div className="p-8 text-center text-on-surface-variant">Issue not found</div>;
 
   const isCritical = issue.severity === 'critical';
+  const primaryEvidence = issue.observations?.find((observation: any) => observation.evidence?.url)?.evidence?.url;
 
   return (
     <div className="p-4 sm:p-6 space-y-6 max-w-7xl mx-auto">
@@ -113,7 +140,7 @@ export function IssueDetailPage() {
             {(issue.type || 'unknown').replace(/_/g, ' ')}
           </h1>
           <div className="flex items-center gap-4 text-sm text-on-surface-variant">
-            <span className="flex items-center gap-1.5"><MapPin className="w-4 h-4" /> {issue.location?.address || 'Bengaluru Municipal Road'}</span>
+            <span className="flex items-center gap-1.5"><MapPin className="w-4 h-4" /> {issue.location?.address || 'Delhi-NCR Municipal Road'}</span>
             <span className="w-1 h-1 rounded-full bg-outline-variant" />
             <span className="flex items-center gap-1.5"><Clock className="w-4 h-4" /> First seen {formatDate(issue.firstDetectedAt, 'long')}</span>
           </div>
@@ -127,8 +154,14 @@ export function IssueDetailPage() {
           
           {/* AI Evidence Frame */}
           <GlassPanel padding="none" className="overflow-hidden relative group border-outline-variant">
-            {/* Mock Image Feed Background */}
             <div className="aspect-video w-full relative bg-surface-lowest overflow-hidden">
+              {primaryEvidence ? (
+                <img src={config.assetUrl(primaryEvidence)} alt="Actual AI detection evidence" className="w-full h-full object-contain" />
+              ) : (
+                <div className="h-full flex items-center justify-center text-center p-6 text-on-surface-variant">
+                  Evidence is not available for this issue.
+                </div>
+              )}
               {/* Simulated camera noise & vignette */}
               <div className="absolute inset-0 opacity-[0.15]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.65%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }} />
               <div className="absolute inset-0 shadow-[inset_0_0_100px_rgba(0,0,0,0.8)]" />
@@ -273,7 +306,11 @@ export function IssueDetailPage() {
                 </div>
                 <div className="flex items-center justify-between pb-3 border-b border-outline-variant">
                   <span className="text-on-surface-variant text-sm">Department</span>
-                  <span className="text-on-surface font-medium">{ticket.departmentId}</span>
+                  <span className="text-on-surface font-medium">{ticket.departmentName || ticket.departmentId}</span>
+                </div>
+                <div className="flex items-center justify-between pb-3 border-b border-outline-variant">
+                  <span className="text-on-surface-variant text-sm">Routing reason</span>
+                  <span className="text-on-surface font-medium text-right">Configured jurisdiction + issue category</span>
                 </div>
                 <div className="flex items-center justify-between pb-3 border-b border-outline-variant">
                   <span className="text-on-surface-variant text-sm">Assigned To</span>
@@ -287,9 +324,42 @@ export function IssueDetailPage() {
             ) : (
               <div className="text-center py-6 text-on-surface-variant text-sm">
                 No active ticket associated.
+                <button
+                  onClick={handleCreateTicket}
+                  disabled={actionLoading === 'ticket'}
+                  className="mt-4 mx-auto block px-4 py-2 rounded bg-primary text-on-primary text-xs font-semibold uppercase"
+                >
+                  {actionLoading === 'ticket' ? 'Creating ticket...' : 'Create repair ticket'}
+                </button>
               </div>
             )}
           </GlassPanel>
+
+          {ticket && (
+            <GlassPanel className="border-amber-500/30">
+              <h3 className="font-label-caps text-amber-300 mb-2">Controlled Demo Simulator</h3>
+              <p className="text-xs text-on-surface-variant mb-4">
+                Simulated bus revisit for this issue. This is a controlled demo action, not a live field inspection.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <button
+                  onClick={() => handleDemoRevisit(true)}
+                  disabled={actionLoading !== null || !['verifying', 'repair_reported'].includes(ticket.status)}
+                  className="px-3 py-2 rounded bg-emerald-600 text-white text-xs font-semibold uppercase disabled:opacity-50"
+                >
+                  {actionLoading === 'revisit-fixed' ? 'Running...' : 'Revisit - Defect Fixed'}
+                </button>
+                <button
+                  onClick={() => handleDemoRevisit(false)}
+                  disabled={actionLoading !== null || !['verifying', 'repair_reported'].includes(ticket.status)}
+                  className="px-3 py-2 rounded bg-amber-600 text-white text-xs font-semibold uppercase disabled:opacity-50"
+                >
+                  {actionLoading === 'revisit-present' ? 'Running...' : 'Revisit - Still Present'}
+                </button>
+              </div>
+              {demoMessage && <p className="mt-3 text-xs text-on-surface">{demoMessage}</p>}
+            </GlassPanel>
+          )}
 
           {/* Timeline */}
           <GlassPanel className="border-outline-variant">

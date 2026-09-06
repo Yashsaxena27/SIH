@@ -307,7 +307,7 @@ export function FleetPage() {
               </div>
             </div>
 
-            <MapContainer center={[12.9716, 77.5946]} zoom={12} className="w-full h-full z-0 outline-none bg-background" zoomControl={false}>
+            <MapContainer center={[28.6139, 77.2090]} zoom={11} className="w-full h-full z-0 outline-none bg-background" zoomControl={false}>
               <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png" />
               {routes.map((route, i) => {
                 if (!route.waypoints || !Array.isArray(route.waypoints)) return null;

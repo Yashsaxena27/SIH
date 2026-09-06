@@ -1,0 +1,32 @@
+{
+  "overall_status": "READY_FOR_SHOWCASE",
+  "frontend": "Positive browser upload completed after Docker cold start; 9 evidence cards rendered",
+  "backend": "Docker cold start completed migrations and served the positive inspection",
+  "database": "Inspection events, evidence, and issue records persisted in PostGIS",
+  "ml": "Real model loads with mock mode disabled; one pothole class validated",
+  "video": "Real repository MP4 produces 9 emitted events at the 10% cutoff",
+  "evidence": "Real evidence crops persisted and returned by event payload",
+  "geolocation": "Configured Delhi-NCR route interpolation; not hardware GPS",
+  "fleet_fusion": "Implemented with 15 m spatial fusion logic; traceability verified",
+  "authority_routing": "Fresh browser issue routed to Delhi-NCR Road Infrastructure via migration-backed configuration",
+  "tickets": "Browser create, assign, in-progress, repair-reported, and verifying transitions persisted",
+  "verification": "Resolved and unresolved API revisits verified directly in PostgreSQL",
+  "road_health": "Browser proof passed: 84/100 before and 86/100 after fixed verification on SEG-DEL-NCR-01",
+  "analytics": "Mixed real and seeded/demo data; claim boundaries documented",
+  "docker": "Cold start verified with .env.demo.example; migrations, model, evidence, and health checks passed",
+  "demo_readiness": "Ready for showcase; clean Docker, three golden fixed runs, unresolved run, zero detection, and Road Health browser proof passed",
+  "known_limitations": [
+    "One-class runtime model",
+    "Interpolated rather than hardware GPS",
+    "Road Health score is decision-support data derived from persisted active issue burden",
+    "Simulated revisit is a clearly-labelled controlled demo action, not live field data",
+    "An external host uvicorn process can conflict with Docker port 8000; stop it before showcase startup",
+    "Environment lacks pytest command"
+  ],
+  "p0": [],
+  "p1": [],
+  "p2": [
+    "Install and validate a four-class model artifact",
+    "Verify Docker cold start with configured environment"
+  ]
+}

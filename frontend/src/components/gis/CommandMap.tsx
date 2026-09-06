@@ -101,7 +101,7 @@ export function CommandMap({ buses, issues, routes, hotspots = [], layers, filte
   return (
     <div className="absolute inset-0 z-0 bg-[#0d0e11]">
       <MapContainer 
-        center={[12.9716, 77.5946]} 
+        center={[28.6139, 77.2090]}
         zoom={12} 
         attributionControl={false} 
         className="w-full h-full z-0 outline-none"

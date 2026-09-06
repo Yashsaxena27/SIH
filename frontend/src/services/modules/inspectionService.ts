@@ -16,6 +16,11 @@ export interface InspectionEvent {
   issue_id?: string;
   issue_status?: string;
   issue_priority?: string;
+  inspection_id?: string;
+  route_id?: string;
+  route_name?: string;
+  location_source?: string;
+  location_confidence?: string;
 }
 
 export interface VideoMetadata {
@@ -60,6 +65,13 @@ export const inspectionService = {
     confThreshold: number = 0.10,
     stabilityFrames: number = 1,
     generateAnnotated: boolean = true
+    ,routeId: string = 'DEL-NCR-01',
+    routeName: string = 'Delhi - Noida Corridor',
+    startLat: number = 28.6139,
+    startLng: number = 77.2090,
+    endLat: number = 28.5355,
+    endLng: number = 77.3910,
+    captureStartedAt: string = ''
   ): Promise<{ inspection_id: string; status: string; message: string }> {
     const formData = new FormData();
     formData.append('video', file);
@@ -68,6 +80,13 @@ export const inspectionService = {
     formData.append('conf_threshold', confThreshold.toString());
     formData.append('stability_frames', stabilityFrames.toString());
     formData.append('generate_annotated', generateAnnotated ? 'true' : 'false');
+    formData.append('route_id', routeId);
+    formData.append('route_name', routeName);
+    formData.append('start_lat', startLat.toString());
+    formData.append('start_lng', startLng.toString());
+    formData.append('end_lat', endLat.toString());
+    formData.append('end_lng', endLng.toString());
+    formData.append('capture_started_at', captureStartedAt);
 
     return client.postForm<{ inspection_id: string; status: string; message: string }>(
       '/inspection/video',

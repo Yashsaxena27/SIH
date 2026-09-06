@@ -2,6 +2,7 @@ import { realtime } from '../core/realtime';
 import { issueService } from '../modules/issueService';
 import type { MLEventPayload } from '@/types';
 import { config } from '../core/config';
+import { client } from '../core/client';
 
 /**
  * DemoSimulator
@@ -65,6 +66,13 @@ class DemoSimulator {
       console.log('[Simulator] Demo sequence paused.');
       this.isSimulating = false;
     }, 12000);
+  }
+
+  async simulateRevisit(issueId: string, fixed: boolean) {
+    if (config.useMockData) {
+      return { message: 'Demo revisit simulated', new_status: fixed ? 'verified' : 'reopened' };
+    }
+    return client.post(`/demo/simulate-revisit/${encodeURIComponent(issueId)}?fixed=${fixed}`, {});
   }
 }
 
