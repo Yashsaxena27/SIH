@@ -15,8 +15,8 @@ router = APIRouter(prefix="/api/v1/demo", tags=["Simulator"])
 async def simulate_detection(
     background_tasks: BackgroundTasks,
     bus_id: str = "BUS-001",
-    lat: float = 12.9716,
-    lng: float = 77.5946,
+    lat: float = 28.6139,
+    lng: float = 77.2090,
     detection_type: str = "pothole",
     severity: str = "medium",
     confidence: float = 0.85,
@@ -58,7 +58,7 @@ async def simulate_repair(ticket_id: str, session: AsyncSession = Depends(get_db
 async def simulate_revisit(
     issue_id: str,
     fixed: bool = True,
-    bus_id: str = "BUS-002",
+    bus_id: str = "BUS-001",
     session: AsyncSession = Depends(get_db)
 ):
     issue = await session.get(UrbanIssue, issue_id)
@@ -76,7 +76,7 @@ async def simulate_revisit(
             event_id=f"EVT-{uuid.uuid4().hex[:8]}",
             bus_id=bus_id,
             timestamp=datetime.datetime.utcnow(),
-            location=GeoPoint(lat=12.9716, lng=77.5946), # Bengaluru MG Road
+            location=GeoPoint(lat=28.6139, lng=77.2090),
             detection_type=issue.issue_type,
             severity=issue.severity.value,
             confidence=0.92,

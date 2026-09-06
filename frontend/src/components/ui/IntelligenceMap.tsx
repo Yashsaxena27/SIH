@@ -73,8 +73,8 @@ interface IntelligenceMapProps {
 
 export function IntelligenceMap({ buses, issues }: IntelligenceMapProps) {
   const [selectedIssue, setSelectedIssue] = useState<UrbanIssue | null>(null);
-  // Default to Bengaluru coords (matching seed_demo.py)
-  const defaultCenter: [number, number] = [12.9716, 77.5946];
+  // Delhi-NCR is the configured showcase geography.
+  const defaultCenter: [number, number] = [28.6139, 77.2090];
 
   return (
     <div className="relative w-full h-full rounded-xl overflow-hidden border border-outline-variant shadow-2xl bg-surface-low">
@@ -151,7 +151,7 @@ export function IntelligenceMap({ buses, issues }: IntelligenceMapProps) {
               {selectedIssue.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
             </h3>
             <p className="text-xs text-white/60 mb-4 flex items-start gap-1.5">
-              <span className="mt-0.5">📍</span> {selectedIssue.location?.address || 'Bengaluru Road Network'}
+              <span className="mt-0.5">📍</span> {selectedIssue.location?.address || 'Delhi-NCR Road Network'}
             </p>
 
             <div className="grid grid-cols-2 gap-2 mb-4">

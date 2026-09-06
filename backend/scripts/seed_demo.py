@@ -38,17 +38,17 @@ async def seed_demo_data():
         
         print("Creating Departments and Users...")
         depts = [
-            Department(id=gen_id("dept"), name="BBMP Major Roads", department_type="maintenance", service_area="Bengaluru Central"),
-            Department(id=gen_id("dept"), name="BBMP Ward Works", department_type="maintenance", service_area="Bengaluru South"),
-            Department(id=gen_id("dept"), name="BTP Traffic Division", department_type="traffic", service_area="Bengaluru Central")
+            Department(id=gen_id("dept"), name="Delhi-NCR Major Roads", department_type="maintenance", service_area="Delhi Central"),
+            Department(id=gen_id("dept"), name="Noida-Ghaziabad Ward Works", department_type="maintenance", service_area="Noida and Ghaziabad"),
+            Department(id=gen_id("dept"), name="Delhi-NCR Traffic Division", department_type="traffic", service_area="Delhi-NCR")
         ]
         session.add_all(depts)
         await session.commit()
         
         users = [
             User(id=gen_id("usr"), name="Admin PotholeWala", email="admin@potholewala.in", hashed_password=get_password_hash("admin123"), role=UserRole.admin, department_id=depts[0].id),
-            User(id=gen_id("usr"), name="Officer Rajesh", email="rajesh@bbmp.gov.in", hashed_password=get_password_hash("pass123"), role=UserRole.officer, department_id=depts[0].id),
-            User(id=gen_id("usr"), name="Operator Sneha", email="sneha@btp.gov.in", hashed_password=get_password_hash("pass123"), role=UserRole.operator, department_id=depts[2].id)
+            User(id=gen_id("usr"), name="Officer Rajesh", email="rajesh@delhi-ncr.gov.in", hashed_password=get_password_hash("pass123"), role=UserRole.officer, department_id=depts[0].id),
+            User(id=gen_id("usr"), name="Operator Sneha", email="operator@delhi-ncr.gov.in", hashed_password=get_password_hash("pass123"), role=UserRole.operator, department_id=depts[2].id)
         ]
         session.add_all(users)
         await session.commit()

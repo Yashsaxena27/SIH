@@ -157,7 +157,7 @@ export function IssueDrawer({ issue, onClose }: IssueDrawerProps) {
                   <span>Location Telemetry</span>
                 </div>
                 <div className="text-xs font-semibold text-white">
-                  {(issue.location as any)?.address || (issue.location as any)?.formattedAddress || 'Bengaluru Municipal Road'}
+                  {(issue.location as any)?.address || (issue.location as any)?.formattedAddress || 'Delhi-NCR Municipal Road'}
                 </div>
                 <div className="font-mono text-[11px] text-on-surface-variant/70">
                   {(() => {

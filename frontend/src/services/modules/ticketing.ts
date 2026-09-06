@@ -7,6 +7,14 @@ import type { Ticket, TicketSummary, Verification, VerificationSummary } from '@
 const delay = (ms: number = 100) => new Promise(resolve => setTimeout(resolve, ms));
 
 export const ticketService = {
+  async createTicket(issueId: string): Promise<any> {
+    if (config.useMockData) {
+      await delay(200);
+      return { issueId, status: 'open', created: true };
+    }
+    return client.post(`/tickets?issue_id=${encodeURIComponent(issueId)}`, {});
+  },
+
   async getTickets(): Promise<Ticket[]> {
     if (config.useMockData) {
       await delay();

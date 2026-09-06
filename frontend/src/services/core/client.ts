@@ -58,6 +58,13 @@ class ApiClient {
     });
   }
 
+  put<T>(endpoint: string, data?: any) {
+    return this.fetch<T>(endpoint, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
   delete<T>(endpoint: string) {
     return this.fetch<T>(endpoint, { method: 'DELETE' });
   }

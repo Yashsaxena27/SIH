@@ -8,6 +8,7 @@ import { analyticsService, detectionService } from './modules/analyticsService';
 import { inspectionService } from './modules/inspectionService';
 
 export const api = {
+  createTicket: ticketService.createTicket,
   // Inspection
   uploadInspectionVideo: inspectionService.uploadVideo,
   getInspectionStatus: inspectionService.getInspectionStatus,

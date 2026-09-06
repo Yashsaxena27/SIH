@@ -240,7 +240,7 @@ export function IssuesPage() {
             {filteredIssues.map((issue, idx) => {
               const badge = getSeverityBadge(issue.severity);
               const BadgeIcon = badge.icon;
-              const address = (issue.location as any)?.address || (issue.location as any)?.formattedAddress || 'Bengaluru Municipal Area';
+              const address = (issue.location as any)?.address || (issue.location as any)?.formattedAddress || 'Delhi-NCR Municipal Area';
               const confidenceVal = typeof issue.confidence === 'number' && !isNaN(issue.confidence)
                 ? `${(issue.confidence * 100).toFixed(0)}%`
                 : 'N/A';

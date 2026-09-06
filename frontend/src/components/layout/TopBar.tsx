@@ -113,7 +113,7 @@ export function TopBar({ className, onMenuClick, onCommandPaletteOpen }: TopBarP
       <div className="hidden md:flex items-center gap-4">
         <div className="flex items-center gap-2 px-2.5 py-1 rounded-full bg-surface-container border border-outline-variant text-xs">
           <MapPin className="w-3.5 h-3.5 text-primary" />
-          <span className="font-semibold text-on-surface">Bengaluru Municipal Zone</span>
+          <span className="font-semibold text-on-surface">Delhi-NCR Municipal Zone</span>
         </div>
 
         {/* Live operational status indicator */}

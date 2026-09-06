@@ -119,7 +119,7 @@ export function IntelligencePage() {
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
             <span className="text-xs font-mono font-bold text-white uppercase tracking-wider">
-              Bengaluru Municipal GIS
+              Delhi-NCR Municipal GIS
             </span>
           </div>
 

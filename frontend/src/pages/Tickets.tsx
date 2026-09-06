@@ -252,7 +252,7 @@ export function TicketsPage() {
                         <div className="flex items-center gap-3 sm:gap-5 text-xs text-on-surface-variant font-mono flex-wrap pt-0.5">
                           <span className="inline-flex items-center gap-1.5 bg-surface-container/60 px-2.5 py-1 rounded-md border border-outline-variant/40">
                             <Building2 className="w-3.5 h-3.5 text-primary" />
-                            {ticket.departmentName || 'BBMP Infrastructure'}
+                            {ticket.departmentName || 'Delhi-NCR Infrastructure'}
                           </span>
                           
                           <span className="inline-flex items-center gap-1.5 bg-surface-container/60 px-2.5 py-1 rounded-md border border-outline-variant/40">
@@ -347,4 +347,3 @@ export function TicketsPage() {
     </div>
   );
 }
-

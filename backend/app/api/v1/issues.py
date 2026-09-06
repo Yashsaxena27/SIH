@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
+from sqlalchemy.orm import selectinload
 from typing import List
 import shapely.wkb
 
 from app.core.database import get_db
-from app.models.domain import UrbanIssue, IssueStatus, Observation, TimelineEvent
+from app.models.domain import UrbanIssue, IssueStatus, Observation, TimelineEvent, Detection
 
 router = APIRouter(prefix="/api/v1/issues", tags=["Issues"])
 
@@ -16,6 +17,14 @@ def _serialize_issue(issue: UrbanIssue) -> dict:
         "lat": point.y if point else None,
         "lng": point.x if point else None,
         "locationSource": "INTERPOLATED" if point else "UNKNOWN",
+        "gps": (
+            {"lat": point.y, "lng": point.x}
+            if point else None
+        ),
+        "snappedGps": (
+            {"lat": point.y, "lng": point.x}
+            if point else None
+        ),
     }
     
     return {
@@ -34,6 +43,7 @@ def _serialize_issue(issue: UrbanIssue) -> dict:
         "confidence": issue.confidence,
         "roadSegmentId": issue.road_segment_id,
         "departmentId": issue.assigned_department_id,
+        "routingReason": "Configured jurisdiction and issue category",
         "firstDetectedAt": issue.first_detected_at.isoformat() if issue.first_detected_at else None,
         "lastObservedAt": issue.last_observed_at.isoformat() if issue.last_observed_at else None,
         "tags": [issue.issue_type, issue.severity],
@@ -91,7 +101,12 @@ async def get_issues_summary(session: AsyncSession = Depends(get_db)):
 
 @router.get("/{issue_id}")
 async def get_issue(issue_id: str, session: AsyncSession = Depends(get_db)):
-    issue = await session.get(UrbanIssue, issue_id)
+    issue_result = await session.execute(
+        select(UrbanIssue)
+        .options(selectinload(UrbanIssue.ticket))
+        .where(UrbanIssue.id == issue_id)
+    )
+    issue = issue_result.scalar_one_or_none()
     if not issue:
         raise HTTPException(status_code=404, detail="Issue not found")
         
@@ -100,6 +115,13 @@ async def get_issue(issue_id: str, session: AsyncSession = Depends(get_db)):
         select(Observation).where(Observation.issue_id == issue.id)
     )
     observations = obs_result.scalars().all()
+    detection_ids = [obs.detection_id for obs in observations]
+    detections = {}
+    if detection_ids:
+        detection_result = await session.execute(
+            select(Detection).where(Detection.id.in_(detection_ids))
+        )
+        detections = {d.id: d for d in detection_result.scalars().all()}
     
     # Also fetch timeline events if ticket exists
     timeline = []
@@ -111,21 +133,38 @@ async def get_issue(issue_id: str, session: AsyncSession = Depends(get_db)):
     
     serialized = _serialize_issue(issue)
     
-    serialized["observations"] = [{
-        "id": obs.id,
-        "detectionId": obs.detection_id,
-        "busId": obs.bus_id,
-        "timestamp": obs.timestamp.isoformat() if obs.timestamp else None,
-        "gps": {"lat": point.y, "lng": point.x} if point else None,
-        "locationSource": "INTERPOLATED",
-        "confidence": obs.confidence,
-        "severity": issue.severity,
-        "evidence": {
-            "url": obs.evidence_url,
-            "type": "image",
-            "annotated": True
-        } if obs.evidence_url else None
-    } for obs in observations]
+    serialized["observations"] = []
+    for obs in observations:
+        detection = detections.get(obs.detection_id)
+        detection_point = (
+            shapely.wkb.loads(bytes(detection.location.data))
+            if detection and detection.location
+            else None
+        )
+        serialized["observations"].append({
+            "id": obs.id,
+            "detectionId": obs.detection_id,
+            "busId": obs.bus_id,
+            "timestamp": obs.timestamp.isoformat() if obs.timestamp else None,
+            "gps": (
+                {"lat": detection_point.y, "lng": detection_point.x}
+                if detection_point else None
+            ),
+            "locationSource": "INTERPOLATED" if detection_point else "UNKNOWN",
+            "confidence": obs.confidence,
+            "severity": (
+                detection.severity.value
+                if detection and hasattr(detection.severity, "value")
+                else issue.severity.value
+                if hasattr(issue.severity, "value")
+                else issue.severity
+            ),
+            "evidence": {
+                "url": obs.evidence_url,
+                "type": "image",
+                "annotated": True
+            } if obs.evidence_url else None
+        })
     
     serialized["resolutionHistory"] = [{
         "id": evt.id,

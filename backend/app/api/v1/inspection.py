@@ -60,7 +60,14 @@ async def run_inspection_background(
     sample_fps: int,
     conf_threshold: float,
     stability_frames: int,
-    generate_annotated: bool
+    generate_annotated: bool,
+    route_id: str,
+    route_name: str,
+    start_lat: float,
+    start_lng: float,
+    end_lat: float,
+    end_lng: float,
+    capture_started_at: str
 ):
     """
     Background worker that runs YOLO detection, tracking, severity, GPS,
@@ -97,7 +104,14 @@ async def run_inspection_background(
             "fps": round(fps, 2),
             "resolution": f"{width}x{height}",
             "total_frames": total_frames,
-            "sampled_frames": max(1, int(duration * sample_fps))
+            "sampled_frames": max(1, int(duration * sample_fps)),
+            "route_id": route_id,
+            "route_name": route_name,
+            "start_point": {"lat": start_lat, "lng": start_lng},
+            "end_point": {"lat": end_lat, "lng": end_lng},
+            "capture_started_at": capture_started_at,
+            "location_source": "INTERPOLATED_FROM_CONFIGURED_ROUTE",
+            "location_confidence": "demo_route"
         }
         await _update_job(inspection_id, {"video_metadata": video_metadata})
 
@@ -112,11 +126,16 @@ async def run_inspection_background(
             annotated_video_url = f"/evidence/{annotated_video_filename}"
 
         # 3. Define progress callback
+        event_loop = asyncio.get_running_loop()
+
         def on_progress(pct: int, stage: str, cur_frame: int, tot_frames: int):
             # Fire and forget update (can't easily await inside sync callback without loop trickery)
             progress_val = min(80, 15 + int(pct * 0.7))
             stage_val = "inference" if pct < 70 else "tracking"
-            asyncio.create_task(_update_job(inspection_id, {"progress": progress_val, "stage": stage_val}))
+            event_loop.call_soon_threadsafe(
+                asyncio.create_task,
+                _update_job(inspection_id, {"progress": progress_val, "stage": stage_val}),
+            )
 
         # 4. Instantiate VideoProcessor and run in background threadpool
         await _update_job(inspection_id, {"stage": "inference"})
@@ -132,7 +151,11 @@ async def run_inspection_background(
             sample_fps=sample_fps,
             stability_frames=stability_frames,
             progress_callback=on_progress,
-            emit_to_backend=False
+            emit_to_backend=False,
+            start_lat=start_lat,
+            start_lng=start_lng,
+            end_lat=end_lat,
+            end_lng=end_lng
         )
 
         if ml_result["status"] == "error":
@@ -163,6 +186,11 @@ async def run_inspection_background(
                 ingestion_result = await process_detection_event(session, detection_event)
                 
                 ev_data = dict(ev)
+                ev_data["inspection_id"] = inspection_id
+                ev_data["route_id"] = route_id
+                ev_data["route_name"] = route_name
+                ev_data["location_source"] = "INTERPOLATED_FROM_CONFIGURED_ROUTE"
+                ev_data["location_confidence"] = "demo_route"
                 if ingestion_result:
                     ev_data["issue_id"] = ingestion_result.id
                     ev_data["issue_status"] = ingestion_result.status.value if hasattr(ingestion_result.status, 'value') else ingestion_result.status
@@ -171,13 +199,27 @@ async def run_inspection_background(
 
             await session.commit()
 
+        # Keep the raw ML trace visible even when an individual ingestion result
+        # is unavailable; dropping the complete inspection result obscures detections.
+        events_to_persist = processed_events or [
+            {
+                **ev,
+                "inspection_id": inspection_id,
+                "route_id": route_id,
+                "route_name": route_name,
+                "location_source": "INTERPOLATED_FROM_CONFIGURED_ROUTE",
+                "location_confidence": "demo_route",
+            }
+            for ev in raw_events
+        ]
+
         # 6. Finalize inspection status
         elapsed = round(time.time() - start_time, 2)
         await _update_job(inspection_id, {
             "status": "completed",
             "stage": "complete",
             "progress": 100,
-            # "events": processed_events, # We don't save events to the job DB for now to save space
+            "events": events_to_persist,
             "annotated_video_url": annotated_video_url if (annotated_video_path and os.path.exists(annotated_video_path)) else None,
             "statistics": {
                 "total_frames": total_frames,
@@ -185,11 +227,11 @@ async def run_inspection_background(
                 "raw_detections": ml_result.get("detections_raw", 0),
                 "filtered_detections": ml_result.get("detections_filtered", 0),
                 "tracks": ml_result.get("tracks", 0),
-                "emitted_events": len(processed_events),
+                "emitted_events": len(events_to_persist),
                 "processing_time": elapsed
             }
         })
-        logger.info(f"AI Inspection {inspection_id} completed successfully in {elapsed}s. {len(processed_events)} events detected.")
+        logger.info(f"AI Inspection {inspection_id} completed successfully in {elapsed}s. {len(events_to_persist)} events detected.")
 
     except Exception as e:
         logger.error(f"AI Inspection {inspection_id} failed: {e}", exc_info=True)
@@ -216,6 +258,13 @@ async def upload_inspection_video(
     conf_threshold: float = Form(0.10),
     stability_frames: int = Form(1),
     generate_annotated: bool = Form(True),
+    route_id: str = Form("DEL-NCR-01"),
+    route_name: str = Form("Delhi - Noida Corridor"),
+    start_lat: float = Form(28.6139),
+    start_lng: float = Form(77.2090),
+    end_lat: float = Form(28.5355),
+    end_lng: float = Form(77.3910),
+    capture_started_at: str = Form(""),
     session: AsyncSession = Depends(get_db)
 ):
     """
@@ -275,7 +324,14 @@ async def upload_inspection_video(
         sample_fps,
         conf_threshold,
         stability_frames,
-        generate_annotated
+        generate_annotated,
+        route_id,
+        route_name,
+        start_lat,
+        start_lng,
+        end_lat,
+        end_lng,
+        capture_started_at or "not_provided"
     )
 
     return {
@@ -302,10 +358,10 @@ async def get_inspection_status(inspection_id: str, session: AsyncSession = Depe
         "progress": job.progress,
         "video_metadata": job.video_metadata,
         "statistics": job.statistics,
+        "events": job.events or [],
         "annotated_video_url": job.annotated_video_url,
         "error": job.error,
         "created_at": job.created_at.isoformat() if job.created_at else None,
-        "events": [] # We don't return events here to save payload size, they are fetched via issues API
     }
 
 from sqlalchemy import select

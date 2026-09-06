@@ -1,11 +1,71 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, case
+from datetime import datetime
+import uuid
 
 from app.core.database import get_db
-from app.models.domain import Ticket, TicketStatus, Department, UrbanIssue
+from app.models.domain import Ticket, TicketStatus, Department, UrbanIssue, IssueStatus
 
 router = APIRouter(prefix="/api/v1/tickets", tags=["Tickets"])
+
+
+@router.post("")
+async def create_ticket(issue_id: str, session: AsyncSession = Depends(get_db)):
+    """Create one active repair ticket for an issue, idempotently."""
+    issue = await session.get(UrbanIssue, issue_id)
+    if not issue:
+        raise HTTPException(status_code=404, detail="Issue not found")
+
+    existing = await session.execute(
+        select(Ticket).where(
+            Ticket.issue_id == issue_id,
+            Ticket.status.not_in([TicketStatus.verified_resolved, TicketStatus.closed]),
+        )
+    )
+    ticket = existing.scalar_one_or_none()
+    if ticket:
+        return {
+            "id": ticket.id,
+            "displayId": ticket.display_id,
+            "issueId": ticket.issue_id,
+            "status": ticket.status.value,
+            "created": False,
+        }
+
+    department_result = await session.execute(
+        select(Department)
+        .where(Department.is_active == True)
+        .order_by(case((Department.department_type == "maintenance", 0), else_=1), Department.id)
+        .limit(1)
+    )
+    department = department_result.scalar_one_or_none()
+    if not department:
+        raise HTTPException(status_code=503, detail="No active authority department is configured")
+
+    ticket = Ticket(
+        id=f"tkt_{uuid.uuid4().hex[:8]}",
+        display_id=f"TKT-{datetime.utcnow().year}-{issue.id[-4:].upper()}",
+        issue_id=issue.id,
+        department_id=department.id,
+        title=f"Repair: {issue.issue_type.replace('_', ' ').title()}",
+        description=f"Operator-created repair ticket for {issue.issue_type}. Confidence: {issue.confidence:.2f}",
+        status=TicketStatus.open,
+        priority=issue.priority,
+    )
+    session.add(ticket)
+    issue.assigned_department_id = department.id
+    issue.status = IssueStatus.ticket_created
+    await session.commit()
+    return {
+        "id": ticket.id,
+        "displayId": ticket.display_id,
+        "issueId": ticket.issue_id,
+        "status": ticket.status.value,
+        "departmentId": department.id,
+        "departmentName": department.name,
+        "created": True,
+    }
 
 @router.get("")
 async def get_tickets(status: str = None, session: AsyncSession = Depends(get_db)):
@@ -37,7 +97,7 @@ async def get_tickets(status: str = None, session: AsyncSession = Depends(get_db
             "priority": t.priority.value if hasattr(t.priority, 'value') else t.priority,
             "severity": (issue_map[t.issue_id].severity.value if hasattr(issue_map[t.issue_id].severity, 'value') else issue_map[t.issue_id].severity) if t.issue_id in issue_map else "medium",
             "departmentId": t.department_id,
-            "departmentName": dept_map.get(t.department_id, "BBMP Road Infrastructure"),
+            "departmentName": dept_map.get(t.department_id, "Delhi-NCR Road Infrastructure"),
             "slaStatus": "on_track",
             "createdAt": t.created_at.isoformat() if t.created_at else None,
             "updatedAt": t.updated_at.isoformat() if t.updated_at else None
@@ -89,7 +149,7 @@ async def get_ticket(ticket_id: str, session: AsyncSession = Depends(get_db)):
         "priority": ticket.priority.value if hasattr(ticket.priority, 'value') else ticket.priority,
         "severity": (issue.severity.value if hasattr(issue.severity, 'value') else issue.severity) if issue else "medium",
         "departmentId": ticket.department_id,
-        "departmentName": dept.name if dept else "BBMP Road Infrastructure",
+        "departmentName": dept.name if dept else "Delhi-NCR Road Infrastructure",
         "slaStatus": "on_track",
         "createdAt": ticket.created_at.isoformat() if ticket.created_at else None,
         "updatedAt": ticket.updated_at.isoformat() if ticket.updated_at else None
@@ -174,4 +234,3 @@ async def get_valid_transitions(
         "currentStatus": ticket.status.value,
         "allowedTransitions": [s.value for s in allowed]
     }
-

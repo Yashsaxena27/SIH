@@ -35,8 +35,9 @@ class ModelInferenceEngine:
                 logger.info(f"YOLO model loaded successfully. Detected classes: {self.classes}")
             except Exception as e:
                 logger.error(f"Failed to load YOLO model: {e}")
-                logger.warning("Falling back to MOCK mode!")
-                self.mock_mode = True
+                raise RuntimeError(
+                    f"Real ML model could not be loaded from {settings.RESOLVED_MODEL_PATH}"
+                ) from e
 
     def predict_frame(self, frame: np.ndarray, conf: Optional[float] = None) -> List[Dict[str, Any]]:
         """

@@ -4,6 +4,7 @@ from sqlalchemy import select, func
 
 from app.core.database import get_db
 from app.models.domain import RoadSegment, Department, UrbanIssue, Bus, Route
+from app.services.road_health import recalculate_all_segment_health
 
 router = APIRouter(prefix="/api/v1", tags=["Analytics"])
 
@@ -11,6 +12,10 @@ router = APIRouter(prefix="/api/v1", tags=["Analytics"])
 async def get_road_segments(session: AsyncSession = Depends(get_db)):
     from sqlalchemy import text
     import shapely.wkb
+    health_results = {
+        item["segmentId"]: item
+        for item in await recalculate_all_segment_health(session)
+    }
     result = await session.execute(select(RoadSegment))
     segments = result.scalars().all()
     serialized = []
@@ -30,7 +35,7 @@ async def get_road_segments(session: AsyncSession = Depends(get_db)):
             "id": s.id,
             "name": s.name,
             "roadType": s.road_class,
-            "healthScore": s.health_score,
+            "healthScore": health_results[s.id]["healthScore"],
             "startPoint": start_point,
             "endPoint": end_point
         })
@@ -102,16 +107,18 @@ async def get_activity(session: AsyncSession = Depends(get_db)):
 
 @router.get('/analytics/roads/summary')
 async def get_road_summary(session: AsyncSession = Depends(get_db)):
+    health_results = await recalculate_all_segment_health(session)
     result = await session.execute(select(RoadSegment))
     segments = result.scalars().all()
     
     total_seg = len(segments)
-    avg_score = round(sum(s.health_score for s in segments) / max(total_seg, 1), 1) if total_seg else 82.0
+    scores = [item["healthScore"] for item in health_results]
+    avg_score = round(sum(scores) / max(len(scores), 1), 1) if scores else 82.0
     
-    excellent = sum(1 for s in segments if s.health_score >= 85)
-    good = sum(1 for s in segments if 70 <= s.health_score < 85)
-    fair = sum(1 for s in segments if 50 <= s.health_score < 70)
-    critical = sum(1 for s in segments if s.health_score < 50)
+    excellent = sum(1 for score in scores if score >= 85)
+    good = sum(1 for score in scores if 70 <= score < 85)
+    fair = sum(1 for score in scores if 50 <= score < 70)
+    critical = sum(1 for score in scores if score < 50)
     
     defect_count = await session.scalar(select(func.count()).select_from(UrbanIssue))
     
@@ -216,4 +223,3 @@ async def get_hotspots(session: AsyncSession = Depends(get_db)):
         })
         
     return hotspots
-
