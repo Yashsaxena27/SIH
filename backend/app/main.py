@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 
-from app.api.v1 import issues, simulator, ingestion, fleet, tickets, verifications, analytics, events, inspection, complaints
+from app.api.v1 import issues, simulator, ingestion, fleet, tickets, verifications, analytics, events, inspection, complaints, authorities
 
 app = FastAPI(
     title="Urban Intelligence Network API",
@@ -25,6 +25,7 @@ app.include_router(ingestion.router)
 app.include_router(fleet.router)
 app.include_router(tickets.router)
 app.include_router(verifications.router)
+app.include_router(authorities.router)
 app.include_router(analytics.router)
 app.include_router(events.router)
 app.include_router(inspection.router)
@@ -37,6 +38,16 @@ from fastapi.staticfiles import StaticFiles
 evidence_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "evidence"))
 os.makedirs(evidence_dir, exist_ok=True)
 app.mount("/evidence", StaticFiles(directory=evidence_dir), name="evidence")
+
+# Video library static files mount
+candidate_video_dirs = [
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "ml", "videos")),
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "ml", "videos")),
+    "/app/ml/videos"
+]
+videos_dir = next((d for d in candidate_video_dirs if os.path.isdir(d)), candidate_video_dirs[0])
+os.makedirs(videos_dir, exist_ok=True)
+app.mount("/videos", StaticFiles(directory=videos_dir), name="videos")
 
 @app.get("/health/live", tags=["Health"])
 async def health_live():

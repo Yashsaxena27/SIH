@@ -9,74 +9,13 @@ import {
   CheckCircle, XCircle, Clock, Check, ArrowRight,
   ShieldAlert, Wrench, Search, PenTool, Layers, MapPin
 } from 'lucide-react';
-import { GlassPanel, PageHeader } from '@/components/ui';
+import { GlassPanel, PageHeader, LoadingState, EmptyState } from '@/components/ui';
+import { api } from '@/services/api';
 import { cn, timeAgo, formatDate } from '@/lib/utils';
+import { config } from '@/services/core/config';
+import type { Verification, VerificationSummary } from '@/types';
 
-// ── Simulated Road Imagery ──────────────────────────────────
-interface RoadImageProps {
-  type: 'before' | 'after_success' | 'after_fail';
-}
-
-function SimulatedRoadImage({ type }: RoadImageProps) {
-  return (
-    <div className="absolute inset-0 w-full h-full bg-[#1a1a24] overflow-hidden">
-      {/* Asphalt noise */}
-      <div className="absolute inset-0 opacity-[0.15]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%220 0 200 200%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22noiseFilter%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.8%22 numOctaves=%223%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23noiseFilter)%22/%3E%3C/svg%3E")' }} />
-      
-      {type === 'before' && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="relative w-32 h-24">
-            {/* Pothole shape */}
-            <div className="absolute inset-0 bg-[#0a0a0f] rounded-[40%_60%_70%_30%/40%_50%_60%_50%] shadow-[inset_0_10px_20px_rgba(0,0,0,0.8)]" />
-            <div className="absolute inset-2 bg-[#050508] rounded-[30%_70%_50%_50%/50%_40%_60%_40%] shadow-[inset_0_5px_10px_rgba(0,0,0,0.9)]" />
-            {/* Bounding Box */}
-            <div className="absolute -inset-4 border-2 border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.3)]">
-              <div className="absolute -top-6 left-[-2px] bg-red-500 text-black text-[10px] font-mono font-bold px-1.5 py-0.5 uppercase">
-                DEFECT_DETECTED
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {type === 'after_success' && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="relative w-36 h-28">
-            {/* Repaired patch shape */}
-            <div className="absolute inset-0 bg-[#2a2a35] rounded-[35%_65%_65%_35%/45%_55%_55%_45%] border border-white/5" />
-            {/* Bounding Box */}
-            <div className="absolute -inset-2 border-2 border-status-healthy shadow-[0_0_15px_rgba(16,185,129,0.3)]">
-              <div className="absolute -top-6 left-[-2px] bg-status-healthy text-black text-[10px] font-mono font-bold px-1.5 py-0.5 uppercase">
-                SURFACE_REPAIRED
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {type === 'after_fail' && (
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="relative w-32 h-24">
-            {/* Same pothole shape */}
-            <div className="absolute inset-0 bg-[#0a0a0f] rounded-[40%_60%_70%_30%/40%_50%_60%_50%] shadow-[inset_0_10px_20px_rgba(0,0,0,0.8)]" />
-            <div className="absolute inset-2 bg-[#050508] rounded-[30%_70%_50%_50%/50%_40%_60%_40%] shadow-[inset_0_5px_10px_rgba(0,0,0,0.9)]" />
-            {/* Bounding Box */}
-            <div className="absolute -inset-4 border-2 border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.3)]">
-              <div className="absolute -top-6 left-[-2px] bg-red-500 text-black text-[10px] font-mono font-bold px-1.5 py-0.5 uppercase">
-                DEFECT_PERSISTS
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-      
-      {/* Overlay vignette */}
-      <div className="absolute inset-0 shadow-[inset_0_0_100px_rgba(0,0,0,0.9)] pointer-events-none" />
-    </div>
-  );
-}
-
-// ── Main Page Types & Cases Data ──────────────────────────────
+// ── Verification Case Model ───────────────────────────────────
 
 type VerificationCase = {
   id: string;
@@ -87,55 +26,79 @@ type VerificationCase = {
   afterBus: string;
   beforeTime: string;
   afterTime: string;
-  confidence: number;
+  confidence: number | null;
   reason?: string;
+  beforeEvidenceUrl?: string | null;
+  afterEvidenceUrl?: string | null;
+  authorityName?: string | null;
+  authorityCode?: string | null;
+  departmentName?: string | null;
+  issueId?: string;
 };
 
-const mockCases: VerificationCase[] = [
-  {
-    id: 'VRF-8842',
-    type: 'Critical Pothole',
-    location: 'MG Road, Sector 14',
-    status: 'verified',
-    beforeBus: 'BUS-017',
-    afterBus: 'BUS-029',
-    beforeTime: '2026-08-28T09:32:00Z',
-    afterTime: '2026-09-01T10:15:00Z',
-    confidence: 94.2
-  },
-  {
-    id: 'VRF-8843',
-    type: 'Deep Pothole',
-    location: 'Ring Road, Near Flyover',
-    status: 'reopened',
-    beforeBus: 'BUS-042',
-    afterBus: 'BUS-011',
-    beforeTime: '2026-08-29T11:20:00Z',
-    afterTime: '2026-09-01T14:30:00Z',
-    confidence: 88.7,
-    reason: 'Defect remains visible. Repair reported but not executed.'
-  },
-  {
-    id: 'VRF-8844',
-    type: 'Road Crack',
-    location: 'Vikas Marg',
-    status: 'pending',
-    beforeBus: 'BUS-033',
-    afterBus: 'PENDING',
-    beforeTime: '2026-08-30T08:15:00Z',
-    afterTime: 'PENDING',
-    confidence: 0
-  }
-];
-
 export function VerificationPage() {
-  const [activeCase, setActiveCase] = useState<VerificationCase>(mockCases[0]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [cases, setCases] = useState<VerificationCase[]>([]);
+  const [summary, setSummary] = useState<VerificationSummary | null>(null);
+  const [activeCase, setActiveCase] = useState<VerificationCase | null>(null);
   const [sliderPos, setSliderPos] = useState(50);
   const [analysisState, setAnalysisState] = useState(0); // 0: loading, 1: comparing, 2: complete
   const sliderRef = useRef<HTMLDivElement>(null);
 
+  const loadData = () => {
+    setLoading(true);
+    setError(null);
+    Promise.allSettled([
+      api.getVerifications(),
+      api.getVerificationSummary()
+    ]).then(([vRes, sRes]) => {
+      const vList: Verification[] = vRes.status === 'fulfilled' && Array.isArray(vRes.value) ? vRes.value : [];
+      const vSummary: VerificationSummary | null = sRes.status === 'fulfilled' ? sRes.value : null;
+
+      const mapped: VerificationCase[] = vList.map(v => {
+        const anyV = v as any;
+        return {
+          id: v.id,
+          type: anyV.issueType || 'Pothole Defect',
+          location: anyV.locationName || anyV.location || v.issueId || 'Monitored Corridor',
+          status: v.result === 'resolved' ? 'verified' : (v.result === 'unresolved' ? 'reopened' : 'pending'),
+          beforeBus: anyV.busId || 'Fleet Unit',
+          afterBus: v.result === 'pending_review' ? 'Pending Reinspection' : (v.busId || 'Fleet Unit'),
+          beforeTime: v.timestamp || new Date().toISOString(),
+          afterTime: v.timestamp || new Date().toISOString(),
+          confidence: v.confidence != null ? Math.round(v.confidence * 100) : null,
+          reason: v.notes || (v.result === 'unresolved' ? 'Defect remains visible upon reinspection.' : undefined),
+          beforeEvidenceUrl: anyV.beforeEvidenceUrl || null,
+          afterEvidenceUrl: anyV.afterEvidenceUrl || null,
+          authorityName: anyV.authorityName || null,
+          authorityCode: anyV.authorityCode || null,
+          departmentName: anyV.departmentName || null,
+          issueId: v.issueId
+        };
+      });
+
+      setCases(mapped);
+      setSummary(vSummary);
+      if (mapped.length > 0) {
+        setActiveCase(mapped[0]);
+      } else {
+        setActiveCase(null);
+      }
+      setLoading(false);
+    }).catch(err => {
+      setError('Failed to load repair verification cases.');
+      setLoading(false);
+    });
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
   // Trigger AI investigation animation on case change
   useEffect(() => {
+    if (!activeCase) return;
     setAnalysisState(0);
     setSliderPos(50);
     
@@ -147,7 +110,7 @@ export function VerificationPage() {
     }, 2200);
 
     return () => { clearTimeout(t1); clearTimeout(t2); };
-  }, [activeCase.id]);
+  }, [activeCase?.id]);
 
   const handleSliderMove = (e: React.MouseEvent | React.TouchEvent) => {
     if (!sliderRef.current) return;
@@ -156,6 +119,35 @@ export function VerificationPage() {
     const x = Math.max(0, Math.min(clientX - rect.left, rect.width));
     setSliderPos((x / rect.width) * 100);
   };
+
+  if (loading) return <LoadingState message="Loading repair verification telemetry..." size="lg" className="h-full" />;
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] p-6 bg-background">
+        <GlassPanel padding="lg" className="max-w-md text-center space-y-4 border-red-500/20 shadow-2xl">
+          <div className="w-12 h-12 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mx-auto text-status-critical">
+            <AlertTriangle className="w-6 h-6" />
+          </div>
+          <h2 className="text-lg font-bold text-on-surface">Data Unavailable</h2>
+          <p className="text-xs text-on-surface-variant leading-relaxed">{error}</p>
+          <button 
+            onClick={loadData} 
+            className="px-4 py-2 bg-primary text-on-primary rounded-xl text-xs font-bold uppercase tracking-wider transition-colors inline-flex items-center gap-2"
+          >
+            Retry Connection
+          </button>
+        </GlassPanel>
+      </div>
+    );
+  }
+
+  const statPills = [
+    { label: 'Awaiting', count: summary?.pendingReview ?? 0, color: 'text-blue-400 border-blue-500/20 bg-blue-500/10' },
+    { label: 'Verified', count: summary?.resolved ?? 0, color: 'text-emerald-400 border-emerald-500/20 bg-emerald-500/10' },
+    { label: 'Partial', count: summary?.partiallyResolved ?? 0, color: 'text-amber-400 border-amber-500/20 bg-amber-500/10' },
+    { label: 'Reopened', count: summary?.unresolved ?? 0, color: 'text-red-400 border-red-500/20 bg-red-500/10' },
+  ];
 
   return (
     <div className="p-4 sm:p-6 space-y-6 max-w-[1920px] mx-auto min-h-[calc(100vh-var(--spacing-header-height))] flex flex-col pb-16">
@@ -170,12 +162,7 @@ export function VerificationPage() {
         
         {/* Stat Pill Badges */}
         <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto pb-1 lg:pb-0 font-mono">
-          {[
-            { label: 'Awaiting', count: 12, color: 'text-blue-400 border-blue-500/20 bg-blue-500/10' },
-            { label: 'Verified', count: 8, color: 'text-emerald-400 border-emerald-500/20 bg-emerald-500/10' },
-            { label: 'Pending', count: 3, color: 'text-amber-400 border-amber-500/20 bg-amber-500/10' },
-            { label: 'Reopened', count: 1, color: 'text-red-400 border-red-500/20 bg-red-500/10' },
-          ].map(stat => (
+          {statPills.map(stat => (
             <div key={stat.label} className={cn("border rounded-xl px-4 py-2 flex flex-col min-w-[95px] backdrop-blur-md transition-all hover:scale-105", stat.color)}>
               <span className="text-[10px] text-on-surface-variant uppercase tracking-wider font-semibold">{stat.label}</span>
               <span className="text-xl font-bold mt-0.5 font-display-metrics">{stat.count}</span>
@@ -185,6 +172,15 @@ export function VerificationPage() {
       </div>
 
       {/* ── Main Layout ─────────────────────────────────────── */}
+      {cases.length === 0 ? (
+        <GlassPanel className="flex-1 flex flex-col items-center justify-center p-12 text-center min-h-[400px]">
+          <ShieldCheck className="w-12 h-12 text-on-surface-variant/40 mb-3" />
+          <h3 className="text-base font-bold text-on-surface">No Verifications Recorded</h3>
+          <p className="text-xs text-on-surface-variant max-w-sm mt-1">
+            Automated fleet reinspection records will appear here once municipal road repairs are inspected by buses.
+          </p>
+        </GlassPanel>
+      ) : activeCase ? (
       <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-6">
         
         {/* Left Panel: Verification Queue */}
@@ -195,12 +191,12 @@ export function VerificationPage() {
               Verification Queue
             </h3>
             <span className="text-[11px] font-mono font-bold text-on-surface-variant bg-surface-container border border-outline-variant px-2.5 py-0.5 rounded-full">
-              {mockCases.length} cases
+              {cases.length} cases
             </span>
           </div>
           
           <div className="flex-1 overflow-y-auto p-3 space-y-2.5">
-            {mockCases.map(c => {
+            {cases.map(c => {
               const isSelected = activeCase.id === c.id;
               let statusBadge = 'bg-blue-500/10 text-blue-400 border-blue-500/30';
               if (c.status === 'verified') statusBadge = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30';
@@ -264,25 +260,47 @@ export function VerificationPage() {
                 onTouchMove={handleSliderMove}
               >
                 {/* Before Image (Always on bottom) */}
-                <div className="absolute inset-0">
-                  <SimulatedRoadImage type="before" />
-                  <div className="absolute bottom-4 left-4 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-lg border border-outline-variant z-10">
+                <div className="absolute inset-0 bg-surface-lowest flex items-center justify-center overflow-hidden">
+                  {activeCase.beforeEvidenceUrl ? (
+                    <img 
+                      src={config.assetUrl(activeCase.beforeEvidenceUrl)} 
+                      alt="Original AI detection" 
+                      className="w-full h-full object-contain" 
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center justify-center p-6 text-center text-on-surface-variant font-mono text-xs">
+                      <Camera className="w-8 h-8 mb-2 opacity-40 text-primary" />
+                      <span>Original Evidence Crop Unavailable</span>
+                    </div>
+                  )}
+                  <div className="absolute bottom-4 left-4 bg-black/70 backdrop-blur-md px-3 py-1.5 rounded-lg border border-outline-variant z-10 font-mono">
                     <div className="text-[10px] text-on-surface-variant uppercase font-bold tracking-widest mb-0.5">Original Detection</div>
-                    <div className="text-xs text-on-surface font-data-mono">{formatDate(activeCase.beforeTime, 'medium')}</div>
+                    <div className="text-xs text-on-surface">{formatDate(activeCase.beforeTime, 'medium')}</div>
                   </div>
                 </div>
 
                 {/* After Image (Clipped on top) */}
                 <div 
-                  className="absolute inset-0 border-l-2 border-primary shadow-[-5px_0_20px_rgba(0,0,0,0.5)] z-20"
+                  className="absolute inset-0 border-l-2 border-primary shadow-[-5px_0_20px_rgba(0,0,0,0.5)] z-20 bg-surface-lowest flex items-center justify-center overflow-hidden"
                   style={{ clipPath: `inset(0 0 0 ${sliderPos}%)` }}
                 >
-                  <SimulatedRoadImage type={activeCase.status === 'verified' ? 'after_success' : activeCase.status === 'reopened' ? 'after_fail' : 'before'} />
+                  {activeCase.afterEvidenceUrl ? (
+                    <img 
+                      src={config.assetUrl(activeCase.afterEvidenceUrl)} 
+                      alt="Bus reinspection pass" 
+                      className="w-full h-full object-contain" 
+                    />
+                  ) : (
+                    <div className="flex flex-col items-center justify-center p-6 text-center text-on-surface-variant font-mono text-xs">
+                      <ShieldCheck className="w-8 h-8 mb-2 opacity-40 text-emerald-400" />
+                      <span>Reinspection Field Crop Unavailable</span>
+                    </div>
+                  )}
                   
                   {activeCase.status !== 'pending' && (
-                    <div className="absolute bottom-4 right-4 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-lg border border-outline-variant text-right z-10">
+                    <div className="absolute bottom-4 right-4 bg-black/70 backdrop-blur-md px-3 py-1.5 rounded-lg border border-outline-variant text-right z-10 font-mono">
                       <div className="text-[10px] text-on-surface-variant uppercase tracking-widest mb-0.5">Bus Reinspection</div>
-                      <div className="text-xs text-on-surface font-data-mono">{formatDate(activeCase.afterTime, 'medium')}</div>
+                      <div className="text-xs text-on-surface">{formatDate(activeCase.afterTime, 'medium')}</div>
                     </div>
                   )}
                 </div>
@@ -361,9 +379,21 @@ export function VerificationPage() {
                 {/* Metrics Breakdown */}
                 <div className="space-y-3.5 pt-4 border-t border-outline-variant/60 font-mono">
                   <div className="flex justify-between items-center text-xs">
+                    <span className="text-on-surface-variant uppercase tracking-wider font-semibold">Authority</span>
+                    <span className="font-bold text-on-surface">
+                      {activeCase.authorityCode || activeCase.authorityName || 'Unassigned'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-on-surface-variant uppercase tracking-wider font-semibold">Department</span>
+                    <span className="font-bold text-cyan-400">
+                      {activeCase.departmentName || 'Municipal Infrastructure'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs">
                     <span className="text-on-surface-variant uppercase tracking-wider font-semibold">Repair Confidence</span>
                     <span className="text-base font-bold text-on-surface font-display-metrics">
-                      {analysisState === 2 ? `${activeCase.confidence}%` : '---'}
+                      {analysisState === 2 ? (activeCase.confidence != null ? `${activeCase.confidence}%` : 'Unavailable') : '---'}
                     </span>
                   </div>
                   <div className="flex justify-between items-center text-xs">
@@ -475,6 +505,7 @@ export function VerificationPage() {
 
         </div>
       </div>
+      ) : null}
     </div>
   );
 }

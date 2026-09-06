@@ -24,6 +24,7 @@ export function IssuesPage() {
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [searchQuery, setSearchQuery] = useState('');
   const [severityFilter, setSeverityFilter] = useState<string>('ALL');
+  const [authorityFilter, setAuthorityFilter] = useState<string>('ALL');
   
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
@@ -67,21 +68,27 @@ export function IssuesPage() {
     );
   }
 
-  // Filter issues safely by search query & severity filter
+  // Filter issues safely by search query, severity, and jurisdiction authority
   const filteredIssues = issues.filter(issue => {
     const query = searchQuery.toLowerCase().trim();
     const address = (issue.location as any)?.address || (issue.location as any)?.formattedAddress || '';
     const idStr = issue.id || '';
     const typeStr = issue.type || '';
+    const authCode = issue.authorityCode || '';
 
     const matchesQuery = !query || 
       idStr.toLowerCase().includes(query) ||
       address.toLowerCase().includes(query) ||
-      typeStr.toLowerCase().includes(query);
+      typeStr.toLowerCase().includes(query) ||
+      authCode.toLowerCase().includes(query);
 
     const matchesSeverity = severityFilter === 'ALL' || (issue.severity || '').toLowerCase() === severityFilter.toLowerCase();
 
-    return matchesQuery && matchesSeverity;
+    const matchesAuthority = authorityFilter === 'ALL' ||
+      (authorityFilter === 'UNRESOLVED' && (issue.authorityId === null || issue.jurisdictionStatus === 'unresolved')) ||
+      (issue.authorityCode === authorityFilter || issue.authorityId === authorityFilter);
+
+    return matchesQuery && matchesSeverity && matchesAuthority;
   });
 
   const getSeverityBadge = (severity: string) => {
@@ -177,6 +184,30 @@ export function IssuesPage() {
             ))}
           </div>
 
+          {/* Authority / Jurisdiction Filter Selector */}
+          <div className="flex items-center p-1 bg-[#16161a] border border-white/[0.08] rounded-lg text-xs font-mono overflow-x-auto">
+            {[
+              { id: 'ALL', label: 'All' },
+              { id: 'PWD', label: 'PWD' },
+              { id: 'MCD', label: 'MCD' },
+              { id: 'NOIDA', label: 'Noida' },
+              { id: 'UNRESOLVED', label: 'Needs Review' }
+            ].map(auth => (
+              <button
+                key={auth.id}
+                onClick={() => setAuthorityFilter(auth.id)}
+                className={cn(
+                  "px-2.5 py-1 rounded-md text-[10px] font-bold uppercase transition-all whitespace-nowrap",
+                  authorityFilter === auth.id
+                    ? (auth.id === 'UNRESOLVED' ? "bg-amber-500/20 text-amber-400 border border-amber-500/30" : "bg-cyan-500/20 text-cyan-400 border border-cyan-500/30")
+                    : "text-on-surface-variant/70 hover:text-white"
+                )}
+              >
+                {auth.label}
+              </button>
+            ))}
+          </div>
+
           {/* View Mode Toggle Switcher */}
           <div className="flex items-center p-1 bg-[#16161a] border border-white/[0.08] rounded-lg">
             {[
@@ -258,21 +289,43 @@ export function IssuesPage() {
                   <div className="p-4 rounded-xl bg-[#16161a] border border-white/[0.08] hover:border-white/20 hover:bg-[#1a1b20] transition-all duration-200 cursor-pointer group flex flex-col justify-between h-full relative overflow-hidden">
                     
                     <div>
-                      {/* Card Header: Severity Badge + ID Tag */}
+                      {/* Card Header: Severity Badge + Authority Badge + ID Tag */}
                       <div className="flex items-center justify-between gap-3 mb-2.5">
-                        <span className={cn("inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider border", badge.color)}>
-                          <BadgeIcon className="w-3 h-3" />
-                          {badge.label}
-                        </span>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className={cn("inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider border", badge.color)}>
+                            <BadgeIcon className="w-3 h-3" />
+                            {badge.label}
+                          </span>
+                          {issue.authorityCode ? (
+                            <span className={cn(
+                              "px-2 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase border",
+                              issue.authorityCode === 'PWD' ? "bg-blue-500/15 text-blue-400 border-blue-500/30" :
+                              issue.authorityCode === 'MCD' ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" :
+                              "bg-purple-500/15 text-purple-400 border-purple-500/30"
+                            )}>
+                              {issue.authorityCode}
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-bold uppercase border bg-amber-500/15 text-amber-400 border-amber-500/30">
+                              UNRESOLVED
+                            </span>
+                          )}
+                        </div>
                         <span className="font-mono text-[11px] text-on-surface-variant/60 font-semibold tracking-wider">
                           {issue.id ? issue.id.toUpperCase() : `HAZ-${idx+1}`}
                         </span>
                       </div>
 
                       {/* Issue Title & Type */}
-                      <h3 className="text-base font-bold text-white group-hover:text-primary-hover transition-colors truncate mb-1.5">
+                      <h3 className="text-base font-bold text-white group-hover:text-primary-hover transition-colors truncate mb-1">
                         {(issue.type || 'road_hazard').replace(/_/g, ' ')}
                       </h3>
+
+                      {/* Department & Route Context */}
+                      <div className="text-[11px] text-zinc-400 font-mono mb-2 truncate">
+                        <span className="text-zinc-500">Dept: </span>
+                        <span className="text-zinc-300">{issue.departmentName || 'Pending Assignment'}</span>
+                      </div>
 
                       {/* Address Location */}
                       <div className="flex items-center gap-1.5 text-xs text-on-surface-variant/80 mb-4">
@@ -285,10 +338,10 @@ export function IssuesPage() {
                     <div className="pt-3 border-t border-white/[0.06] space-y-3">
                       <div className="grid grid-cols-2 gap-2 text-xs">
                         <div className="p-2 rounded-lg bg-white/[0.02] border border-white/[0.04] flex items-center justify-between">
-                          <span className="text-[10px] font-mono uppercase text-on-surface-variant/60">Hits</span>
+                          <span className="text-[10px] font-mono uppercase text-on-surface-variant/60">Fleet</span>
                           <span className="font-mono font-bold text-white flex items-center gap-1">
-                            <Bus className="w-3 h-3 text-on-surface-variant/70" />
-                            {obsCount}
+                            <Bus className="w-3 h-3 text-cyan-400" />
+                            {issue.uniqueBusCount > 1 ? `${issue.uniqueBusCount} Buses` : `${obsCount} Obs`}
                           </span>
                         </div>
 

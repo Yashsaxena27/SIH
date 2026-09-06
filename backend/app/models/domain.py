@@ -65,13 +65,41 @@ class ComplaintStatus(str, enum.Enum):
     closed = "closed"
 
 
+class Authority(Base, TimestampMixin):
+    __tablename__ = "authorities"
+    id = Column(String(50), primary_key=True)
+    name = Column(String(100), nullable=False)
+    code = Column(String(20), nullable=False, unique=True)
+    authority_type = Column(String(50), nullable=False)  # state_pwd, municipal_corporation, development_authority
+    jurisdiction_boundary = Column(Geometry(geometry_type='POLYGON', srid=4326), nullable=True)
+    is_active = Column(Boolean, default=True)
+
+    departments = relationship("Department", back_populates="authority")
+    jurisdictions = relationship("Jurisdiction", back_populates="authority")
+
+
+class Jurisdiction(Base, TimestampMixin):
+    __tablename__ = "jurisdictions"
+    id = Column(String(50), primary_key=True)
+    name = Column(String(100), nullable=False)
+    authority_id = Column(String(50), ForeignKey("authorities.id"), nullable=False)
+    boundary = Column(Geometry(geometry_type='POLYGON', srid=4326), nullable=False)
+    boundary_type = Column(String(50), default="configured_prototype_boundary")  # official_gis, configured_prototype_boundary
+    is_active = Column(Boolean, default=True)
+
+    authority = relationship("Authority", back_populates="jurisdictions")
+
+
 class Department(Base, TimestampMixin):
     __tablename__ = "departments"
     id = Column(String(50), primary_key=True)
     name = Column(String(100), nullable=False)
     department_type = Column(String(50))
     service_area = Column(String(100))
+    authority_id = Column(String(50), ForeignKey("authorities.id"), nullable=True)
     is_active = Column(Boolean, default=True)
+
+    authority = relationship("Authority", back_populates="departments")
 
 class User(Base, TimestampMixin):
     __tablename__ = "users"
@@ -111,6 +139,10 @@ class RoadSegment(Base, TimestampMixin):
     road_class = Column(String(50))
     geometry = Column(Geometry(geometry_type='LINESTRING', srid=4326), nullable=False)
     health_score = Column(Float, default=100.0)
+    authority_id = Column(String(50), ForeignKey("authorities.id"), nullable=True)
+    owner_agency = Column(String(100), nullable=True)
+
+    authority = relationship("Authority")
 
 class UrbanIssue(Base, TimestampMixin):
     __tablename__ = "urban_issues"
@@ -130,9 +162,14 @@ class UrbanIssue(Base, TimestampMixin):
     confidence = Column(Float, default=0.0)
     
     assigned_department_id = Column(String(50), ForeignKey("departments.id"), nullable=True)
+    authority_id = Column(String(50), ForeignKey("authorities.id"), nullable=True)
+    jurisdiction_id = Column(String(50), ForeignKey("jurisdictions.id"), nullable=True)
+    jurisdiction_source = Column(String(50), nullable=True)
     
     observations = relationship("Observation", back_populates="issue")
     ticket = relationship("Ticket", back_populates="issue", uselist=False)
+    authority = relationship("Authority")
+    jurisdiction = relationship("Jurisdiction")
 
 class Detection(Base, TimestampMixin):
     __tablename__ = "detections"
@@ -165,6 +202,7 @@ class Ticket(Base, TimestampMixin):
     display_id = Column(String(50), unique=True, nullable=False)
     issue_id = Column(String(50), ForeignKey("urban_issues.id"), nullable=False, unique=True)
     department_id = Column(String(50), ForeignKey("departments.id"), nullable=False)
+    authority_id = Column(String(50), ForeignKey("authorities.id"), nullable=True)
     
     title = Column(String(255), nullable=False)
     description = Column(String(1000))
@@ -177,6 +215,7 @@ class Ticket(Base, TimestampMixin):
     verified_at = Column(DateTime(timezone=True), nullable=True)
     
     issue = relationship("UrbanIssue", back_populates="ticket")
+    authority = relationship("Authority")
 
 class Verification(Base, TimestampMixin):
     __tablename__ = "verifications"

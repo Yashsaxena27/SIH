@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Polyline, Circle, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { renderToString } from 'react-dom/server';
-import { Bus as BusIcon, ShieldAlert, AlertTriangle } from 'lucide-react';
+import { Bus as BusIcon, ShieldAlert, AlertTriangle, MapPin } from 'lucide-react';
 import { cn, getValidLatLng } from '@/lib/utils';
 import type { Bus, UrbanIssue, Route } from '@/types';
 import type { MapLayers } from './LayerControls';
@@ -46,15 +46,22 @@ const createBusIcon = () => {
   return L.divIcon({ html, className: '', iconSize: [32, 32], iconAnchor: [16, 16] });
 };
 
-const createIssueIcon = (severity: string, observationCount: number, showClusters: boolean) => {
+const createIssueIcon = (severity: string, observationCount: number, showClusters: boolean, authorityCode?: string) => {
   const isCritical = severity === 'critical';
   const isHigh = severity === 'high';
   
+  const authorityRing = 
+    authorityCode === 'PWD' ? 'ring-2 ring-blue-500/80 shadow-[0_0_8px_rgba(59,130,246,0.5)]' :
+    authorityCode === 'MCD' ? 'ring-2 ring-emerald-500/80 shadow-[0_0_8px_rgba(16,185,129,0.5)]' :
+    authorityCode === 'NOIDA' ? 'ring-2 ring-purple-500/80 shadow-[0_0_8px_rgba(168,85,247,0.5)]' :
+    'ring-1 ring-amber-400/40';
+
   const html = renderToString(
     <div className="relative flex items-center justify-center group cursor-pointer">
       {isCritical && <div className="absolute inset-[-4px] rounded-full bg-red-500/30 animate-ping" />}
       <div className={cn(
         "relative flex items-center justify-center rounded-full border shadow-lg transition-transform group-hover:scale-110",
+        authorityRing,
         isCritical ? 'w-7 h-7 bg-[#141519] border-red-500 shadow-[0_0_16px_rgba(239,68,68,0.7)]' :
         isHigh ? 'w-6 h-6 bg-[#141519] border-orange-500 shadow-[0_0_12px_rgba(249,115,22,0.6)]' :
         'w-5.5 h-5.5 bg-[#141519] border-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.5)]'
@@ -97,6 +104,11 @@ export function CommandMap({ buses, issues, routes, hotspots = [], layers, filte
     if (filter === 'SAFETY') return i.severity === 'critical';
     return true;
   });
+
+  const hasValidIssues = visibleIssues.some(i => getValidLatLng(i) !== null);
+  const hasValidBuses = buses.some(b => getValidLatLng(b) !== null);
+  const hasValidHotspots = hotspots.some(h => getValidLatLng(h) !== null);
+  const hasAnyVisibleGeoData = hasValidIssues || (layers.buses && hasValidBuses) || (layers.clusters && hasValidHotspots);
 
   return (
     <div className="absolute inset-0 z-0 bg-[#0d0e11]">
@@ -148,11 +160,12 @@ export function CommandMap({ buses, issues, routes, hotspots = [], layers, filte
 
         {/* Hotspots (Cluster DBSCAN from DB) */}
         {layers.clusters && hotspots.map(spot => {
-          if (!spot.center) return null;
+          const pos = getValidLatLng(spot);
+          if (!pos) return null;
           return (
             <Circle
               key={spot.id}
-              center={[spot.center.lat, spot.center.lng]}
+              center={pos}
               radius={spot.radius || 50}
               pathOptions={{
                 stroke: true,
@@ -173,7 +186,7 @@ export function CommandMap({ buses, issues, routes, hotspots = [], layers, filte
             <Marker 
               key={`issue-${issue.id}`}
               position={pos}
-              icon={createIssueIcon(issue.severity, issue.observationCount, false)}
+              icon={createIssueIcon(issue.severity, issue.observationCount, false, issue.authorityCode)}
               eventHandlers={{ click: () => onIssueSelect(issue) }}
             />
           );
@@ -194,6 +207,23 @@ export function CommandMap({ buses, issues, routes, hotspots = [], layers, filte
         
         <MapBounds buses={buses} issues={issues} />
       </MapContainer>
+
+      {/* Honest Empty Overlay when no valid geo entities are visible in active filter */}
+      {!hasAnyVisibleGeoData && (
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[400] pointer-events-none">
+          <div className="bg-[#141519]/90 backdrop-blur-xl border border-white/[0.1] rounded-2xl px-6 py-5 text-center shadow-2xl max-w-sm pointer-events-auto">
+            <div className="w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-3 text-on-surface-variant">
+              <MapPin className="w-5 h-5" />
+            </div>
+            <h3 className="text-sm font-bold text-white">No Spatial Entities in Sector</h3>
+            <p className="text-xs text-on-surface-variant/70 mt-1 font-mono">
+              {filter !== 'ALL' 
+                ? `No recorded events match the "${filter}" filter criteria.` 
+                : 'No geographic incidents or vehicle coordinates are currently reported in this sector.'}
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

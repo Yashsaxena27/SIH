@@ -148,6 +148,15 @@ export function getValidLatLng(item: any): [number, number] | null {
         lat = geom.coordinates[1];
       }
     }
+
+    // 6. Center property (e.g., spatial cluster / hotspot): item.center
+    if ((lat === undefined || lng === undefined) && item.center) {
+      const c = item.center;
+      if (typeof c === 'object' && c !== null) {
+        lat = c.lat ?? c.latitude;
+        lng = c.lng ?? c.longitude;
+      }
+    }
   }
 
   // Convert to numbers

@@ -7,6 +7,8 @@ import type { TicketPriority, Severity } from './common';
 export interface Ticket {
   id: string;
   displayId: string; // e.g. "TKT-2024-0847"
+  isDemo?: boolean;
+  provenance?: string;
   issueId: string;
   issueDisplayId: string;
   title: string;
@@ -17,6 +19,9 @@ export interface Ticket {
   status: TicketStatus;
   departmentId: string;
   departmentName: string;
+  authorityId?: string | null;
+  authorityName?: string | null;
+  authorityCode?: string | null;
   assignedTo?: string;
   assignedOfficer?: string;
   createdAt: string;

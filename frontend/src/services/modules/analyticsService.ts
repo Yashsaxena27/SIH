@@ -7,12 +7,38 @@ import { mockDetections, mockDetectionSummary } from '../mock/detections';
 import type { 
   RoadSegment, RoadHealthSummary, RoadHealth, Department,
   SystemHealth, Alert, SystemMetric, ActivityEvent,
-  Detection, DetectionSummary
+  Detection, DetectionSummary,
+  AnalyticsSummary, AnalyticsIssues, AnalyticsTrends,
+  AnalyticsTickets, AnalyticsVerifications, AnalyticsAuthorities,
+  AnalyticsRoadHealth
 } from '@/types';
 
 const delay = (ms: number = 100) => new Promise(resolve => setTimeout(resolve, ms));
 
 export const analyticsService = {
+  // Phase 15 Database-Derived Analytics
+  async getAnalyticsSummary(): Promise<AnalyticsSummary> {
+    return client.get<AnalyticsSummary>('/analytics/summary');
+  },
+  async getAnalyticsIssues(): Promise<AnalyticsIssues> {
+    return client.get<AnalyticsIssues>('/analytics/issues');
+  },
+  async getAnalyticsTrends(): Promise<AnalyticsTrends> {
+    return client.get<AnalyticsTrends>('/analytics/trends');
+  },
+  async getAnalyticsTickets(): Promise<AnalyticsTickets> {
+    return client.get<AnalyticsTickets>('/analytics/tickets');
+  },
+  async getAnalyticsVerifications(): Promise<AnalyticsVerifications> {
+    return client.get<AnalyticsVerifications>('/analytics/verifications');
+  },
+  async getAnalyticsAuthorities(): Promise<AnalyticsAuthorities> {
+    return client.get<AnalyticsAuthorities>('/analytics/authorities');
+  },
+  async getAnalyticsRoadHealth(): Promise<AnalyticsRoadHealth> {
+    return client.get<AnalyticsRoadHealth>('/analytics/road-health');
+  },
+
   // Road Health
   async getRoadSegments(): Promise<RoadSegment[]> {
     if (config.useMockData) return delay().then(() => [...mockRoadSegments]);

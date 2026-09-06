@@ -34,14 +34,34 @@ const ticketStatusIcons: Record<string, typeof CheckCircle2> = {
 
 export function TicketsPage() {
   const [tickets, setTickets] = useState<TicketType[]>([]);
+  const [authorities, setAuthorities] = useState<any[]>([]);
+  const [selectedAuthority, setSelectedAuthority] = useState<string>('ALL');
+  const [selectedDepartment, setSelectedDepartment] = useState<string>('ALL');
+  const [selectedStatus, setSelectedStatus] = useState<string>('ALL');
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const loadAuthorities = async () => {
+    try {
+      const auths = await api.getAuthorities();
+      if (Array.isArray(auths)) {
+        setAuthorities(auths);
+      }
+    } catch (_e) {
+      // Graceful ignore
+    }
+  };
+
   const loadData = () => {
     setLoading(true);
     setError(null);
-    api.getTickets()
+    const params: { authority?: string; department_id?: string; status?: string } = {};
+    if (selectedAuthority !== 'ALL') params.authority = selectedAuthority;
+    if (selectedDepartment !== 'ALL') params.department_id = selectedDepartment;
+    if (selectedStatus !== 'ALL') params.status = selectedStatus;
+
+    api.getTickets(params)
       .then(data => {
         setTickets(Array.isArray(data) ? data : []);
         setLoading(false);
@@ -66,7 +86,11 @@ export function TicketsPage() {
       }
       
       // Reload tickets to get latest state
-      const updated = await api.getTickets();
+      const params: { authority?: string; department_id?: string; status?: string } = {};
+      if (selectedAuthority !== 'ALL') params.authority = selectedAuthority;
+      if (selectedDepartment !== 'ALL') params.department_id = selectedDepartment;
+      if (selectedStatus !== 'ALL') params.status = selectedStatus;
+      const updated = await api.getTickets(params);
       setTickets(Array.isArray(updated) ? updated : []);
     } catch (err) {
       console.error('Failed to update ticket status', err);
@@ -76,8 +100,24 @@ export function TicketsPage() {
   };
 
   useEffect(() => {
-    loadData();
+    loadAuthorities();
   }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [selectedAuthority, selectedDepartment, selectedStatus]);
+
+  const availableDepartments = useMemo(() => {
+    if (selectedAuthority === 'ALL') {
+      const depts: any[] = [];
+      authorities.forEach(a => {
+        if (Array.isArray(a.departments)) depts.push(...a.departments);
+      });
+      return depts;
+    }
+    const auth = authorities.find(a => a.code === selectedAuthority || a.id === selectedAuthority);
+    return auth && Array.isArray(auth.departments) ? auth.departments : [];
+  }, [authorities, selectedAuthority]);
 
   // Compute summary stats dynamically from existing loaded tickets array
   const stats = useMemo(() => {
@@ -177,12 +217,106 @@ export function TicketsPage() {
         </div>
       )}
 
+      {/* ── Authority & Queue Filter Toolbar ────────────────── */}
+      <GlassPanel padding="md" className="border-outline-variant/70 bg-surface-container/30">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          
+          {/* Authority Tabs */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0 font-mono text-xs">
+            <button
+              onClick={() => setSelectedAuthority('ALL')}
+              className={cn(
+                "px-3 py-1.5 rounded-lg border transition-all uppercase tracking-wider font-bold whitespace-nowrap",
+                selectedAuthority === 'ALL'
+                  ? "bg-primary text-on-primary border-primary shadow-sm"
+                  : "bg-surface-container text-on-surface-variant border-outline-variant hover:text-on-surface"
+              )}
+            >
+              All Authorities
+            </button>
+
+            {authorities.map(auth => (
+              <button
+                key={auth.id}
+                onClick={() => setSelectedAuthority(auth.code || auth.name)}
+                className={cn(
+                  "px-3 py-1.5 rounded-lg border transition-all uppercase tracking-wider font-bold whitespace-nowrap flex items-center gap-1.5",
+                  selectedAuthority === (auth.code || auth.name)
+                    ? "bg-primary text-on-primary border-primary shadow-sm"
+                    : "bg-surface-container text-on-surface-variant border-outline-variant hover:text-on-surface"
+                )}
+              >
+                <span>{auth.code || auth.name}</span>
+                {auth.ticketCount != null && auth.ticketCount > 0 && (
+                  <span className={cn(
+                    "text-[10px] px-1.5 py-0.2 rounded-full",
+                    selectedAuthority === (auth.code || auth.name) ? "bg-white/20 text-white" : "bg-surface-container-high text-on-surface-variant"
+                  )}>
+                    {auth.ticketCount}
+                  </span>
+                )}
+              </button>
+            ))}
+
+            <button
+              onClick={() => setSelectedAuthority('UNASSIGNED')}
+              className={cn(
+                "px-3 py-1.5 rounded-lg border transition-all uppercase tracking-wider font-bold whitespace-nowrap",
+                selectedAuthority === 'UNASSIGNED'
+                  ? "bg-amber-500 text-black border-amber-500 shadow-sm"
+                  : "bg-surface-container text-on-surface-variant border-outline-variant hover:text-on-surface"
+              )}
+            >
+              Unassigned
+            </button>
+          </div>
+
+          {/* Department & Status Selectors */}
+          <div className="flex items-center gap-3 font-mono text-xs flex-wrap">
+            <div className="flex items-center gap-1.5">
+              <span className="text-on-surface-variant text-[11px] uppercase">Dept:</span>
+              <select
+                value={selectedDepartment}
+                onChange={(e) => setSelectedDepartment(e.target.value)}
+                className="bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-on-surface text-xs focus:outline-none focus:border-primary"
+              >
+                <option value="ALL">All Departments</option>
+                {availableDepartments.map(d => (
+                  <option key={d.id} value={d.id}>{d.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <span className="text-on-surface-variant text-[11px] uppercase">Status:</span>
+              <select
+                value={selectedStatus}
+                onChange={(e) => setSelectedStatus(e.target.value)}
+                className="bg-surface-container border border-outline-variant rounded-lg px-2.5 py-1.5 text-on-surface text-xs focus:outline-none focus:border-primary uppercase"
+              >
+                <option value="ALL">All Statuses</option>
+                <option value="open">Open</option>
+                <option value="assigned">Assigned</option>
+                <option value="in_progress">In Progress</option>
+                <option value="repair_reported">Repair Reported</option>
+                <option value="verifying">Verifying</option>
+                <option value="verified_resolved">Verified Resolved</option>
+                <option value="verified_unresolved">Verified Unresolved</option>
+                <option value="closed">Closed</option>
+                <option value="reopened">Reopened</option>
+              </select>
+            </div>
+          </div>
+
+        </div>
+      </GlassPanel>
+
       {tickets.length === 0 ? (
         <div className="p-12">
           <EmptyState
             icon={Ticket}
             title="No Work Tickets"
-            description="There are currently no active municipal work tickets. Tickets will appear once road damage issues are prioritized."
+            description="There are currently no active municipal work tickets matching the selected filters."
           />
         </div>
       ) : (
@@ -232,6 +366,12 @@ export function TicketsPage() {
                             {ticket.displayId || ticket.id}
                           </span>
                           
+                          {(ticket.isDemo || (ticket.id && ticket.id.startsWith('tkt_demo_'))) && (
+                            <span className="px-2 py-0.5 rounded font-mono text-[9px] bg-purple-500/15 text-purple-400 border border-purple-500/30 uppercase tracking-wider font-bold">
+                              DEMO
+                            </span>
+                          )}
+
                           <SeverityBadge severity={ticket.severity || 'medium'} size="sm" />
                           
                           <span className={cn(
@@ -249,10 +389,26 @@ export function TicketsPage() {
                         </h3>
 
                         {/* Metadata Tag Row */}
-                        <div className="flex items-center gap-3 sm:gap-5 text-xs text-on-surface-variant font-mono flex-wrap pt-0.5">
+                        <div className="flex items-center gap-3 sm:gap-4 text-xs text-on-surface-variant font-mono flex-wrap pt-0.5">
+                          {ticket.authorityCode ? (
+                            <span className={cn(
+                              "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-mono font-bold uppercase border",
+                              ticket.authorityCode === 'PWD' ? "bg-blue-500/15 text-blue-400 border-blue-500/30" :
+                              ticket.authorityCode === 'MCD' ? "bg-emerald-500/15 text-emerald-400 border-emerald-500/30" :
+                              ticket.authorityCode === 'NOIDA' ? "bg-purple-500/15 text-purple-400 border-purple-500/30" :
+                              "bg-surface-container text-on-surface-variant border-outline-variant"
+                            )}>
+                              {ticket.authorityCode}
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 bg-surface-container text-on-surface-variant border border-outline-variant px-2.5 py-1 rounded-md text-xs font-mono font-bold uppercase">
+                              {ticket.authorityName || 'UNASSIGNED'}
+                            </span>
+                          )}
+
                           <span className="inline-flex items-center gap-1.5 bg-surface-container/60 px-2.5 py-1 rounded-md border border-outline-variant/40">
                             <Building2 className="w-3.5 h-3.5 text-primary" />
-                            {ticket.departmentName || 'Delhi-NCR Infrastructure'}
+                            {ticket.departmentName || ticket.departmentId || 'Delhi-NCR Road Infrastructure'}
                           </span>
                           
                           <span className="inline-flex items-center gap-1.5 bg-surface-container/60 px-2.5 py-1 rounded-md border border-outline-variant/40">
@@ -260,9 +416,9 @@ export function TicketsPage() {
                             {timeAgo(ticket.updatedAt || ticket.createdAt)}
                           </span>
 
-                          {ticket.assignedOfficer && (
+                          {(ticket.assignedOfficer || ticket.assignedTo) && (
                             <span className="inline-flex items-center gap-1.5 text-on-surface font-semibold bg-blue-500/10 px-2.5 py-1 rounded-md border border-blue-500/20 text-blue-300">
-                              <User className="w-3.5 h-3.5 text-blue-400" /> {ticket.assignedOfficer}
+                              <User className="w-3.5 h-3.5 text-blue-400" /> {ticket.assignedOfficer || ticket.assignedTo}
                             </span>
                           )}
                         </div>

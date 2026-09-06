@@ -17,18 +17,34 @@ async def transition_issue_state(session: AsyncSession, issue: UrbanIssue) -> Ur
     new_priority = calculate_priority(issue)
     issue.priority = new_priority
 
-    # Route every detected issue to the configured maintenance authority, even
-    # when its priority does not yet warrant automatic ticket creation.
-    if not issue.assigned_department_id:
-        dept_result = await session.execute(
-            select(Department).where(Department.is_active == True).order_by(
-                case((Department.department_type == "maintenance", 0), else_=1),
-                Department.id.asc()
-            ).limit(1)
-        )
-        department = dept_result.scalar_one_or_none()
-        if department:
-            issue.assigned_department_id = department.id
+    # Deterministic spatial jurisdiction and authority routing
+    if not issue.authority_id or not issue.assigned_department_id:
+        point_wkt = None
+        if isinstance(issue.location, str):
+            point_wkt = issue.location
+        elif hasattr(issue.location, 'x') and hasattr(issue.location, 'y'):
+            point_wkt = f"POINT({issue.location.x} {issue.location.y})"
+        elif hasattr(issue.location, 'data'):
+            import shapely.wkb
+            try:
+                pt = shapely.wkb.loads(bytes(issue.location.data))
+                point_wkt = f"POINT({pt.x} {pt.y})"
+            except Exception as e:
+                logger.warning(f"Could not parse issue location for jurisdiction resolution: {e}")
+
+        if point_wkt:
+            from app.services.jurisdiction_engine import resolve_issue_jurisdiction
+            res = await resolve_issue_jurisdiction(
+                session=session,
+                point_wkt=point_wkt,
+                road_segment_id=issue.road_segment_id,
+                issue_type=issue.issue_type
+            )
+            issue.authority_id = res.authority_id
+            issue.jurisdiction_id = res.jurisdiction_id
+            issue.jurisdiction_source = res.source
+            if res.department_id:
+                issue.assigned_department_id = res.department_id
     
     # 1. NEW -> CONFIRMED
     # Rule: If observed by >1 unique bus, or observation_count >= 3
@@ -46,20 +62,13 @@ async def transition_issue_state(session: AsyncSession, issue: UrbanIssue) -> Ur
     # Automatically create a ticket for high/urgent issues for the prototype demo
     if issue.status == IssueStatus.prioritized:
         if issue.priority in ['high', 'urgent']:
-            # Dynamically query active maintenance department to ensure valid Foreign Key
-            dept_query = select(Department).where(Department.is_active == True).order_by(
-                case((Department.department_type == 'maintenance', 0), else_=1),
-                Department.id.asc()
-            ).limit(1)
-            dept_result = await session.execute(dept_query)
-            dept = dept_result.scalar_one_or_none()
-
-            if dept:
+            if issue.assigned_department_id:
                 ticket = Ticket(
                     id=f"tkt_{uuid.uuid4().hex[:8]}",
                     display_id=f"TKT-{datetime.utcnow().year}-{issue.id[-4:].upper()}",
                     issue_id=issue.id,
-                    department_id=dept.id,
+                    department_id=issue.assigned_department_id,
+                    authority_id=issue.authority_id,
                     title=f"Repair: {issue.issue_type.replace('_', ' ').title()}",
                     description=f"Auto-generated ticket for {issue.issue_type}. Confidence: {issue.confidence:.2f}",
                     status=TicketStatus.open,
@@ -68,7 +77,7 @@ async def transition_issue_state(session: AsyncSession, issue: UrbanIssue) -> Ur
                 session.add(ticket)
                 issue.status = IssueStatus.ticket_created
             else:
-                logger.warning("No active department found in database; holding issue at 'prioritized'.")
+                logger.warning(f"Issue {issue.id} has no assigned department (jurisdiction {issue.jurisdiction_source}); holding at 'prioritized'.")
 
     # 4. REPAIR_REPORTED -> VERIFICATION_PENDING
     if issue.status == IssueStatus.repair_reported:

@@ -17,7 +17,12 @@ async def ensure_bus_exists(session: AsyncSession, bus_id: str) -> Bus:
     """
     bus = await session.get(Bus, bus_id)
     if not bus:
-        reg_num = f"DL-01-{bus_id.replace('-', '')[:6]}"
+        cleaned = bus_id.replace('-', '').upper()
+        suffix = cleaned[-6:] if len(cleaned) >= 6 else cleaned.ljust(6, 'X')
+        reg_num = f"DL-01-{suffix}"
+        existing_reg = await session.execute(select(Bus).where(Bus.registration_number == reg_num))
+        if existing_reg.scalar_one_or_none():
+            reg_num = f"DL-01-{uuid.uuid4().hex[:6].upper()}"
         bus = Bus(
             id=bus_id,
             registration_number=reg_num,

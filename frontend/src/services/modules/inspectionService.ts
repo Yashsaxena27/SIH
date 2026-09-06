@@ -57,7 +57,56 @@ export interface InspectionJob {
   created_at: number;
 }
 
+export interface LibraryVideo {
+  filename: string;
+  rel_path: string;
+  video_url: string;
+  size_bytes: number;
+  duration: number;
+  fps: number;
+  resolution: string;
+  width: number;
+  height: number;
+  total_frames: number;
+  default_bus_id: string;
+  default_route_id: string;
+  default_route_name: string;
+  default_start_lat: number;
+  default_start_lng: number;
+  default_end_lat: number;
+  default_end_lng: number;
+  description: string;
+  status_label: string;
+}
+
+export interface RunLibraryInspectionPayload {
+  video_filename: string;
+  bus_id?: string;
+  sample_fps?: number;
+  conf_threshold?: number;
+  stability_frames?: number;
+  generate_annotated?: boolean;
+  route_id?: string;
+  route_name?: string;
+  start_lat?: number;
+  start_lng?: number;
+  end_lat?: number;
+  end_lng?: number;
+  capture_started_at?: string;
+}
+
 export const inspectionService = {
+  async getLibraryVideos(): Promise<LibraryVideo[]> {
+    return client.get<LibraryVideo[]>('/inspection/videos');
+  },
+
+  async runLibraryInspection(payload: RunLibraryInspectionPayload): Promise<{ inspection_id: string; status: string; message: string }> {
+    return client.post<{ inspection_id: string; status: string; message: string }>(
+      '/inspection/library',
+      payload
+    );
+  },
+
   async uploadVideo(
     file: File,
     busId: string = 'BUS-001',

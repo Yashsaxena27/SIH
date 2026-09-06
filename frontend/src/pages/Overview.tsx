@@ -16,11 +16,9 @@ import {
   Wrench,
   ShieldAlert,
   Eye,
-  Layers,
-  Sparkles,
   RefreshCw
 } from 'lucide-react';
-import { GlassPanel, Sparkline, IntelligenceMap, LoadingState, EmptyState } from '@/components/ui';
+import { Sparkline, IntelligenceMap, LoadingState } from '@/components/ui';
 import { api } from '@/services/api';
 import { cn, timeAgo } from '@/lib/utils';
 import type { 
@@ -31,8 +29,6 @@ import type {
   VerificationSummary,
   RoadHealthSummary
 } from '@/types';
-
-import { config } from '@/services/core/config';
 
 export function OverviewPage() {
   const [loading, setLoading] = useState(true);
@@ -107,17 +103,6 @@ export function OverviewPage() {
           >
             <RefreshCw className="w-3.5 h-3.5" /> Retry Connection
           </button>
-          {!config.useMockData && (
-            <button 
-              onClick={() => {
-                config.useMockData = true;
-                loadData();
-              }}
-              className="px-4 py-2 bg-surface-container border border-outline-variant text-on-surface text-xs font-bold uppercase tracking-wider hover:bg-surface-high transition-colors rounded-lg"
-            >
-              Load Demo Mode
-            </button>
-          )}
         </div>
       </div>
     );
@@ -125,76 +110,63 @@ export function OverviewPage() {
 
   const { buses, issues, activity, verification, roadHealth } = data;
 
-  // Derive metrics safely from actual arrays & objects
-  const activeBuses = buses.filter(b => b.status === 'active').length;
-  const openIssues = issues.filter(i => ['open', 'confirmed', 'assigned'].includes(i.status)).length;
-  const criticalIssues = issues.filter(i => i.severity === 'critical' && ['open', 'confirmed', 'assigned'].includes(i.status)).length;
-  const liveObservations = buses.reduce((acc, b) => acc + (b.detectionsToday || 0), 0);
+  // Derive metrics truthfully from real backend responses
+  const activeBuses = data.system?.activeBuses ?? buses.filter(b => b.status === 'online' || b.status === 'active').length;
+  const totalBuses = data.system?.totalBuses ?? buses.length;
+  const openIssues = issues.filter(i => ['open', 'confirmed', 'assigned', 'new'].includes(i.status)).length;
+  const criticalIssues = issues.filter(i => (i.severity || '').toLowerCase() === 'critical' && ['open', 'confirmed', 'assigned', 'new'].includes(i.status)).length;
+  const liveObservations = data.system?.detectionsPastHour ?? issues.reduce((acc, i) => acc + (i.observationCount || 1), 0);
 
-  // Sparkline historical trends (mocked baseline visual overlay)
-  const sparkData = {
-    buses: [6, 7, 8, 8, 9, 11, 9],
-    obs: [120, 150, 180, 240, 310, 420, 560],
-    open: [24, 28, 26, 31, 35, 33, 31],
-    critical: [2, 3, 3, 5, 4, 3, 4],
-    pending: [15, 12, 14, 11, 15, 18, 12],
-    verified: [40, 45, 42, 51, 55, 62, 68]
-  };
-
-  const kpiCards = [
+  const kpiCards: Array<{
+    label: string;
+    value: number;
+    subtext: string;
+    icon: any;
+    iconColor: string;
+    spark?: number[];
+    sparkColor?: string;
+  }> = [
     {
       label: 'Active Fleet',
       value: activeBuses,
-      subtext: `${buses.length} total vehicles`,
+      subtext: `${totalBuses} registered vehicles`,
       icon: Bus,
-      iconColor: 'text-blue-400 bg-blue-500/10 border-blue-500/20',
-      spark: sparkData.buses,
-      sparkColor: '#60a5fa'
+      iconColor: 'text-blue-400 bg-blue-500/10 border-blue-500/20'
     },
     {
-      label: 'Live Detections',
+      label: 'Network Detections',
       value: liveObservations,
-      subtext: 'Today across network',
+      subtext: data.system?.detectionsPastHour != null ? 'Past hour network detections' : 'Observed defect events',
       icon: Eye,
-      iconColor: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20',
-      spark: sparkData.obs,
-      sparkColor: '#818cf8'
+      iconColor: 'text-indigo-400 bg-indigo-500/10 border-indigo-500/20'
     },
     {
       label: 'Open Issues',
       value: openIssues,
-      subtext: `${issues.length} recorded total`,
+      subtext: `${issues.length} total recorded`,
       icon: AlertTriangle,
-      iconColor: 'text-amber-400 bg-amber-500/10 border-amber-500/20',
-      spark: sparkData.open,
-      sparkColor: '#fbbf24'
+      iconColor: 'text-amber-400 bg-amber-500/10 border-amber-500/20'
     },
     {
       label: 'Critical Hazards',
       value: criticalIssues,
-      subtext: 'Require dispatch',
+      subtext: 'High/Critical priority',
       icon: ShieldAlert,
-      iconColor: 'text-red-400 bg-red-500/10 border-red-500/20',
-      spark: sparkData.critical,
-      sparkColor: '#f87171'
+      iconColor: 'text-red-400 bg-red-500/10 border-red-500/20'
     },
     {
       label: 'Pending Review',
       value: verification?.pendingReview ?? 0,
-      subtext: 'Awaiting inspection',
+      subtext: 'Awaiting reinspection',
       icon: Clock,
-      iconColor: 'text-sky-400 bg-sky-500/10 border-sky-500/20',
-      spark: sparkData.pending,
-      sparkColor: '#38bdf8'
+      iconColor: 'text-sky-400 bg-sky-500/10 border-sky-500/20'
     },
     {
       label: 'Verified Fixed',
       value: verification?.resolved ?? 0,
       subtext: 'Confirmed repairs',
       icon: ShieldCheck,
-      iconColor: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
-      spark: sparkData.verified,
-      sparkColor: '#34d399'
+      iconColor: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20'
     }
   ];
 
@@ -209,11 +181,8 @@ export function OverviewPage() {
               Municipal Operations Command Center
             </h1>
             <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-              <span className="relative flex h-1.5 w-1.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
-              </span>
-              LIVE INGESTION
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+              {data.system?.overallStatus ? `SYSTEM ${data.system.overallStatus.toUpperCase()}` : 'SYSTEM READY'}
             </div>
           </div>
           <p className="text-xs text-on-surface-variant/80 mt-1 font-medium">
@@ -269,9 +238,11 @@ export function OverviewPage() {
                       {card.subtext}
                     </div>
                   </div>
-                  <div className="opacity-40 group-hover:opacity-100 transition-opacity pb-0.5">
-                    <Sparkline data={card.spark} color={card.sparkColor} />
-                  </div>
+                  {card.spark && (
+                    <div className="opacity-40 group-hover:opacity-100 transition-opacity pb-0.5">
+                      <Sparkline data={card.spark} color={card.sparkColor} />
+                    </div>
+                  )}
                 </div>
               </div>
             </motion.div>
@@ -402,15 +373,23 @@ export function OverviewPage() {
               </div>
 
               {roadHealth ? (() => {
-                const avgScore = roadHealth.averageScore ?? roadHealth.averageHealth ?? 80;
-                const dist = roadHealth.segmentDistribution || { excellent: 40, good: 50, fair: 18, critical: 12 };
+                const rawScore = roadHealth.averageScore ?? roadHealth.averageHealth;
+                const hasScore = rawScore != null;
+                const avgScore = rawScore ?? 0;
+                const dist = roadHealth.segmentDistribution || { excellent: 0, good: 0, fair: 0, critical: 0 };
                 const totalSegments = Math.max(roadHealth.totalSegments || 1, 1);
 
                 return (
                   <div className="flex items-center justify-between">
                     <div>
-                      <div className="font-mono text-3xl font-bold text-white">{avgScore.toFixed(0)}<span className="text-xs font-normal text-on-surface-variant/60">/100</span></div>
-                      <div className="text-[10px] font-mono uppercase tracking-wider text-emerald-400 font-semibold mt-0.5">Municipal Rating</div>
+                      <div className="font-mono text-3xl font-bold text-white">
+                        {hasScore ? (
+                          <>{avgScore.toFixed(0)}<span className="text-xs font-normal text-on-surface-variant/60">/100</span></>
+                        ) : (
+                          <span className="text-zinc-500 text-2xl font-mono">UNAVAILABLE</span>
+                        )}
+                      </div>
+                      <div className="text-[10px] font-mono uppercase tracking-wider text-emerald-400 font-semibold mt-0.5">Decision Support Score</div>
                     </div>
 
                     <div className="flex gap-2">

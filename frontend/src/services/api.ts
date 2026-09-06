@@ -2,7 +2,7 @@
 // It routes all API calls to the newly architected modular services.
 
 import { issueService } from './modules/issueService';
-import { ticketService, verificationService } from './modules/ticketing';
+import { ticketService, verificationService, authorityService } from './modules/ticketing';
 import { fleetService, routeService } from './modules/fleetService';
 import { analyticsService, detectionService } from './modules/analyticsService';
 import { inspectionService } from './modules/inspectionService';
@@ -11,6 +11,8 @@ export const api = {
   createTicket: ticketService.createTicket,
   // Inspection
   uploadInspectionVideo: inspectionService.uploadVideo,
+  getLibraryVideos: inspectionService.getLibraryVideos,
+  runLibraryInspection: inspectionService.runLibraryInspection,
   getInspectionStatus: inspectionService.getInspectionStatus,
   listRecentInspections: inspectionService.listRecentInspections,
 
@@ -37,12 +39,22 @@ export const api = {
   getTicketSummary: ticketService.getTicketSummary,
   updateTicketStatus: ticketService.updateTicketStatus,
   assignTicket: ticketService.assignTicket,
+
+  // Authorities
+  getAuthorities: authorityService.getAuthorities,
   
   // Verification
   getVerifications: verificationService.getVerifications,
   getVerificationSummary: verificationService.getVerificationSummary,
   
   // Roads / Analytics
+  getAnalyticsSummary: analyticsService.getAnalyticsSummary,
+  getAnalyticsIssues: analyticsService.getAnalyticsIssues,
+  getAnalyticsTrends: analyticsService.getAnalyticsTrends,
+  getAnalyticsTickets: analyticsService.getAnalyticsTickets,
+  getAnalyticsVerifications: analyticsService.getAnalyticsVerifications,
+  getAnalyticsAuthorities: analyticsService.getAnalyticsAuthorities,
+  getAnalyticsRoadHealth: analyticsService.getAnalyticsRoadHealth,
   getRoadSegments: analyticsService.getRoadSegments,
   getRoadHealthSummary: analyticsService.getRoadHealthSummary,
   getRoadHealthHistory: analyticsService.getRoadHealthHistory,

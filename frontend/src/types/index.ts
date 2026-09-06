@@ -14,3 +14,4 @@ export * from './department';
 export * from './system';
 export * from './integration';
 export * from './common';
+export * from './analytics';

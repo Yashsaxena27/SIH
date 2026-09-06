@@ -167,6 +167,36 @@ export function IssueDrawer({ issue, onClose }: IssueDrawerProps) {
                 </div>
               </div>
 
+              {/* Operational Authority & Jurisdiction Routing */}
+              <div className="p-3.5 bg-white/[0.02] rounded-xl border border-white/[0.06] flex flex-col gap-1.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-xs font-mono text-cyan-400 font-bold">
+                    <UserPlus className="w-3.5 h-3.5" />
+                    <span>Operational Authority</span>
+                  </div>
+                  <span className={cn(
+                    "px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase",
+                    issue.authorityCode === 'PWD' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' :
+                    issue.authorityCode === 'MCD' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
+                    issue.authorityCode === 'NOIDA' ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' :
+                    'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                  )}>
+                    {issue.authorityCode || 'UNRESOLVED'}
+                  </span>
+                </div>
+                <div className="text-xs font-semibold text-white">
+                  {issue.authorityName || 'Pending Jurisdictional Allocation'}
+                </div>
+                <div className="text-[11px] text-on-surface-variant/70">
+                  Dept: {issue.departmentName || 'Road Infrastructure Maintenance'}
+                </div>
+                {issue.jurisdictionSource && (
+                  <div className="text-[10px] font-mono text-on-surface-variant/60">
+                    Provenance: <span className="text-cyan-400">{issue.jurisdictionSource}</span>
+                  </div>
+                )}
+              </div>
+
               {/* Spatial Clustering Visualization */}
               <div className="p-3.5 rounded-xl border border-white/[0.06] bg-white/[0.02] space-y-3">
                 <div className="text-[10px] font-mono uppercase text-on-surface-variant/60 tracking-wider">
@@ -175,15 +205,22 @@ export function IssueDrawer({ issue, onClose }: IssueDrawerProps) {
                 
                 <div className="flex flex-col items-center">
                   <div className="flex flex-wrap justify-center gap-1.5 mb-2">
-                    {Array.from({ length: Math.min(issue.observationCount ?? 1, 4) }).map((_, i) => (
-                      <div key={i} className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/[0.04] border border-white/[0.08] text-[10px] font-mono text-white">
+                    {issue.observingBuses && issue.observingBuses.length > 0 ? (
+                      issue.observingBuses.slice(0, 4).map((busNum, i) => (
+                        <div key={i} className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/[0.04] border border-white/[0.08] text-[10px] font-mono text-white">
+                          <Bus className="w-3 h-3 text-cyan-400" />
+                          <span>{busNum}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/[0.04] border border-white/[0.08] text-[10px] font-mono text-white">
                         <Bus className="w-3 h-3 text-cyan-400" />
-                        <span>BUS-00{i + 1}</span>
+                        <span>{issue.observationCount ?? 1} Recorded Observation{((issue.observationCount ?? 1) > 1) ? 's' : ''}</span>
                       </div>
-                    ))}
-                    {(issue.observationCount ?? 1) > 4 && (
+                    )}
+                    {issue.observingBuses && issue.observingBuses.length > 4 && (
                       <div className="flex items-center justify-center px-2 py-0.5 rounded-md bg-white/[0.04] text-[10px] font-mono text-on-surface-variant/60">
-                        +{(issue.observationCount ?? 1) - 4} more
+                        +{issue.observingBuses.length - 4} more
                       </div>
                     )}
                   </div>
@@ -195,7 +232,7 @@ export function IssueDrawer({ issue, onClose }: IssueDrawerProps) {
 
                   <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-mono font-semibold">
                     <ShieldCheck className="w-4 h-4" />
-                    <span>Validated Civic Anomaly</span>
+                    <span>{issue.corroborationText || ((issue.observationCount ?? 1) > 1 ? `Corroborated by ${issue.observationCount} passes` : 'Single Detection Anomaly')}</span>
                   </div>
                 </div>
               </div>

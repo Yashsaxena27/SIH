@@ -8,6 +8,8 @@ import type { DetectionClass } from './detection';
 export interface UrbanIssue {
   id: string;
   displayId: string; // e.g. "PTH-104"
+  isDemo?: boolean;
+  provenance?: string;
   type: DetectionClass;
   title: string;
   description: string;
@@ -23,8 +25,38 @@ export interface UrbanIssue {
   lastObservedAt: string;
   ticketId?: string;
   departmentId: string;
+  departmentName?: string | null;
+  authorityId?: string | null;
+  authorityName?: string | null;
+  authorityCode?: string | null;
+  jurisdictionId?: string | null;
+  jurisdictionName?: string | null;
+  jurisdictionStatus?: 'resolved' | 'unresolved';
+  jurisdictionSource?: string | null;
+  routingReason?: string;
+  observingBuses?: string[];
+  corroborationText?: string;
   assignedTo?: string;
   roadSegmentId?: string;
+  roadSegment?: {
+    id: string;
+    name: string;
+    roadClass?: string;
+    healthScore?: number;
+    healthScoreProvenance?: string;
+    ownerAgency?: string;
+  } | null;
+  ticket?: any | null;
+  verifications?: any[];
+  verification?: any | null;
+  timeline?: {
+    id: string;
+    type: string;
+    title: string;
+    description?: string;
+    timestamp?: string;
+    actor?: string;
+  }[];
   tags: string[];
   verificationStatus?: VerificationStatus;
   resolutionHistory: ResolutionEvent[];

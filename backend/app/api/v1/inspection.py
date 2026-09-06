@@ -4,7 +4,9 @@ import uuid
 import tempfile
 import asyncio
 import logging
+import shutil
 from typing import Dict, Any, List, Optional
+from pydantic import BaseModel
 try:
     import cv2
 except ImportError:
@@ -42,17 +44,53 @@ router = APIRouter(prefix="/api/v1/inspection", tags=["AI Road Inspection"])
 MAX_UPLOAD_SIZE = 100 * 1024 * 1024  # 100 MB max video
 ALLOWED_EXTENSIONS = {".mp4", ".mov", ".avi", ".mkv"}
 
+# Video Library resolution
+candidate_video_dirs = [
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", "ml", "videos")),
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "ml", "videos")),
+    "/app/ml/videos"
+]
+VIDEOS_DIR = next((d for d in candidate_video_dirs if os.path.isdir(d)), candidate_video_dirs[0])
+
+def probe_video_file(filepath: str) -> dict:
+    meta = {
+        "width": 640,
+        "height": 480,
+        "fps": 30.0,
+        "total_frames": 1,
+        "duration": 0.0,
+        "resolution": "640x480"
+    }
+    if cv2 is not None and os.path.isfile(filepath):
+        try:
+            cap = cv2.VideoCapture(filepath)
+            if cap.isOpened():
+                w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)) or 640
+                h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)) or 480
+                fps = cap.get(cv2.CAP_PROP_FPS) or 30.0
+                frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) or 1
+                dur = round(frames / fps, 2) if fps > 0 else 0.0
+                meta = {
+                    "width": w,
+                    "height": h,
+                    "fps": round(fps, 2),
+                    "total_frames": frames,
+                    "duration": dur,
+                    "resolution": f"{w}x{h}"
+                }
+            cap.release()
+        except Exception as e:
+            logger.warning(f"Could not probe video {filepath}: {e}")
+    return meta
+
 from app.models.domain import InspectionJob
 
-async def _update_job(job_id: str, updates: dict):
-    async with AsyncSessionLocal() as session:
-        job = await session.get(InspectionJob, job_id)
-        if job:
-            for k, v in updates.items():
-                setattr(job, k, v)
-            await session.commit()
+import threading
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
+from sqlalchemy.pool import NullPool
+from app.core.config import settings
 
-async def run_inspection_background(
+def run_inspection_isolated_thread(
     inspection_id: str,
     temp_video_path: str,
     filename: str,
@@ -70,20 +108,55 @@ async def run_inspection_background(
     capture_started_at: str
 ):
     """
-    Background worker that runs YOLO detection, tracking, severity, GPS,
-    evidence cropping, PostGIS ingestion, and lifecycle updates.
+    Isolated synchronous wrapper that runs the entire inspection in a new event loop
+    with a detached database connection pool to avoid FastAPI test lifecycle crashes.
     """
+    def _worker():
+        asyncio.run(_isolated_async_inspection(
+            inspection_id, temp_video_path, filename, bus_id, sample_fps,
+            conf_threshold, stability_frames, generate_annotated, route_id, route_name,
+            start_lat, start_lng, end_lat, end_lng, capture_started_at
+        ))
+        
+    t = threading.Thread(target=_worker, daemon=True)
+    t.start()
+
+
+async def _isolated_async_inspection(
+    inspection_id: str, temp_video_path: str, filename: str, bus_id: str,
+    sample_fps: int, conf_threshold: float, stability_frames: int,
+    generate_annotated: bool, route_id: str, route_name: str,
+    start_lat: float, start_lng: float, end_lat: float, end_lng: float,
+    capture_started_at: str
+):
+    # 1. Create fully isolated DB engine and sessionmaker
+    isolated_engine = create_async_engine(
+        settings.DATABASE_URL,
+        poolclass=NullPool,
+        echo=False,
+        future=True
+    )
+    IsolatedSessionLocal = async_sessionmaker(isolated_engine, expire_on_commit=False)
+
+    async def _isolated_update_job(updates: dict):
+        try:
+            async with IsolatedSessionLocal() as session:
+                job = await session.get(InspectionJob, inspection_id)
+                if job:
+                    for k, v in updates.items():
+                        setattr(job, k, v)
+                    await session.commit()
+        except Exception as e:
+            logger.warning(f"Failed to update job {inspection_id}: {e}")
+
     start_time = time.time()
-    
-    await _update_job(inspection_id, {
+    await _isolated_update_job({
         "status": "running",
         "stage": "sampling",
         "progress": 15
     })
     
     try:
-
-        # 1. Inspect video metadata
         if cv2 is None or VideoProcessor is None:
             raise ValueError("Video inspection requires OpenCV (cv2) and ML pipeline packages.")
 
@@ -113,9 +186,8 @@ async def run_inspection_background(
             "location_source": "INTERPOLATED_FROM_CONFIGURED_ROUTE",
             "location_confidence": "demo_route"
         }
-        await _update_job(inspection_id, {"video_metadata": video_metadata})
+        await _isolated_update_job({"video_metadata": video_metadata})
 
-        # 2. Output annotated video path
         annotated_video_url = None
         annotated_video_path = None
         if generate_annotated:
@@ -125,24 +197,23 @@ async def run_inspection_background(
             annotated_video_path = os.path.join(evidence_dir, annotated_video_filename)
             annotated_video_url = f"/evidence/{annotated_video_filename}"
 
-        # 3. Define progress callback
-        event_loop = asyncio.get_running_loop()
+        loop = asyncio.get_running_loop()
 
         def on_progress(pct: int, stage: str, cur_frame: int, tot_frames: int):
-            # Fire and forget update (can't easily await inside sync callback without loop trickery)
             progress_val = min(80, 15 + int(pct * 0.7))
             stage_val = "inference" if pct < 70 else "tracking"
-            event_loop.call_soon_threadsafe(
-                asyncio.create_task,
-                _update_job(inspection_id, {"progress": progress_val, "stage": stage_val}),
-            )
+            try:
+                asyncio.run_coroutine_threadsafe(
+                    _isolated_update_job({"progress": progress_val, "stage": stage_val}),
+                    loop
+                )
+            except Exception:
+                pass
 
-        # 4. Instantiate VideoProcessor and run in background threadpool
-        await _update_job(inspection_id, {"stage": "inference"})
+        await _isolated_update_job({"stage": "inference"})
 
         processor = VideoProcessor(output_path=annotated_video_path)
         
-        # Execute processing in threadpool so asyncio loop remains responsive to polling
         ml_result = await asyncio.to_thread(
             processor.process_video,
             video_path=temp_video_path,
@@ -162,45 +233,21 @@ async def run_inspection_background(
             raise ValueError(ml_result.get("error") or "ML video processing encountered an error")
 
         raw_events = ml_result.get("events", [])
-        await _update_job(inspection_id, {"stage": "ingestion", "progress": 85})
-
-        # 5. Persist events safely into PostgreSQL/PostGIS through existing lifecycle
         processed_events = []
-        async with AsyncSessionLocal() as session:
-            # Ensure bus exists in database
+        
+        # Spatial Fusion and DB ingestion
+        async with IsolatedSessionLocal() as session:
             await ensure_bus_exists(session, bus_id)
+            
+            for event_data in raw_events:
+                detection_event = DetectionEvent(**event_data)
+                result_issue = await process_detection_event(session, detection_event)
+                if result_issue:
+                    event_data["issue_id"] = result_issue.id
+                    event_data["issue_status"] = result_issue.status
+                    event_data["issue_priority"] = result_issue.priority
+                processed_events.append(event_data)
 
-            for ev in raw_events:
-                detection_event = DetectionEvent(
-                    event_id=ev["event_id"],
-                    bus_id=ev["bus_id"],
-                    timestamp=ev["timestamp"],
-                    location=GeoPoint(lat=ev["location"]["lat"], lng=ev["location"]["lng"]),
-                    detection_type=ev["detection_type"],
-                    confidence=ev["confidence"],
-                    severity=ev["severity"],
-                    evidence_url=ev["evidence_url"]
-                )
-
-                # Process detection through PostGIS spatial fusion and lifecycle
-                ingestion_result = await process_detection_event(session, detection_event)
-                
-                ev_data = dict(ev)
-                ev_data["inspection_id"] = inspection_id
-                ev_data["route_id"] = route_id
-                ev_data["route_name"] = route_name
-                ev_data["location_source"] = "INTERPOLATED_FROM_CONFIGURED_ROUTE"
-                ev_data["location_confidence"] = "demo_route"
-                if ingestion_result:
-                    ev_data["issue_id"] = ingestion_result.id
-                    ev_data["issue_status"] = ingestion_result.status.value if hasattr(ingestion_result.status, 'value') else ingestion_result.status
-                    ev_data["issue_priority"] = ingestion_result.priority.value if hasattr(ingestion_result.priority, 'value') else ingestion_result.priority
-                processed_events.append(ev_data)
-
-            await session.commit()
-
-        # Keep the raw ML trace visible even when an individual ingestion result
-        # is unavailable; dropping the complete inspection result obscures detections.
         events_to_persist = processed_events or [
             {
                 **ev,
@@ -213,9 +260,8 @@ async def run_inspection_background(
             for ev in raw_events
         ]
 
-        # 6. Finalize inspection status
         elapsed = round(time.time() - start_time, 2)
-        await _update_job(inspection_id, {
+        await _isolated_update_job({
             "status": "completed",
             "stage": "complete",
             "progress": 100,
@@ -231,27 +277,170 @@ async def run_inspection_background(
                 "processing_time": elapsed
             }
         })
-        logger.info(f"AI Inspection {inspection_id} completed successfully in {elapsed}s. {len(events_to_persist)} events detected.")
+        logger.info(f"AI Inspection {inspection_id} completed successfully in {elapsed}s.")
 
     except Exception as e:
         logger.error(f"AI Inspection {inspection_id} failed: {e}", exc_info=True)
-        await _update_job(inspection_id, {
+        await _isolated_update_job({
             "status": "failed",
             "stage": "error",
             "progress": 100,
             "error": str(e)
         })
     finally:
-        # 7. Clean up temporary uploaded video file
+        await isolated_engine.dispose()
         if os.path.exists(temp_video_path):
             try:
                 os.remove(temp_video_path)
-            except Exception as e:
-                logger.warning(f"Could not remove temp video {temp_video_path}: {e}")
+            except Exception:
+                pass
+
+
+class LibraryInspectionRequest(BaseModel):
+    video_filename: str = "test_video.mp4"
+    bus_id: str = "BUS-001"
+    sample_fps: int = 1
+    conf_threshold: float = 0.10
+    stability_frames: int = 1
+    generate_annotated: bool = True
+    route_id: str = "DEL-NCR-01"
+    route_name: str = "Delhi - Noida Corridor"
+    start_lat: float = 28.6139
+    start_lng: float = 77.2090
+    end_lat: float = 28.5355
+    end_lng: float = 77.3910
+    capture_started_at: Optional[str] = ""
+
+
+@router.get("/videos")
+async def list_library_videos():
+    """
+    Returns verified video library assets with truthful technical metadata
+    and default bus/corridor transit associations.
+    """
+    videos = []
+    if not os.path.isdir(VIDEOS_DIR):
+        return videos
+
+    for root, _, files in os.walk(VIDEOS_DIR):
+        for fname in sorted(files):
+            ext = os.path.splitext(fname)[1].lower()
+            if ext in ALLOWED_EXTENSIONS:
+                abs_path = os.path.join(root, fname)
+                rel_path = os.path.relpath(abs_path, VIDEOS_DIR).replace("\\", "/")
+                size_bytes = os.path.getsize(abs_path)
+                meta = probe_video_file(abs_path)
+
+                if "clean_road" in fname:
+                    bus_id = "BUS-002"
+                    route_id = "DEL-NCR-02"
+                    route_name = "Ring Road Express"
+                    start_lat, start_lng = 28.6139, 77.2090
+                    end_lat, end_lng = 28.6250, 77.2200
+                    desc = "Clean road baseline test asset (0 defects expected)."
+                    tag = "Baseline Calibration"
+                else:
+                    bus_id = "BUS-001"
+                    route_id = "DEL-NCR-01"
+                    route_name = "Delhi - Noida Corridor"
+                    start_lat, start_lng = 28.6139, 77.2090
+                    end_lat, end_lng = 28.5355, 77.3910
+                    desc = "Delhi-Noida corridor run with road distress (potholes & cracks)."
+                    tag = "Road Distress Asset"
+
+                videos.append({
+                    "filename": fname,
+                    "rel_path": rel_path,
+                    "video_url": f"/videos/{rel_path}",
+                    "size_bytes": size_bytes,
+                    "duration": meta["duration"],
+                    "fps": meta["fps"],
+                    "resolution": meta["resolution"],
+                    "width": meta["width"],
+                    "height": meta["height"],
+                    "total_frames": meta["total_frames"],
+                    "default_bus_id": bus_id,
+                    "default_route_id": route_id,
+                    "default_route_name": route_name,
+                    "default_start_lat": start_lat,
+                    "default_start_lng": start_lng,
+                    "default_end_lat": end_lat,
+                    "default_end_lng": end_lng,
+                    "description": desc,
+                    "status_label": tag,
+                    "metadata_source": "configured_route_context"
+                })
+    return videos
+
+
+@router.post("/library")
+async def run_library_inspection(
+    payload: LibraryInspectionRequest,
+    session: AsyncSession = Depends(get_db)
+):
+    """
+    Triggers real YOLO AI road inspection directly on an existing video library asset.
+    """
+    # Strict directory traversal protection
+    clean_name = os.path.splitdrive(payload.video_filename)[1].lstrip(r"\/")
+    clean_name = os.path.normpath(clean_name).lstrip(r"\/")
+    real_videos_dir = os.path.abspath(VIDEOS_DIR)
+    source_video_path = os.path.abspath(os.path.join(real_videos_dir, clean_name))
+
+    if not source_video_path.startswith(real_videos_dir + os.sep) and source_video_path != real_videos_dir:
+        raise HTTPException(status_code=400, detail="Invalid video path traversal")
+
+    if not os.path.isfile(source_video_path):
+        raise HTTPException(status_code=404, detail=f"Library video '{payload.video_filename}' not found")
+
+    await ensure_bus_exists(session, payload.bus_id)
+
+    inspection_id = f"INSP-{uuid.uuid4().hex[:8].upper()}"
+    temp_dir = os.path.join(tempfile.gettempdir(), "aih_pothole_uploads")
+    os.makedirs(temp_dir, exist_ok=True)
+    temp_video_path = os.path.join(temp_dir, f"{inspection_id}_{os.path.basename(source_video_path)}")
+
+    # Copy file so worker cleanup will not affect the library asset
+    shutil.copyfile(source_video_path, temp_video_path)
+
+    new_job = InspectionJob(
+        id=inspection_id,
+        filename=os.path.basename(source_video_path),
+        bus_id=payload.bus_id,
+        status="pending",
+        stage="upload",
+        progress=5
+    )
+    session.add(new_job)
+    await session.commit()
+
+    run_inspection_isolated_thread(
+        inspection_id,
+        temp_video_path,
+        os.path.basename(source_video_path),
+        payload.bus_id,
+        payload.sample_fps,
+        payload.conf_threshold,
+        payload.stability_frames,
+        payload.generate_annotated,
+        payload.route_id,
+        payload.route_name,
+        payload.start_lat,
+        payload.start_lng,
+        payload.end_lat,
+        payload.end_lng,
+        payload.capture_started_at or "not_provided"
+    )
+
+    return {
+        "inspection_id": inspection_id,
+        "status": "pending",
+        "message": f"AI road inspection initiated for library video '{payload.video_filename}'."
+    }
+
 
 @router.post("/video")
 async def upload_inspection_video(
-    background_tasks: BackgroundTasks,
     video: UploadFile = File(...),
     bus_id: str = Form("BUS-001"),
     sample_fps: int = Form(1),
@@ -271,7 +460,6 @@ async def upload_inspection_video(
     Accepts road inspection video upload and triggers real YOLO AI inspection in the background.
     Returns inspection_id immediately for polling or streaming status.
     """
-    # 1. Validate file extension
     ext = os.path.splitext(video.filename)[1].lower()
     if ext not in ALLOWED_EXTENSIONS:
         raise HTTPException(
@@ -279,7 +467,6 @@ async def upload_inspection_video(
             detail=f"Invalid video format '{ext}'. Allowed formats: {', '.join(ALLOWED_EXTENSIONS)}"
         )
 
-    # 2. Ensure Bus exists in PostgreSQL
     await ensure_bus_exists(session, bus_id)
 
     inspection_id = f"INSP-{uuid.uuid4().hex[:8].upper()}"
@@ -287,10 +474,9 @@ async def upload_inspection_video(
     os.makedirs(temp_dir, exist_ok=True)
     temp_video_path = os.path.join(temp_dir, f"{inspection_id}_{video.filename}")
 
-    # 3. Stream upload chunk-by-chunk with MAX_UPLOAD_SIZE check
     bytes_written = 0
     with open(temp_video_path, "wb") as f:
-        while chunk := await video.read(1024 * 1024):  # 1MB chunks
+        while chunk := await video.read(1024 * 1024):  
             bytes_written += len(chunk)
             if bytes_written > MAX_UPLOAD_SIZE:
                 f.close()
@@ -298,11 +484,10 @@ async def upload_inspection_video(
                     os.remove(temp_video_path)
                 raise HTTPException(
                     status_code=413,
-                    detail=f"Video file exceeds maximum allowed size of {MAX_UPLOAD_SIZE // (1024 * 1024)}MB"
+                    detail=f"Video file exceeds maximum allowed size"
                 )
             f.write(chunk)
 
-    # 4. Initialize Job record in DB
     new_job = InspectionJob(
         id=inspection_id,
         filename=video.filename,
@@ -314,9 +499,8 @@ async def upload_inspection_video(
     session.add(new_job)
     await session.commit()
 
-    # 5. Dispatch background task
-    background_tasks.add_task(
-        run_inspection_background,
+    # Launch fully isolated worker thread
+    run_inspection_isolated_thread(
         inspection_id,
         temp_video_path,
         video.filename,

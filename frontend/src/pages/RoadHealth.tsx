@@ -62,7 +62,7 @@ export function RoadHealthPage() {
     );
   }
 
-  const avgScore = summary?.averageScore ?? 82;
+  const avgScore = summary?.averageScore != null ? summary.averageScore : null;
 
   return (
     <div className="relative p-4 sm:p-6 lg:p-8 space-y-8 max-w-[1920px] mx-auto pb-24 overflow-hidden">
@@ -96,18 +96,23 @@ export function RoadHealthPage() {
             </div>
           </div>
           <div className="flex items-baseline gap-2 mt-1">
-            <span className="text-4xl font-display-metrics font-extrabold tracking-tight text-on-surface">{avgScore.toFixed(0)}</span>
-            <span className="text-xs text-on-surface-variant font-mono font-medium">/ 100</span>
+            <span className="text-4xl font-display-metrics font-extrabold tracking-tight text-on-surface">
+              {avgScore != null ? avgScore.toFixed(0) : 'N/A'}
+            </span>
+            {avgScore != null && <span className="text-xs text-on-surface-variant font-mono font-medium">/ 100</span>}
           </div>
-          <div className="w-full bg-surface-container-high/80 h-2 rounded-full mt-4 overflow-hidden p-0.5 border border-outline-variant/30">
-            <div 
-              className="h-full rounded-full bg-gradient-to-r from-emerald-500 via-primary to-blue-400 transition-all duration-700 shadow-sm" 
-              style={{ width: `${Math.min(Math.max(avgScore, 0), 100)}%` }}
-            />
-          </div>
-          <div className="flex items-center gap-2 text-xs text-emerald-400 mt-3 font-semibold">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <TrendingUp className="w-3.5 h-3.5" /> Good Municipal Grade
+          {avgScore != null ? (
+            <div className="w-full bg-surface-container-high/80 h-2 rounded-full mt-4 overflow-hidden p-0.5 border border-outline-variant/30">
+              <div 
+                className="h-full rounded-full bg-gradient-to-r from-emerald-500 via-primary to-blue-400 transition-all duration-700 shadow-sm" 
+                style={{ width: `${Math.min(Math.max(avgScore, 0), 100)}%` }}
+              />
+            </div>
+          ) : (
+            <div className="text-xs text-on-surface-variant/60 mt-4 font-mono">Telemetry pending</div>
+          )}
+          <div className="flex items-center gap-2 text-xs text-on-surface-variant mt-3 font-semibold">
+            <TrendingUp className="w-3.5 h-3.5 text-primary" /> Surface Assessment
           </div>
         </GlassPanel>
 
@@ -150,10 +155,10 @@ export function RoadHealthPage() {
             </div>
           </div>
           <div className="text-4xl font-display-metrics font-extrabold tracking-tight text-on-surface mt-1">
-            94.2%
+            {summary?.resolutionRate != null ? `${summary.resolutionRate}%` : 'Awaiting SLA'}
           </div>
           <div className="text-xs text-on-surface-variant font-mono mt-4 flex items-center gap-1.5 font-medium">
-            <span className="w-2 h-2 rounded-full bg-emerald-400" /> Within 48h Target
+            <span className="w-2 h-2 rounded-full bg-primary" /> Target SLA Window
           </div>
         </GlassPanel>
       </div>
@@ -183,13 +188,19 @@ export function RoadHealthPage() {
         ) : (
           <div className="divide-y divide-outline-variant/50">
             {segments.map((seg, idx) => {
-              const score = seg.healthScore ?? 80;
+              const hasScore = seg.healthScore != null;
+              const score = seg.healthScore ?? 0;
               let statusLabel = 'Optimal';
               let badgeColor = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 shadow-[0_0_12px_rgba(16,185,129,0.1)]';
               let barColor = 'bg-emerald-500';
               let leftBorder = 'bg-emerald-500';
 
-              if (score < 50) {
+              if (!hasScore) {
+                statusLabel = 'UNAVAILABLE';
+                badgeColor = 'bg-zinc-800 text-zinc-400 border-zinc-700';
+                barColor = 'bg-zinc-600';
+                leftBorder = 'bg-zinc-600';
+              } else if (score < 50) {
                 statusLabel = 'Critical';
                 badgeColor = 'bg-red-500/10 text-red-400 border-red-500/30 shadow-[0_0_12px_rgba(239,68,68,0.1)]';
                 barColor = 'bg-red-500';
@@ -233,11 +244,17 @@ export function RoadHealthPage() {
 
                   <div className="flex items-center gap-6 sm:gap-12">
                     <div className="text-right min-w-[120px]">
-                      <div className="text-sm font-mono font-extrabold text-on-surface">{score} <span className="text-xs text-on-surface-variant font-normal">/ 100</span></div>
-                      <div className="w-28 bg-surface-container-high/80 h-1.5 rounded-full mt-1.5 ml-auto overflow-hidden p-0.5 border border-outline-variant/30">
-                        <div className={cn("h-full rounded-full transition-all duration-500", barColor)} style={{ width: `${Math.min(Math.max(score, 0), 100)}%` }} />
+                      <div className="text-sm font-mono font-extrabold text-on-surface">
+                        {hasScore ? (
+                          <>{score} <span className="text-xs text-on-surface-variant font-normal">/ 100</span></>
+                        ) : (
+                          <span className="text-zinc-500">N/A</span>
+                        )}
                       </div>
-                      <div className="text-[10px] text-on-surface-variant uppercase tracking-wider font-mono font-medium mt-1">Condition Index</div>
+                      <div className="w-28 bg-surface-container-high/80 h-1.5 rounded-full mt-1.5 ml-auto overflow-hidden p-0.5 border border-outline-variant/30">
+                        <div className={cn("h-full rounded-full transition-all duration-500", barColor)} style={{ width: hasScore ? `${Math.min(Math.max(score, 0), 100)}%` : '0%' }} />
+                      </div>
+                      <div className="text-[10px] text-on-surface-variant uppercase tracking-wider font-mono font-medium mt-1">Decision Support Score</div>
                     </div>
 
                     <span className={cn('px-3 py-1 text-xs font-mono font-bold rounded-lg border uppercase tracking-wider transition-all duration-200', badgeColor)}>
@@ -249,6 +266,9 @@ export function RoadHealthPage() {
             })}
           </div>
         )}
+        <div className="p-4 bg-surface-container/20 border-t border-outline-variant/40 text-[11px] font-mono text-on-surface-variant/70 text-center">
+          * Decision-support metric based on detected defect burden. Not an official Pavement Condition Index (PCI).
+        </div>
       </GlassPanel>
     </div>
   );

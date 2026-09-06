@@ -15,12 +15,17 @@ export const ticketService = {
     return client.post(`/tickets?issue_id=${encodeURIComponent(issueId)}`, {});
   },
 
-  async getTickets(): Promise<Ticket[]> {
+  async getTickets(params?: { authority?: string; department_id?: string; status?: string }): Promise<Ticket[]> {
     if (config.useMockData) {
       await delay();
       return [...mockTickets];
     }
-    return client.get<Ticket[]>('/tickets');
+    const query = new URLSearchParams();
+    if (params?.authority) query.set('authority', params.authority);
+    if (params?.department_id) query.set('department_id', params.department_id);
+    if (params?.status) query.set('status', params.status);
+    const qs = query.toString();
+    return client.get<Ticket[]>(`/tickets${qs ? `?${qs}` : ''}`);
   },
   
   async getTicket(id: string): Promise<Ticket | undefined> {
@@ -53,6 +58,13 @@ export const ticketService = {
   }
 };
 
+export const authorityService = {
+  async getAuthorities(): Promise<any[]> {
+    if (config.useMockData) return [];
+    return client.get<any[]>('/authorities');
+  }
+};
+
 export const verificationService = {
   async getVerifications(): Promise<Verification[]> {
     if (config.useMockData) return delay().then(() => [...mockVerifications]);
@@ -64,3 +76,4 @@ export const verificationService = {
     return client.get<VerificationSummary>('/verifications/summary');
   }
 };
+

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { renderToString } from 'react-dom/server';
-import { Bus as BusIcon, AlertTriangle, X, ShieldAlert } from 'lucide-react';
+import { Bus as BusIcon, AlertTriangle, X, ShieldAlert, MapPin } from 'lucide-react';
 import { GlassPanel } from './GlassPanel';
 import { cn, timeAgo, getValidLatLng } from '@/lib/utils';
 import type { Bus, UrbanIssue } from '@/types';
@@ -76,6 +76,10 @@ export function IntelligenceMap({ buses, issues }: IntelligenceMapProps) {
   // Delhi-NCR is the configured showcase geography.
   const defaultCenter: [number, number] = [28.6139, 77.2090];
 
+  const validIssues = issues.filter(i => getValidLatLng(i) !== null);
+  const validBuses = buses.filter(b => getValidLatLng(b) !== null);
+  const hasValidData = validIssues.length > 0 || validBuses.length > 0;
+
   return (
     <div className="relative w-full h-full rounded-xl overflow-hidden border border-outline-variant shadow-2xl bg-surface-low">
       <MapContainer 
@@ -122,6 +126,21 @@ export function IntelligenceMap({ buses, issues }: IntelligenceMapProps) {
         <MapBounds buses={buses} issues={issues} />
       </MapContainer>
 
+      {/* Honest Empty State Overlay when no valid geo entities exist */}
+      {!hasValidData && (
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-[400] pointer-events-none">
+          <div className="bg-surface-high/90 backdrop-blur-xl border border-white/[0.1] rounded-2xl px-5 py-4 text-center shadow-2xl max-w-xs pointer-events-auto">
+            <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-2 text-on-surface-variant">
+              <MapPin className="w-4 h-4" />
+            </div>
+            <h4 className="text-xs font-bold text-white">No Spatial Defects Recorded</h4>
+            <p className="text-[11px] text-on-surface-variant/70 mt-0.5 font-mono">
+              Urban road defects with verified GPS coordinates will appear here.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Floating Context Panel over the Map */}
       {selectedIssue && (
         <div className="absolute top-4 right-4 z-[400] w-80 animate-in slide-in-from-right-8 fade-in duration-300">
@@ -150,9 +169,22 @@ export function IntelligenceMap({ buses, issues }: IntelligenceMapProps) {
             <h3 className="text-sm font-semibold text-on-surface mb-1 leading-snug">
               {selectedIssue.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
             </h3>
-            <p className="text-xs text-white/60 mb-4 flex items-start gap-1.5">
-              <span className="mt-0.5">📍</span> {selectedIssue.location?.address || 'Delhi-NCR Road Network'}
-            </p>
+            {(() => {
+              const pos = getValidLatLng(selectedIssue);
+              return (
+                <div className="text-xs text-white/60 mb-4 flex flex-col gap-0.5 font-mono">
+                  <div className="flex items-center gap-1.5">
+                    <span>📍</span>
+                    <span className="truncate">{selectedIssue.location?.address || 'Monitored Road Network'}</span>
+                  </div>
+                  {pos && (
+                    <span className="text-[10px] text-on-surface-variant ml-5">
+                      GPS: {pos[0].toFixed(6)}, {pos[1].toFixed(6)}
+                    </span>
+                  )}
+                </div>
+              );
+            })()}
 
             <div className="grid grid-cols-2 gap-2 mb-4">
               <div className="bg-surface-container rounded-lg p-2 border border-white/[0.04]">

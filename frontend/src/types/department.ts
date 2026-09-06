@@ -37,3 +37,19 @@ export interface DepartmentPerformance {
   verificationRate: number;
   reopenRate: number;
 }
+
+export interface Authority {
+  id: string;
+  name: string;
+  code: string;
+  authorityType?: string;
+  jurisdictionType?: string;
+  contactEmail?: string;
+  boundaryType?: string;
+  boundaryProvenance?: string;
+  isConfiguredPrototype?: boolean;
+  prototypeJurisdictionName?: string;
+  ticketCount?: number;
+  departments?: Partial<Department>[];
+}
+

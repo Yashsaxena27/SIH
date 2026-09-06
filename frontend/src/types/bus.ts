@@ -7,20 +7,28 @@ import type { GeoPoint, OperationalStatus } from './common';
 export interface Bus {
   id: string;
   registrationNumber: string;
-  displayName: string;
-  routeId: string;
-  status: BusStatus;
-  operationalStatus: OperationalStatus;
+  displayName?: string;
+  routeId?: string;
+  routeName?: string;
+  routeCode?: string;
+  operator?: string;
+  status: BusStatus | string;
+  operationalStatus?: OperationalStatus;
   currentPosition?: GeoPoint;
+  currentLocation?: GeoPoint | null;
+  telemetryStatus?: 'available' | 'unavailable' | 'stale' | 'demo';
   heading?: number; // degrees 0-360
   speed?: number; // km/h
-  lastSeen: string;
-  edgeDeviceId: string;
-  edgeDeviceStatus: EdgeDeviceStatus;
-  totalDetections: number;
-  detectionsToday: number;
-  distanceTodayKm: number;
-  uptime: number; // percentage 0-100
+  lastSeen?: string;
+  edgeDeviceId?: string;
+  edgeDeviceStatus?: EdgeDeviceStatus;
+  cameraStatus?: string;
+  gpsStatus?: string;
+  edgeAiStatus?: string;
+  totalDetections?: number;
+  detectionsToday?: number;
+  distanceTodayKm?: number;
+  uptime?: number; // percentage 0-100
 }
 
 export type BusStatus = 'active' | 'idle' | 'maintenance' | 'offline';
