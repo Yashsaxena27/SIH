@@ -14,12 +14,8 @@ def test_model_inference_and_class_mapping():
     assert not engine.mock_mode, "Engine fell back to mock mode"
     assert engine.model is not None, "Model failed to load"
     
-    # 4 classes verified
-    assert len(engine.classes) == 4
-    assert engine.DAMAGE_TYPE_MAP["D40"] == "pothole"
-    assert engine.DAMAGE_TYPE_MAP["D00"] == "longitudinal_crack"
-    assert engine.DAMAGE_TYPE_MAP["D10"] == "transverse_crack"
-    assert engine.DAMAGE_TYPE_MAP["D20"] == "alligator_crack"
+    # The shipped SIH runtime artifact is the validated one-class pothole model.
+    assert engine.classes == {0: "pothole"}
 
     # Prediction on test frame
     frame = np.ones((480, 640, 3), dtype=np.uint8) * 128
@@ -56,7 +52,7 @@ def test_evidence_store_abstraction(tmp_path):
     assert os.path.exists(saved_file)
     assert os.path.getsize(saved_file) > 0
 
-def test_offline_sqlite_buffering(tmp_path):
+def test_offline_sqlite_buffering(tmp_path, monkeypatch):
     db_path = str(tmp_path / "test_buffer.db")
     client = BackendClient(db_path=db_path)
     
@@ -71,7 +67,13 @@ def test_offline_sqlite_buffering(tmp_path):
         "evidence_url": "/evidence/sample.jpg"
     }
     
-    # Offline transmission buffers locally
+    def raise_connection_error(*args, **kwargs):
+        raise httpx.ConnectError("offline")
+
+    import httpx
+    monkeypatch.setattr(httpx, "post", raise_connection_error)
+
+    # Offline transmission buffers locally.
     success = client.send_detection(event)
     assert success is False
     assert client.get_unsynced_count() == 1

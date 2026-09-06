@@ -601,6 +601,7 @@ export function InspectionPage() {
                 {activeVideoTab === 'annotated' && activeJob?.annotated_video_url ? (
                   <>
                     <video 
+                      key={activeJob.annotated_video_url}
                       src={config.assetUrl(activeJob.annotated_video_url)}
                       controls 
                       autoPlay 
@@ -615,6 +616,7 @@ export function InspectionPage() {
                 ) : activeVideoTab === 'original' && previewUrl ? (
                   <>
                     <video 
+                      key={previewUrl}
                       src={previewUrl} 
                       controls 
                       loop 

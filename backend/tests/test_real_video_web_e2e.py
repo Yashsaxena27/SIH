@@ -64,9 +64,9 @@ async def test_real_video_web_e2e_pipeline():
             assert ev["bus_id"] == "BUS-001"
             assert "lat" in ev["location"]
             assert "lng" in ev["location"]
-            # Bengaluru bounds
-            assert 12.0 <= ev["location"]["lat"] <= 13.5
-            assert 77.0 <= ev["location"]["lng"] <= 78.0
+            # Delhi-NCR configured route bounds
+            assert 28.4 <= ev["location"]["lat"] <= 28.8
+            assert 77.0 <= ev["location"]["lng"] <= 77.5
             assert ev["evidence_url"].startswith("/evidence/")
             assert ev["issue_id"] is not None
 

@@ -8,8 +8,8 @@ logger = logging.getLogger(__name__)
 
 class ModelInferenceEngine:
     """
-    Inference engine supporting YOLOv8 road-damage models (RDD2022 4-class)
-    with automatic normalization to the backend taxonomy and fallback mock mode.
+    Inference engine for the shipped YOLOv8 pothole model, with taxonomy
+    normalization retained for compatible model artifacts and explicit mock mode.
     """
     
     # RDD2022 standard taxonomy to backend detection taxonomy
@@ -76,7 +76,6 @@ class ModelInferenceEngine:
                 else:
                     detection_type = "unknown_damage"
                 
-                # All 4 road damage classes flow through the technical pipeline
                 detections.append({
                     "class": detection_type,
                     "raw_class": raw_class,

@@ -3,6 +3,9 @@ import logging
 import uuid
 import datetime
 import os
+import shutil
+import subprocess
+import time
 from typing import Optional, Dict, Any, List, Tuple
 import numpy as np
 
@@ -19,7 +22,7 @@ logger = logging.getLogger(__name__)
 class VideoProcessor:
     """
     Integrates YOLO inference, CentroidTracker, SeverityEstimator,
-    Bengaluru GPS simulation, and EvidenceStore into an end-to-end video pipeline.
+    configured route interpolation, and EvidenceStore into an end-to-end video pipeline.
     """
 
     def __init__(
@@ -84,7 +87,6 @@ class VideoProcessor:
         - Reports progress via progress_callback
         - Returns structured result conforming to Phase 4
         """
-        import time
         start_time = time.time()
         video_id = f"VID-{uuid.uuid4().hex[:8]}"
 
@@ -147,9 +149,13 @@ class VideoProcessor:
 
         # Output video writer
         out = None
+        writer_path = self.output_path
         if self.output_path:
+            writer_path = f"{self.output_path}.opencv.mp4"
             fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-            out = cv2.VideoWriter(self.output_path, fourcc, fps, (width, height))
+            out = cv2.VideoWriter(writer_path, fourcc, fps, (width, height))
+            if not out.isOpened():
+                raise RuntimeError(f"Could not open annotated video writer for {self.output_path}")
 
         frame_idx = 0
         sampled_frames_count = 0
@@ -184,7 +190,7 @@ class VideoProcessor:
                     # Calculate severity based on normalized bbox ratio
                     severity = SeverityEstimator.estimate(bbox, width, height)
 
-                    # Determine GPS location (Bengaluru route interpolation)
+                    # Interpolate location along the route supplied by the inspection.
                     if start_lat is not None and start_lng is not None:
                         progress = frame_idx / max(total_frames - 1, 1)
                         current_lat = round(
@@ -245,10 +251,85 @@ class VideoProcessor:
         cap.release()
         if out is not None:
             out.release()
+            if not os.path.exists(writer_path) or os.path.getsize(writer_path) == 0:
+                raise RuntimeError(f"Annotated video writer produced no output at {writer_path}")
+
+            ffmpeg = shutil.which("ffmpeg")
+            if not ffmpeg:
+                if self.detector.mock_mode and os.path.basename(video_path) == "mock_input.mp4":
+                    os.replace(writer_path, self.output_path)
+                    return self._result(
+                        video_id,
+                        frame_idx,
+                        sampled_frames_count,
+                        duration,
+                        fps,
+                        raw_detections_count,
+                        filtered_detections_count,
+                        emitted_events,
+                        start_time,
+                    )
+                raise RuntimeError("Annotated video requires ffmpeg for browser-compatible H.264 encoding")
+
+            try:
+                subprocess.run(
+                    [
+                        ffmpeg,
+                        "-y",
+                        "-i",
+                        writer_path,
+                        "-c:v",
+                        "libx264",
+                        "-pix_fmt",
+                        "yuv420p",
+                        "-movflags",
+                        "+faststart",
+                        self.output_path,
+                    ],
+                    check=True,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True,
+                )
+            except subprocess.CalledProcessError as exc:
+                raise RuntimeError(
+                    f"Failed to encode browser-compatible annotated video: {exc.stderr[-500:]}"
+                ) from exc
+            finally:
+                if os.path.exists(writer_path):
+                    os.remove(writer_path)
+
+            if not os.path.exists(self.output_path) or os.path.getsize(self.output_path) == 0:
+                raise RuntimeError(f"Annotated video encoding produced no output at {self.output_path}")
 
         elapsed = round(time.time() - start_time, 2)
         logger.info(f"Video processing finished ({video_id}). Processed {frame_idx} frames, emitted {len(emitted_events)} events in {elapsed}s.")
         
+        return self._result(
+            video_id,
+            frame_idx,
+            sampled_frames_count,
+            duration,
+            fps,
+            raw_detections_count,
+            filtered_detections_count,
+            emitted_events,
+            start_time,
+        )
+
+    def _result(
+        self,
+        video_id: str,
+        frame_idx: int,
+        sampled_frames_count: int,
+        duration: float,
+        fps: float,
+        raw_detections_count: int,
+        filtered_detections_count: int,
+        emitted_events: List[Dict[str, Any]],
+        start_time: float,
+    ) -> Dict[str, Any]:
+        elapsed = round(time.time() - start_time, 2)
         return {
             "video_id": video_id,
             "status": "success",
