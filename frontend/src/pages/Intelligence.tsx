@@ -10,13 +10,16 @@ import {
   LayerControls, 
   IssueDrawer,
   RoadDrawer,
+  SafeRoutePanel,
   type IntelligenceFilter,
   type MapLayers 
 } from '@/components/gis';
 import { LoadingState } from '@/components/ui';
 import { api } from '@/services/api';
 import type { Bus, UrbanIssue, Route, RoadSegment, RoadIssueSummary } from '@/types';
-import { MapPin, Bus as BusIcon, AlertTriangle, Activity, RefreshCw, Compass } from 'lucide-react';
+import type { SafeRouteResponse, RouteCandidate } from '@/types/saferoute';
+import { MapPin, Bus as BusIcon, AlertTriangle, Activity, RefreshCw, Compass, Navigation } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export function IntelligencePage() {
   // Data State
@@ -26,6 +29,11 @@ export function IntelligencePage() {
   const [routes, setRoutes] = useState<Route[]>([]);
   const [roads, setRoads] = useState<RoadSegment[]>([]);
   const [hotspots, setHotspots] = useState<any[]>([]);
+  
+  // SafeRoute State
+  const [safeRouteOpen, setSafeRouteOpen] = useState(false);
+  const [safeRouteResult, setSafeRouteResult] = useState<SafeRouteResponse | null>(null);
+  const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
   
   // UI State
   const [selectedIssue, setSelectedIssue] = useState<UrbanIssue | null>(null);
@@ -167,6 +175,9 @@ export function IntelligencePage() {
         }}
         onRoadSelect={handleSelectRoad}
         selectedRoadId={selectedRoad?.id}
+        safeRouteResult={safeRouteResult}
+        selectedCandidateId={selectedCandidateId}
+        onSelectCandidate={(cand) => setSelectedCandidateId(cand.id)}
       />
 
       {/* ── Floating Top Operational GIS Banner (Center-Left) ── */}
@@ -205,6 +216,29 @@ export function IntelligencePage() {
               </>
             )}
           </div>
+
+          <div className="h-4 w-px bg-white/[0.1]" />
+
+          {/* SafeRoute Toggle Button */}
+          <button
+            onClick={() => setSafeRouteOpen(prev => !prev)}
+            className={cn(
+              "px-3 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer",
+              safeRouteOpen 
+                ? "bg-emerald-500 text-black shadow-[0_0_14px_rgba(16,185,129,0.5)]" 
+                : "bg-white/[0.06] hover:bg-white/[0.12] text-emerald-400 border border-emerald-500/30"
+            )}
+            title="Toggle SafeRoute Recommendation Engine"
+          >
+            <Navigation className="w-3.5 h-3.5" />
+            <span>SafeRoute</span>
+            {safeRouteResult && (
+              <span className={cn(
+                "w-1.5 h-1.5 rounded-full ml-0.5",
+                safeRouteOpen ? "bg-black" : "bg-emerald-400"
+              )} />
+            )}
+          </button>
         </div>
       </div>
 
@@ -214,6 +248,16 @@ export function IntelligencePage() {
       <FilterBar 
         activeFilter={activeFilter} 
         onFilterChange={setActiveFilter} 
+      />
+
+      {/* SafeRoute Risk-Aware Routing Panel */}
+      <SafeRoutePanel
+        isOpen={safeRouteOpen}
+        onClose={() => setSafeRouteOpen(false)}
+        onRoutesCalculated={setSafeRouteResult}
+        selectedCandidateId={selectedCandidateId}
+        onSelectCandidate={(cand) => setSelectedCandidateId(cand.id)}
+        onSelectRoad={handleSelectRoad}
       />
 
       {/* Right Layer Controls */}

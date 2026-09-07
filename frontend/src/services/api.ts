@@ -7,8 +7,20 @@ import { fleetService, routeService } from './modules/fleetService';
 import { analyticsService, detectionService } from './modules/analyticsService';
 import { inspectionService } from './modules/inspectionService';
 import { roadService } from './modules/roadService';
+import { saferouteService } from './modules/saferouteService';
+import { missionControlService } from './modules/missionControlService';
 
 export const api = {
+  // Mission Control
+  getMissionControlOverview: missionControlService.getOverview,
+  getActionQueue: missionControlService.getActionQueue,
+  executeMissionControlAction: missionControlService.executeAction,
+
+  // SafeRoute
+  getSafeRoutePresets: saferouteService.getPresets,
+  planSafeRoute: saferouteService.planRoute,
+  getSafeRouteCorridors: saferouteService.getCorridors,
+
   createTicket: ticketService.createTicket,
   // Inspection
   uploadInspectionVideo: inspectionService.uploadVideo,
@@ -17,9 +29,14 @@ export const api = {
   getInspectionStatus: inspectionService.getInspectionStatus,
   listRecentInspections: inspectionService.listRecentInspections,
 
-  // Fleet
+  // Fleet & Distributed Sensing
   getBuses: fleetService.getBuses,
   getBus: fleetService.getBus,
+  getFleetSummary: fleetService.getSummary,
+  getFleetSessions: fleetService.getSessions,
+  startInspectionSession: fleetService.startSession,
+  endInspectionSession: fleetService.endSession,
+  getNetworkCoverage: fleetService.getCoverage,
   
   // Routes
   getRoutes: routeService.getRoutes,

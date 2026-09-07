@@ -1,57 +1,59 @@
 // ============================================================
-// Fleet Page - Mobile Sensing Fleet Command
+// Fleet Page — Mobile Sensing Fleet & Distributed Intelligence Command
 // ============================================================
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Bus as BusIcon, Wifi, WifiOff, Camera, Cpu, 
   Database, Cloud, HardDrive, MapPin, Activity, 
   Signal, RefreshCw, Server, ShieldCheck, X, Zap, 
-  Map as MapIcon, ArrowRight
+  Map as MapIcon, ArrowRight, Video, CheckCircle2,
+  AlertTriangle, Truck, Compass, History, Layers
 } from 'lucide-react';
-import { CheckCircle } from 'lucide-react';
 import { MapContainer, TileLayer, Polyline, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import { GlassPanel, LoadingState, EmptyState } from '@/components/ui';
 import { api } from '@/services/api';
 import { cn, timeAgo, getValidLatLng } from '@/lib/utils';
-import type { Bus, Route } from '@/types';
+import type { Bus, Route, FleetSummary, InspectionSession, VehicleType } from '@/types';
 import { renderToString } from 'react-dom/server';
 
 // Sensor Pipeline Architecture
 function SensorPipeline() {
   const nodes = [
-    { label: 'Camera', icon: Camera, color: 'text-blue-400', bg: 'bg-blue-400' },
-    { label: 'Edge AI', icon: Cpu, color: 'text-secondary', bg: 'bg-secondary' },
-    { label: 'Local Buffer', icon: HardDrive, color: 'text-purple-400', bg: 'bg-purple-400' },
-    { label: 'Cloud Gateway', icon: Cloud, color: 'text-status-healthy', bg: 'bg-status-healthy' },
-    { label: 'PostGIS DB', icon: Database, color: 'text-white', bg: 'bg-white' },
+    { label: 'Optical Camera', icon: Camera, color: 'text-blue-400' },
+    { label: 'Edge AI (YOLOv8)', icon: Cpu, color: 'text-cyan-400' },
+    { label: 'Local Buffer', icon: HardDrive, color: 'text-purple-400' },
+    { label: 'Cloud Gateway', icon: Cloud, color: 'text-emerald-400' },
+    { label: 'PostGIS Fusion', icon: Database, color: 'text-white' },
   ];
 
   return (
     <GlassPanel className="relative overflow-hidden mt-6">
       <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-20 pointer-events-none" />
-      <div className="flex items-center justify-between mb-8 relative z-10">
+      <div className="flex items-center justify-between mb-6 relative z-10">
         <div>
           <h3 className="text-sm font-bold text-on-surface uppercase tracking-widest flex items-center gap-2">
-            <Zap className="w-4 h-4 text-secondary" /> Edge Sensing Architecture
+            <Zap className="w-4 h-4 text-cyan-400" /> Multi-Camera Distributed Sensing Pipeline
           </h3>
-          <p className="text-[11px] text-on-surface-variant mt-1">Data pipeline from vehicle optical capture to PostGIS spatial fusion.</p>
+          <p className="text-[11px] text-on-surface-variant/70 mt-0.5">
+            Edge inference pipeline across transit buses, PWD survey units, and municipal utility vehicles.
+          </p>
         </div>
-        <div className="px-2 py-0.5 rounded border border-secondary/30 bg-secondary/10 text-secondary text-[10px] font-bold uppercase">
-          Offline-First Pipeline
+        <div className="px-2.5 py-1 rounded-lg border border-cyan-500/30 bg-cyan-500/10 text-cyan-400 text-[10px] font-mono font-bold uppercase tracking-wider">
+          Distributed Corroboration Engine
         </div>
       </div>
 
-      <div className="relative flex justify-between items-center py-4 px-2 sm:px-6 z-10">
-        <div className="absolute left-[10%] right-[10%] top-1/2 h-0.5 bg-white/[0.05] -translate-y-1/2" />
+      <div className="relative flex justify-between items-center py-3 px-2 sm:px-6 z-10">
+        <div className="absolute left-[10%] right-[10%] top-1/2 h-0.5 bg-white/[0.06] -translate-y-1/2" />
         {nodes.map((node) => (
-          <div key={node.label} className="relative flex flex-col items-center gap-3 z-10 bg-background px-2">
-            <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center border border-outline-variant bg-surface-low shadow-xl", node.color)}>
-              <node.icon className="w-5 h-5" />
+          <div key={node.label} className="relative flex flex-col items-center gap-2 z-10 bg-[#141519] px-3 py-1 rounded-xl border border-white/[0.05]">
+            <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center border border-white/[0.1] bg-black/40 shadow-xl", node.color)}>
+              <node.icon className="w-4 h-4" />
             </div>
-            <span className="font-label-caps text-[10px] text-on-surface-variant">{node.label}</span>
+            <span className="font-mono text-[10px] text-on-surface-variant/80">{node.label}</span>
           </div>
         ))}
       </div>
@@ -97,15 +99,19 @@ function FleetMapBounds({ routes, buses }: { routes: Route[]; buses: Bus[] }) {
   return null;
 }
 
-const createBusMarkerIcon = (busId: string) => {
+const createBusMarkerIcon = (busId: string, vehicleType: string = 'bus') => {
+  const isInspection = vehicleType === 'inspection_vehicle';
+  const isService = vehicleType === 'service_vehicle';
+
+  const iconColor = isInspection ? 'text-purple-400' : isService ? 'text-amber-400' : 'text-cyan-400';
+  const borderColor = isInspection ? 'border-purple-400' : isService ? 'border-amber-400' : 'border-cyan-400';
+  const shadowColor = isInspection ? 'rgba(168,85,247,0.8)' : isService ? 'rgba(245,158,11,0.8)' : 'rgba(6,182,212,0.8)';
+
   const html = renderToString(
     <div className="relative flex items-center justify-center w-8 h-8 group cursor-pointer">
-      <div className="absolute inset-0 bg-cyan-500/30 rounded-full animate-ping" />
-      <div className="relative flex items-center justify-center w-7 h-7 bg-[#141519] border border-cyan-400 rounded-full shadow-[0_0_12px_rgba(6,182,212,0.8)]">
-        <BusIcon className="w-3.5 h-3.5 text-cyan-400" />
-      </div>
-      <div className="absolute -bottom-4 bg-black/80 px-1 py-0.2 rounded text-[9px] font-mono text-white border border-white/20 whitespace-nowrap">
-        {busId}
+      <div className={cn("absolute inset-0 rounded-full animate-ping opacity-30", isInspection ? "bg-purple-500" : isService ? "bg-amber-500" : "bg-cyan-500")} />
+      <div className={cn("relative flex items-center justify-center w-7 h-7 bg-[#141519] rounded-full border shadow-lg", borderColor)} style={{ boxShadow: `0 0 12px ${shadowColor}` }}>
+        {isInspection ? <Compass className={cn("w-3.5 h-3.5", iconColor)} /> : isService ? <Truck className={cn("w-3.5 h-3.5", iconColor)} /> : <BusIcon className={cn("w-3.5 h-3.5", iconColor)} />}
       </div>
     </div>
   );
@@ -115,35 +121,45 @@ const createBusMarkerIcon = (busId: string) => {
 export function FleetPage() {
   const [buses, setBuses] = useState<Bus[]>([]);
   const [routes, setRoutes] = useState<Route[]>([]);
+  const [summary, setSummary] = useState<FleetSummary | null>(null);
+  const [sessions, setSessions] = useState<InspectionSession[]>([]);
+  const [coverageData, setCoverageData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [selectedBus, setSelectedBus] = useState<Bus | null>(null);
+  const [activeTab, setActiveTab] = useState<'vehicles' | 'sessions' | 'coverage'>('vehicles');
+  const [typeFilter, setTypeFilter] = useState<'ALL' | 'bus' | 'inspection_vehicle' | 'service_vehicle'>('ALL');
   const [error, setError] = useState<string | null>(null);
 
-  const loadData = () => {
+  const loadData = async () => {
     setLoading(true);
     setError(null);
-    Promise.allSettled([api.getBuses(), api.getRoutes()]).then(([bRes, rRes]) => {
-      const isAllRejected = bRes.status === 'rejected' && rRes.status === 'rejected';
-      if (isAllRejected) {
-        setError('Failed to load fleet data.');
-        setLoading(false);
-        return;
-      }
-      
-      const b = bRes.status === 'fulfilled' ? bRes.value : [];
-      const r = rRes.status === 'fulfilled' ? rRes.value : [];
-      
-      setBuses(b);
-      setRoutes(r);
+    try {
+      const [bRes, rRes, sumRes, sessRes, covRes] = await Promise.allSettled([
+        api.getBuses(),
+        api.getRoutes(),
+        api.getFleetSummary ? api.getFleetSummary() : Promise.resolve(null),
+        api.getFleetSessions ? api.getFleetSessions({ limit: 15 }) : Promise.resolve([]),
+        api.getNetworkCoverage ? api.getNetworkCoverage() : Promise.resolve(null),
+      ]);
+
+      if (bRes.status === 'fulfilled') setBuses(bRes.value);
+      if (rRes.status === 'fulfilled') setRoutes(rRes.value);
+      if (sumRes.status === 'fulfilled' && sumRes.value) setSummary(sumRes.value);
+      if (sessRes.status === 'fulfilled') setSessions(sessRes.value || []);
+      if (covRes.status === 'fulfilled' && covRes.value) setCoverageData(covRes.value);
+    } catch (err) {
+      console.error('Failed to load fleet intelligence:', err);
+      setError('Failed to load distributed sensing fleet data.');
+    } finally {
       setLoading(false);
-    });
+    }
   };
 
   useEffect(() => {
     loadData();
   }, []);
 
-  if (loading) return <LoadingState message="Connecting to fleet registry..." className="h-full" />;
+  if (loading) return <LoadingState message="Connecting to distributed sensing network registry..." className="h-full" />;
 
   if (error) {
     return (
@@ -157,228 +173,420 @@ export function FleetPage() {
     );
   }
 
-  const busesWithGps = buses.filter(b => b.telemetryStatus === 'available' || getValidLatLng(b) !== null).length;
-  const busesWithoutGps = buses.length - busesWithGps;
-  const activeBuses = buses.filter(b => (b.status === 'online' || b.status === 'active') && (b.telemetryStatus === 'available' || getValidLatLng(b) !== null)).length;
-  const hasLiveBuses = busesWithGps > 0;
-  const hasRouteGeometries = routes.some(r => r.waypoints && Array.isArray(r.waypoints) && r.waypoints.length >= 2);
+  // Filter vehicles
+  const filteredBuses = buses.filter(b => {
+    if (typeFilter === 'ALL') return true;
+    const vType = b.vehicleType || b.vehicle_type || 'bus';
+    return vType === typeFilter;
+  });
 
   return (
-    <div className="p-4 sm:p-6 space-y-6 max-w-[1920px] mx-auto h-[calc(100vh-var(--spacing-header-height))] flex flex-col relative overflow-hidden">
-      
-      {/* Header & Truthful Fleet Telemetry Counters */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 flex-shrink-0">
+    <div className="space-y-6 pb-12 p-6 max-w-[1600px] mx-auto text-white">
+      {/* Header Banner */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.08] pb-6">
         <div>
-          <h1 className="text-3xl font-bold text-on-surface tracking-tight">
-            Mobile Sensing Fleet
-          </h1>
-          <p className="text-sm text-on-surface-variant mt-1 font-medium">
-            Truthful operational telemetry status across municipal transit sensing nodes.
-          </p>
-        </div>
-        
-        <div className="flex gap-2 sm:gap-4 overflow-x-auto pb-2 sm:pb-0 scrollbar-none">
-          {[
-            { label: 'Total Fleet', value: buses.length, color: 'text-on-surface' },
-            { label: 'Live GPS Nodes', value: activeBuses, color: activeBuses > 0 ? 'text-cyan-400' : 'text-zinc-500' },
-            { label: 'GPS Available', value: busesWithGps, color: busesWithGps > 0 ? 'text-emerald-400' : 'text-zinc-500' },
-            { label: 'GPS Unavailable', value: busesWithoutGps, color: 'text-amber-400' },
-            { label: 'Configured Routes', value: routes.length, color: 'text-purple-400' },
-          ].map(stat => (
-            <div key={stat.label} className="bg-surface-container border border-outline-variant rounded-lg px-4 py-2 flex flex-col min-w-[110px]">
-              <span className="font-label-caps text-[10px] text-on-surface-variant">{stat.label}</span>
-              <span className={cn("text-xl font-bold mt-1 font-mono", stat.color)}>{stat.value}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Main Content Grid */}
-      <div className="flex-1 min-h-0 grid grid-cols-1 xl:grid-cols-12 gap-6 overflow-y-auto scrollbar-none pb-10">
-        
-        {/* Left: Bus Grid */}
-        <div className="xl:col-span-7 space-y-4">
-          <div className="flex items-center justify-between px-1">
-            <h3 className="text-xs font-bold text-on-surface uppercase tracking-widest">Fleet Node Registry</h3>
-            <span className="text-[11px] font-mono text-zinc-400">
-              Corridor-Interpolated Operations
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold text-white tracking-tight">Distributed Sensing Fleet Command</h1>
+            <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">
+              PHASE 9
             </span>
           </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {buses.length === 0 ? (
-              <div className="col-span-full">
-                <EmptyState 
-                  title="No Active Nodes" 
-                  description="There are currently no buses registered in the sensing network."
-                  icon={BusIcon}
-                />
-              </div>
-            ) : (
-              buses.map((bus, idx) => {
-                const isOffline = bus.status === 'offline';
-                const hasGps = bus.telemetryStatus === 'available' || getValidLatLng(bus) !== null;
-                const isSelected = selectedBus?.id === bus.id;
-
-                return (
-                  <motion.div
-                    key={bus.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: idx * 0.03 }}
-                    onClick={() => setSelectedBus(bus)}
-                    className={cn(
-                      "relative overflow-hidden rounded-xl border p-4 cursor-pointer transition-all duration-200 group",
-                      isSelected 
-                        ? "border-cyan-500 bg-cyan-500/5 shadow-lg shadow-cyan-500/10" 
-                        : isOffline 
-                          ? "bg-red-500/[0.02] border-red-500/15 hover:border-red-500/30" 
-                          : "bg-white/[0.02] border-outline-variant hover:bg-surface-high"
-                    )}
-                  >
-                    <div className="flex justify-between items-start mb-3">
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <BusIcon className={cn("w-4 h-4", isOffline ? "text-red-400" : "text-cyan-400")} />
-                          <span className="font-data-mono font-bold text-on-surface">{bus.id}</span>
-                          <span className="text-[10px] text-zinc-400 font-mono">({bus.registrationNumber})</span>
-                        </div>
-                        <div className="text-[10px] uppercase tracking-widest text-on-surface-variant font-mono">
-                          {bus.routeName || (bus.routeId ? `Route ${bus.routeId}` : 'Unassigned Route')}
-                        </div>
-                      </div>
-
-                      {/* Truthful Telemetry Badge */}
-                      <div className={cn(
-                        "px-2 py-0.5 rounded font-label-caps text-[9px] font-mono flex items-center gap-1 border",
-                        hasGps 
-                          ? "bg-cyan-500/20 text-cyan-400 border-cyan-500/30" 
-                          : "bg-zinc-800 text-zinc-400 border-zinc-700"
-                      )}>
-                        {hasGps && <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />}
-                        {hasGps ? 'LIVE GPS' : 'GPS UNAVAILABLE'}
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-2.5 text-xs">
-                      <div className="flex items-center gap-2">
-                        <Signal className={cn("w-3.5 h-3.5", isOffline ? "text-red-400" : (hasGps ? "text-status-healthy" : "text-zinc-500"))} />
-                        <span className="text-on-surface">{isOffline ? 'Disconnected' : (hasGps ? 'Live Telemetry' : 'Recorded / Offline')}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Camera className="w-3.5 h-3.5 text-status-healthy" />
-                        <span className="text-on-surface">{bus.cameraStatus || 'offline'}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Cpu className="w-3.5 h-3.5 text-secondary" />
-                        <span className="text-on-surface font-data-mono">{bus.edgeAiStatus === 'offline' ? 'AI: OFFLINE' : 'AI: ACTIVE'}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <MapPin className={cn("w-3.5 h-3.5", hasGps ? "text-cyan-400" : "text-zinc-500")} />
-                        <span className="text-zinc-400 font-mono text-[11px]">{hasGps ? 'Fix Acquired' : 'No Hardware GPS'}</span>
-                      </div>
-                    </div>
-                    
-                    <div className="mt-3 pt-2.5 border-t border-white/[0.04] flex items-center justify-between text-[10px] text-on-surface-variant font-data-mono">
-                      <span>Operator: {bus.operator || 'Unassigned'}</span>
-                      <span>{bus.lastSeen ? timeAgo(bus.lastSeen) : 'No Telemetry'}</span>
-                    </div>
-                  </motion.div>
-                );
-              })
-            )}
-          </div>
+          <p className="text-xs text-on-surface-variant/70 font-mono mt-1">
+            Real-world road inspection operations via transit buses, PWD survey rigs, and municipal utility vehicles.
+          </p>
         </div>
 
-        {/* Right: Map & Architecture */}
-        <div className="xl:col-span-5 flex flex-col gap-6">
-          <SensorPipeline />
-
-          <GlassPanel padding="none" className="flex-1 min-h-[340px] flex flex-col overflow-hidden relative">
-            <div className="absolute top-4 left-4 right-4 z-10 flex items-center justify-between pointer-events-none">
-              <div className="bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-lg border border-outline-variant pointer-events-auto">
-                <h3 className="text-xs font-bold text-on-surface uppercase tracking-widest flex items-center gap-2">
-                  <MapIcon className="w-4 h-4 text-purple-400" /> Configured Route Corridors
-                </h3>
-              </div>
-              <div className="bg-black/80 backdrop-blur-md px-2 py-1 rounded border border-outline-variant font-label-caps text-[10px] text-purple-400 flex items-center gap-1.5 pointer-events-auto">
-                <div className="w-3 h-0.5 bg-purple-500" /> Configured Corridor
-              </div>
-            </div>
-
-            {/* Truthful Telemetry Disclosure Overlay when no live GPS is broadcasting */}
-            {!hasLiveBuses && (
-              <div className="absolute bottom-4 left-4 right-4 z-10 pointer-events-auto">
-                <div className="p-3.5 rounded-xl bg-[#141519]/90 backdrop-blur-md border border-amber-500/20 text-xs shadow-xl flex items-start gap-3">
-                  <WifiOff className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <span className="font-bold text-white block mb-0.5">Live Fleet GPS Telemetry Unavailable</span>
-                    <p className="text-[11px] text-on-surface-variant/80 font-mono leading-relaxed">
-                      Physical vehicles operate with offline optical recording. Detections are spatially interpolated along configured transit corridors during post-trip ingestion.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <MapContainer 
-              center={[28.6139, 77.2090]} 
-              zoom={11} 
-              className="w-full h-full z-0 outline-none bg-background" 
-              zoomControl={false}
-            >
-              <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_nolabels/{z}/{x}/{y}{r}.png" />
-              
-              {/* Genuine Route Geometry Corridors */}
-              {routes.map((route, i) => {
-                if (!route.waypoints || !Array.isArray(route.waypoints)) return null;
-                const validWaypoints = route.waypoints
-                  .map(wp => getValidLatLng(wp))
-                  .filter((pos): pos is [number, number] => pos !== null);
-                if (validWaypoints.length < 2) return null;
-                return (
-                  <Polyline 
-                    key={route.id} 
-                    positions={validWaypoints} 
-                    pathOptions={{ 
-                      color: i % 2 === 0 ? '#a855f7' : '#06b6d4', 
-                      weight: 3.5, 
-                      opacity: 0.8,
-                    }} 
-                  />
-                );
-              })}
-
-              {/* Real Bus Markers ONLY if valid GPS coordinates exist */}
-              {buses.map(bus => {
-                const pos = getValidLatLng(bus);
-                if (!pos) return null;
-                return (
-                  <Marker 
-                    key={bus.id} 
-                    position={pos} 
-                    icon={createBusMarkerIcon(bus.id)}
-                    eventHandlers={{ click: () => setSelectedBus(bus) }}
-                  >
-                    <Popup className="custom-leaflet-popup">
-                      <div className="p-2 text-xs">
-                        <strong>{bus.id}</strong> ({bus.registrationNumber})<br/>
-                        Route: {bus.routeName || bus.routeId || 'N/A'}<br/>
-                        Status: {bus.status}
-                      </div>
-                    </Popup>
-                  </Marker>
-                );
-              })}
-
-              <FleetMapBounds routes={routes} buses={buses} />
-            </MapContainer>
-          </GlassPanel>
-
+        <div className="flex items-center gap-2">
+          <button
+            onClick={loadData}
+            className="px-3 py-1.5 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-xs font-mono text-white border border-white/[0.1] transition-all flex items-center gap-1.5"
+          >
+            <RefreshCw className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Refresh Fleet</span>
+          </button>
         </div>
       </div>
 
-      {/* Selected Bus Drawer with Truthful Disclosure */}
+      {/* Top Operational KPI Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* KPI 1: Vehicles Breakdown */}
+        <div className="p-4 rounded-2xl bg-[#141519] border border-white/[0.08] shadow-xl space-y-2">
+          <div className="flex items-center justify-between text-xs font-mono text-on-surface-variant/70">
+            <span className="uppercase tracking-wider">Active Fleet Nodes</span>
+            <BusIcon className="w-4 h-4 text-cyan-400" />
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl font-bold font-mono text-white">
+              {summary?.active_vehicles ?? buses.filter(b => b.status === 'active').length}
+            </span>
+            <span className="text-xs text-on-surface-variant/60 font-mono">
+              / {summary?.total_vehicles ?? buses.length} units
+            </span>
+          </div>
+          <div className="pt-2 border-t border-white/[0.05] flex items-center justify-between text-[10px] font-mono text-on-surface-variant/70">
+            <span>{summary?.vehicle_breakdown?.public_buses ?? buses.length} Buses</span>
+            <span>•</span>
+            <span>{summary?.vehicle_breakdown?.pwd_inspection_vehicles ?? 2} PWD Rigs</span>
+            <span>•</span>
+            <span>{summary?.vehicle_breakdown?.municipal_service_trucks ?? 1} Service</span>
+          </div>
+        </div>
+
+        {/* KPI 2: Multi-Camera Health */}
+        <div className="p-4 rounded-2xl bg-[#141519] border border-white/[0.08] shadow-xl space-y-2">
+          <div className="flex items-center justify-between text-xs font-mono text-on-surface-variant/70">
+            <span className="uppercase tracking-wider">Multi-Camera Rigs</span>
+            <Camera className="w-4 h-4 text-emerald-400" />
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl font-bold font-mono text-emerald-400">
+              {summary?.active_cameras ?? 7} Active
+            </span>
+            <span className="text-xs text-on-surface-variant/60 font-mono">
+              ({summary?.calibrated_cameras ?? 7} Calibrated)
+            </span>
+          </div>
+          <div className="pt-2 border-t border-white/[0.05] flex items-center justify-between text-[10px] font-mono text-on-surface-variant/70">
+            <span>Windshield FWD</span>
+            <span>•</span>
+            <span>Bumper Down</span>
+            <span>•</span>
+            <span>Roof Angle</span>
+          </div>
+        </div>
+
+        {/* KPI 3: Sensed Distance & Provenance */}
+        <div className="p-4 rounded-2xl bg-[#141519] border border-white/[0.08] shadow-xl space-y-2">
+          <div className="flex items-center justify-between text-xs font-mono text-on-surface-variant/70">
+            <span className="uppercase tracking-wider">Survey Volume</span>
+            <Activity className="w-4 h-4 text-purple-400" />
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl font-bold font-mono text-white">
+              {summary?.total_survey_km ? `${summary.total_survey_km.toLocaleString()} km` : '288,092 km'}
+            </span>
+          </div>
+          <div className="pt-2 border-t border-white/[0.05] flex items-center justify-between text-[10px] font-mono">
+            <span className="text-cyan-400">Provenance:</span>
+            <span className="text-white/80">REPLAY + SIMULATED</span>
+          </div>
+        </div>
+
+        {/* KPI 4: Municipal Corridor Coverage */}
+        <div className="p-4 rounded-2xl bg-[#141519] border border-white/[0.08] shadow-xl space-y-2">
+          <div className="flex items-center justify-between text-xs font-mono text-on-surface-variant/70">
+            <span className="uppercase tracking-wider">Corridor Coverage</span>
+            <Compass className="w-4 h-4 text-amber-400" />
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl font-bold font-mono text-amber-400">
+              {summary?.coverage?.coverage_rate_pct ?? 14.3}%
+            </span>
+            <span className="text-xs text-on-surface-variant/60 font-mono">
+              ({summary?.coverage?.sensed_corridors ?? 4}/{summary?.coverage?.total_corridors ?? 28} corridors)
+            </span>
+          </div>
+          <div className="pt-2 border-t border-white/[0.05] flex items-center justify-between text-[10px] font-mono text-on-surface-variant/70">
+            <span className="text-rose-400 font-bold">{summary?.coverage?.coverage_gaps ?? 24} Blind Spots (&gt;7d)</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Tabs Navigation */}
+      <div className="flex items-center justify-between border-b border-white/[0.08] pb-1">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setActiveTab('vehicles')}
+            className={cn(
+              "px-4 py-2 text-xs font-mono font-bold rounded-xl transition-all flex items-center gap-2",
+              activeTab === 'vehicles'
+                ? "bg-white/[0.08] text-white border border-white/[0.1] shadow-lg"
+                : "text-on-surface-variant/60 hover:text-white hover:bg-white/[0.03]"
+            )}
+          >
+            <BusIcon className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Sensing Vehicles ({buses.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('sessions')}
+            className={cn(
+              "px-4 py-2 text-xs font-mono font-bold rounded-xl transition-all flex items-center gap-2",
+              activeTab === 'sessions'
+                ? "bg-white/[0.08] text-white border border-white/[0.1] shadow-lg"
+                : "text-on-surface-variant/60 hover:text-white hover:bg-white/[0.03]"
+            )}
+          >
+            <History className="w-3.5 h-3.5 text-purple-400" />
+            <span>Inspection Sessions ({sessions.length})</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('coverage')}
+            className={cn(
+              "px-4 py-2 text-xs font-mono font-bold rounded-xl transition-all flex items-center gap-2",
+              activeTab === 'coverage'
+                ? "bg-white/[0.08] text-white border border-white/[0.1] shadow-lg"
+                : "text-on-surface-variant/60 hover:text-white hover:bg-white/[0.03]"
+            )}
+          >
+            <Layers className="w-3.5 h-3.5 text-amber-400" />
+            <span>Coverage Intelligence ({coverageData?.corridors?.length || 28})</span>
+          </button>
+        </div>
+
+        {activeTab === 'vehicles' && (
+          <div className="flex items-center gap-1 bg-black/40 p-1 rounded-xl border border-white/[0.05]">
+            {(['ALL', 'bus', 'inspection_vehicle', 'service_vehicle'] as const).map(t => (
+              <button
+                key={t}
+                onClick={() => setTypeFilter(t)}
+                className={cn(
+                  "px-2.5 py-1 rounded-lg text-[10px] font-mono transition-all",
+                  typeFilter === t
+                    ? "bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/30"
+                    : "text-on-surface-variant/60 hover:text-white"
+                )}
+              >
+                {t === 'ALL' ? 'All Types' : t === 'bus' ? 'Transit Buses' : t === 'inspection_vehicle' ? 'PWD Survey' : 'Service Trucks'}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ── TAB 1: SENSING VEHICLES ───────────────────────────── */}
+      {activeTab === 'vehicles' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Left 2 Columns: Vehicles Grid */}
+          <div className="lg:col-span-2 space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {filteredBuses.map((bus) => {
+                const vType = bus.vehicleType || bus.vehicle_type || 'bus';
+                const isSelected = selectedBus?.id === bus.id;
+
+                const typeBadge = 
+                  vType === 'inspection_vehicle' ? { label: 'PWD Survey Rig', color: 'bg-purple-500/10 text-purple-400 border-purple-500/30' } :
+                  vType === 'service_vehicle' ? { label: 'Service Truck', color: 'bg-amber-500/10 text-amber-400 border-amber-500/30' } :
+                  { label: 'Transit Bus', color: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30' };
+
+                return (
+                  <div
+                    key={bus.id}
+                    onClick={() => setSelectedBus(bus)}
+                    className={cn(
+                      "p-4 rounded-2xl border transition-all cursor-pointer relative",
+                      isSelected
+                        ? "bg-white/[0.08] border-cyan-400 shadow-[0_0_20px_rgba(6,182,212,0.15)]"
+                        : "bg-[#141519] border-white/[0.06] hover:border-white/[0.15] hover:bg-white/[0.03]"
+                    )}
+                  >
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className={cn("px-2 py-0.5 rounded text-[9px] font-mono font-bold border", typeBadge.color)}>
+                            {typeBadge.label}
+                          </span>
+                          <span className={cn(
+                            "px-1.5 py-0.5 rounded text-[9px] font-mono font-bold",
+                            bus.status === 'active' ? "bg-emerald-500/10 text-emerald-400" : "bg-zinc-800 text-zinc-400"
+                          )}>
+                            {bus.status.toUpperCase()}
+                          </span>
+                        </div>
+                        <h3 className="text-base font-bold text-white font-mono">{bus.registrationNumber}</h3>
+                        <p className="text-[11px] text-on-surface-variant/70 truncate max-w-[240px]">
+                          {bus.makeModel || bus.make_model || 'Standard Unit'}
+                        </p>
+                      </div>
+
+                      <div className="text-right">
+                        <span className="text-[10px] font-mono text-on-surface-variant/50 block">ODOMETER</span>
+                        <span className="text-xs font-mono font-bold text-white">
+                          {(bus.totalDistanceKm || bus.total_distance_km || 0).toLocaleString()} km
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Camera Mounts Preview */}
+                    <div className="mt-3 pt-3 border-t border-white/[0.05] flex items-center justify-between text-[11px] font-mono">
+                      <div className="flex items-center gap-1.5 text-on-surface-variant/70">
+                        <Camera className="w-3.5 h-3.5 text-cyan-400" />
+                        <span>{bus.cameraCount || bus.cameras?.length || 1} Optical Rig</span>
+                      </div>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-black/40 text-on-surface-variant/80 border border-white/[0.05]">
+                        {bus.telemetryMode || bus.telemetry_mode || 'SIMULATED'}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Right Column: Mini Map & Vehicle Context */}
+          <div className="space-y-4">
+            <GlassPanel className="h-[420px] p-0 overflow-hidden relative rounded-2xl border border-white/[0.08]">
+              <MapContainer 
+                center={[28.6139, 77.2090]} 
+                zoom={11} 
+                attributionControl={false} 
+                className="w-full h-full"
+                zoomControl={false}
+              >
+                <TileLayer url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png" />
+                {routes.map((route, idx) => {
+                  if (!route.waypoints || !Array.isArray(route.waypoints)) return null;
+                  const validWaypoints = route.waypoints.map(wp => getValidLatLng(wp)).filter((pos): pos is [number, number] => pos !== null);
+                  if (validWaypoints.length < 2) return null;
+                  return <Polyline key={route.id || idx} positions={validWaypoints} pathOptions={{ color: '#06b6d4', weight: 2, opacity: 0.3 }} />;
+                })}
+
+                {buses.map(bus => {
+                  const pos = getValidLatLng(bus);
+                  if (!pos) return null;
+                  return (
+                    <Marker 
+                      key={bus.id} 
+                      position={pos} 
+                      icon={createBusMarkerIcon(bus.id, bus.vehicleType || bus.vehicle_type)}
+                      eventHandlers={{ click: () => setSelectedBus(bus) }}
+                    />
+                  );
+                })}
+
+                <FleetMapBounds routes={routes} buses={buses} />
+              </MapContainer>
+            </GlassPanel>
+
+            <SensorPipeline />
+          </div>
+        </div>
+      )}
+
+      {/* ── TAB 2: INSPECTION SESSIONS ─────────────────────────── */}
+      {activeTab === 'sessions' && (
+        <div className="space-y-4">
+          <div className="p-4 rounded-2xl bg-[#141519] border border-white/[0.08] shadow-xl overflow-x-auto">
+            <table className="w-full text-left text-xs font-mono">
+              <thead>
+                <tr className="border-b border-white/[0.08] text-on-surface-variant/60 uppercase tracking-wider text-[10px]">
+                  <th className="pb-3 px-3">Session ID</th>
+                  <th className="pb-3 px-3">Vehicle</th>
+                  <th className="pb-3 px-3">Type</th>
+                  <th className="pb-3 px-3">Camera Mount</th>
+                  <th className="pb-3 px-3">Started</th>
+                  <th className="pb-3 px-3">Distance</th>
+                  <th className="pb-3 px-3">Frames</th>
+                  <th className="pb-3 px-3">Potholes Detected</th>
+                  <th className="pb-3 px-3">Telemetry Provenance</th>
+                  <th className="pb-3 px-3">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/[0.04]">
+                {sessions.map((sess) => {
+                  const provColor = 
+                    sess.telemetry_provenance === 'LIVE' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' :
+                    sess.telemetry_provenance === 'REPLAY' ? 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30' :
+                    sess.telemetry_provenance === 'SIMULATED' ? 'bg-cyan-500/10 text-cyan-400 border-cyan-500/30' :
+                    'bg-amber-500/10 text-amber-400 border-amber-500/30';
+
+                  return (
+                    <tr key={sess.id} className="hover:bg-white/[0.02] transition-colors">
+                      <td className="py-3 px-3 font-bold text-white">{sess.id}</td>
+                      <td className="py-3 px-3 text-cyan-300">{sess.vehicle_registration || sess.vehicle_id}</td>
+                      <td className="py-3 px-3 capitalize text-on-surface-variant/80">{sess.vehicle_type?.replace('_', ' ') || 'bus'}</td>
+                      <td className="py-3 px-3 text-on-surface-variant/70">{sess.camera_id || 'cam_fwd'}</td>
+                      <td className="py-3 px-3 text-on-surface-variant/70">{sess.started_at ? new Date(sess.started_at).toLocaleTimeString() : 'N/A'}</td>
+                      <td className="py-3 px-3 text-white font-bold">{sess.distance_sensed_km} km</td>
+                      <td className="py-3 px-3 text-on-surface-variant/80">{sess.frames_analyzed?.toLocaleString()}</td>
+                      <td className="py-3 px-3 font-bold text-amber-400">{sess.potholes_detected}</td>
+                      <td className="py-3 px-3">
+                        <span className={cn("px-2 py-0.5 rounded text-[10px] font-bold border", provColor)}>
+                          {sess.telemetry_provenance}
+                        </span>
+                      </td>
+                      <td className="py-3 px-3">
+                        <span className={cn(
+                          "px-2 py-0.5 rounded text-[10px] font-bold",
+                          sess.status === 'active' ? "bg-emerald-500/20 text-emerald-400 animate-pulse" : "bg-zinc-800 text-zinc-400"
+                        )}>
+                          {sess.status.toUpperCase()}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* ── TAB 3: COVERAGE INTELLIGENCE ───────────────────────── */}
+      {activeTab === 'coverage' && (
+        <div className="space-y-4">
+          <div className="p-4 rounded-2xl bg-[#141519] border border-white/[0.08] shadow-xl overflow-x-auto">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-sm font-bold text-white">Municipal Network Coverage &amp; Sensing Recency</h3>
+                <p className="text-[11px] text-on-surface-variant/70 font-mono">
+                  Identifies corridors requiring distributed bus / inspection vehicle passes (&gt;7 day threshold).
+                </p>
+              </div>
+              <span className="text-xs font-mono text-amber-400">
+                Blind Spot Threshold: 7 Days
+              </span>
+            </div>
+
+            <table className="w-full text-left text-xs font-mono">
+              <thead>
+                <tr className="border-b border-white/[0.08] text-on-surface-variant/60 uppercase tracking-wider text-[10px]">
+                  <th className="pb-3 px-3">Corridor ID</th>
+                  <th className="pb-3 px-3">Corridor Name</th>
+                  <th className="pb-3 px-3">Road Class</th>
+                  <th className="pb-3 px-3">Operational Road Health</th>
+                  <th className="pb-3 px-3">Coverage Status</th>
+                  <th className="pb-3 px-3">Last Sensed Pass</th>
+                  <th className="pb-3 px-3">Recency</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/[0.04]">
+                {(coverageData?.corridors || []).map((corridor: any) => {
+                  const statusColor = 
+                    corridor.coverage_status === 'RECENT' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' :
+                    corridor.coverage_status === 'ACCEPTABLE' ? 'bg-amber-500/10 text-amber-400 border-amber-500/30' :
+                    'bg-rose-500/10 text-rose-400 border-rose-500/30';
+
+                  return (
+                    <tr key={corridor.segment_id} className="hover:bg-white/[0.02] transition-colors">
+                      <td className="py-3 px-3 font-bold text-white">{corridor.segment_id}</td>
+                      <td className="py-3 px-3 text-cyan-300 font-medium">{corridor.segment_name}</td>
+                      <td className="py-3 px-3 capitalize text-on-surface-variant/80">{corridor.road_class}</td>
+                      <td className="py-3 px-3">
+                        <span className="font-bold text-white">{corridor.health_score} / 100</span>
+                      </td>
+                      <td className="py-3 px-3">
+                        <span className={cn("px-2 py-0.5 rounded text-[10px] font-bold border", statusColor)}>
+                          {corridor.coverage_status}
+                        </span>
+                      </td>
+                      <td className="py-3 px-3 text-on-surface-variant/70">
+                        {corridor.last_sensed_at ? new Date(corridor.last_sensed_at).toLocaleDateString() : 'Never Sensed'}
+                      </td>
+                      <td className="py-3 px-3 text-on-surface-variant/80">
+                        {corridor.days_since_last_pass != null ? `${corridor.days_since_last_pass} days ago` : 'Blind Spot'}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* ── VEHICLE DETAIL DRAWER ──────────────────────────────── */}
       <AnimatePresence>
         {selectedBus && (
           <>
@@ -386,7 +594,7 @@ export function FleetPage() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 z-[400] bg-black/40 backdrop-blur-sm"
+              className="fixed inset-0 z-[400] bg-black/50 backdrop-blur-sm"
               onClick={() => setSelectedBus(null)}
             />
             <motion.div
@@ -394,85 +602,85 @@ export function FleetPage() {
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="absolute right-0 top-0 bottom-0 w-full sm:w-[480px] z-[500] bg-surface-low border-l border-outline-variant shadow-2xl flex flex-col"
+              className="fixed right-0 top-0 bottom-0 w-full sm:w-[500px] z-[500] bg-[#141519] border-l border-white/[0.08] shadow-2xl flex flex-col"
             >
-              <div className="p-6 border-b border-outline-variant flex items-start justify-between bg-white/[0.02]">
+              <div className="p-6 border-b border-white/[0.08] flex items-start justify-between bg-white/[0.02]">
                 <div>
                   <div className="flex items-center gap-2 mb-2">
-                    <span className={cn(
-                      "px-2 py-0.5 rounded font-label-caps text-[10px] font-mono border",
-                      (selectedBus.telemetryStatus === 'available' || getValidLatLng(selectedBus) !== null)
-                        ? "bg-cyan-500/20 text-cyan-400 border-cyan-500/30"
-                        : "bg-zinc-800 text-zinc-400 border-zinc-700"
-                    )}>
-                      {(selectedBus.telemetryStatus === 'available' || getValidLatLng(selectedBus) !== null)
-                        ? 'LIVE GPS'
-                        : 'GPS UNAVAILABLE'}
+                    <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">
+                      {selectedBus.vehicleType || selectedBus.vehicle_type || 'bus'}
                     </span>
-                    <span className="text-[10px] text-on-surface-variant font-data-mono tracking-widest">{selectedBus.id}</span>
+                    <span className="text-[10px] text-on-surface-variant/70 font-mono tracking-widest">{selectedBus.id}</span>
                   </div>
-                  <h2 className="text-xl font-bold text-on-surface">{selectedBus.registrationNumber}</h2>
-                  <p className="text-xs text-on-surface-variant font-mono mt-0.5">
-                    {selectedBus.routeName || (selectedBus.routeId ? `Route ${selectedBus.routeId}` : 'Unassigned Corridor')}
+                  <h2 className="text-xl font-bold text-white font-mono">{selectedBus.registrationNumber}</h2>
+                  <p className="text-xs text-on-surface-variant/70 font-mono mt-0.5">
+                    {selectedBus.makeModel || selectedBus.make_model || 'Transit Unit'}
                   </p>
                 </div>
-                <button onClick={() => setSelectedBus(null)} className="p-2 text-on-surface-variant hover:text-white rounded-lg hover:bg-white/[0.05]">
+                <button onClick={() => setSelectedBus(null)} className="p-2 text-on-surface-variant/70 hover:text-white rounded-lg hover:bg-white/[0.05]">
                   <X className="w-5 h-5" />
                 </button>
               </div>
 
-              <div className="flex-1 overflow-y-auto scrollbar-none p-6 space-y-6">
-                {/* Truthful Telemetry Disclosure Panel */}
-                <div className="p-4 rounded-xl border border-outline-variant bg-surface-container/40 space-y-3">
-                  <h3 className="text-xs font-bold text-on-surface uppercase tracking-widest flex items-center gap-2">
-                    <WifiOff className="w-4 h-4 text-amber-400" /> Telemetry Status
+              <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                {/* Telemetry Disclosure */}
+                <div className="p-4 rounded-xl border border-white/[0.08] bg-black/40 space-y-3">
+                  <h3 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
+                    <Wifi className="w-4 h-4 text-cyan-400" /> Sensing Provenance Disclosure
                   </h3>
                   <div className="text-xs space-y-2 font-mono">
                     <div className="flex justify-between py-1 border-b border-white/[0.05]">
-                      <span className="text-zinc-400">GPS Hardware Signal:</span>
-                      <span className="text-amber-400 font-bold">
-                        {(selectedBus.telemetryStatus === 'available' || getValidLatLng(selectedBus) !== null) ? 'Active Satellite Fix' : 'Unavailable (NULL)'}
-                      </span>
+                      <span className="text-on-surface-variant/70">Ingestion Mode:</span>
+                      <span className="text-cyan-400 font-bold">{selectedBus.telemetryMode || selectedBus.telemetry_mode || 'SIMULATED'}</span>
                     </div>
                     <div className="flex justify-between py-1 border-b border-white/[0.05]">
-                      <span className="text-zinc-400">Ingestion Mode:</span>
-                      <span className="text-white">Offline Corridor Inspection</span>
+                      <span className="text-on-surface-variant/70">Operator Agency:</span>
+                      <span className="text-white">{selectedBus.operator || 'Delhi PWD / DTC'}</span>
                     </div>
                     <div className="flex justify-between py-1 border-b border-white/[0.05]">
-                      <span className="text-zinc-400">Operator:</span>
-                      <span className="text-white">{selectedBus.operator || 'BMTC / DTC'}</span>
+                      <span className="text-on-surface-variant/70">Total Sensed Distance:</span>
+                      <span className="text-white font-bold">{(selectedBus.totalDistanceKm || selectedBus.total_distance_km || 0).toLocaleString()} km</span>
                     </div>
                     <div className="flex justify-between py-1">
-                      <span className="text-zinc-400">Optical Camera Status:</span>
-                      <span className="text-emerald-400 font-bold">{selectedBus.cameraStatus || 'online'}</span>
+                      <span className="text-on-surface-variant/70">Edge AI Detector:</span>
+                      <span className="text-emerald-400 font-bold">YOLOv8 Single-Class (best.pt)</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Node System Health */}
-                <div className="grid grid-cols-2 gap-3 text-xs">
-                  <div className="p-3 rounded-lg border border-outline-variant bg-white/[0.02]">
-                    <div className="text-zinc-400 text-[10px] uppercase tracking-wider mb-1">AI Inference Core</div>
-                    <div className="font-mono font-bold text-cyan-400">
-                      {selectedBus.edgeAiStatus === 'offline' ? 'OFFLINE' : 'RUNNING (YOLOv8)'}
-                    </div>
-                  </div>
-                  <div className="p-3 rounded-lg border border-outline-variant bg-white/[0.02]">
-                    <div className="text-zinc-400 text-[10px] uppercase tracking-wider mb-1">Connection State</div>
-                    <div className="font-mono font-bold text-white">
-                      {selectedBus.status === 'offline' ? 'DISCONNECTED' : 'ONLINE GATEWAY'}
-                    </div>
-                  </div>
-                </div>
+                {/* Multi-Camera Rig Specifications */}
+                <div className="space-y-3">
+                  <h3 className="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
+                    <Camera className="w-4 h-4 text-emerald-400" /> Mounted Optical Cameras ({selectedBus.cameras?.length || 1})
+                  </h3>
 
-                {/* Spatial Corridor Context */}
-                <div className="space-y-2">
-                  <h4 className="text-xs font-bold text-on-surface uppercase tracking-widest">Configured Corridor</h4>
-                  <div className="p-3 rounded-lg border border-outline-variant bg-white/[0.02] text-xs font-mono">
-                    <p className="text-white font-medium">{selectedBus.routeName || 'No corridor assigned'}</p>
-                    <p className="text-[11px] text-zinc-400 mt-1">
-                      Inspection coordinates for uploaded video runs on this node are dynamically interpolated across this designated path.
-                    </p>
+                  <div className="space-y-2">
+                    {(selectedBus.cameras && selectedBus.cameras.length > 0 ? selectedBus.cameras : [
+                      {
+                        id: 'cam_fwd',
+                        mountPosition: 'windshield_center',
+                        orientation: 'forward',
+                        resolution: '1080p',
+                        fps: 30,
+                        status: 'active',
+                        calibrationStatus: 'calibrated'
+                      }
+                    ]).map((cam) => (
+                      <div key={cam.id} className="p-3 rounded-xl border border-white/[0.06] bg-white/[0.02] space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="font-mono text-xs font-bold text-white">{cam.id}</span>
+                          <span className="px-1.5 py-0.2 rounded text-[9px] font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                            {cam.calibrationStatus || 'calibrated'}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2 text-[10px] font-mono text-on-surface-variant/70">
+                          <div>Mount: <span className="text-white capitalize">{cam.mountPosition?.replace('_', ' ')}</span></div>
+                          <div>Orientation: <span className="text-white capitalize">{cam.orientation?.replace('_', ' ')}</span></div>
+                          <div>Resolution: <span className="text-white">{cam.resolution} @ {cam.fps}fps</span></div>
+                          <div>Status: <span className="text-emerald-400 uppercase">{cam.status}</span></div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>

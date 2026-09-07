@@ -4,3 +4,4 @@ export { TimeScrubber } from './TimeScrubber';
 export { LayerControls, type MapLayers } from './LayerControls';
 export { CommandMap } from './CommandMap';
 export { RoadDrawer } from './RoadDrawer';
+export { SafeRoutePanel } from './SafeRoutePanel';

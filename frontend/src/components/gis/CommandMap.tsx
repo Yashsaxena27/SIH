@@ -5,6 +5,7 @@ import { renderToString } from 'react-dom/server';
 import { Bus as BusIcon, ShieldAlert, AlertTriangle, MapPin } from 'lucide-react';
 import { cn, getValidLatLng } from '@/lib/utils';
 import type { Bus, UrbanIssue, Route, RoadSegment } from '@/types';
+import type { SafeRouteResponse, RouteCandidate } from '@/types/saferoute';
 import type { MapLayers } from './LayerControls';
 import type { IntelligenceFilter } from './FilterBar';
 
@@ -84,6 +85,21 @@ const createIssueIcon = (severity: string, observationCount: number, showCluster
   return L.divIcon({ html, className: '', iconSize: [28, 28], iconAnchor: [14, 14] });
 };
 
+const createSafeRoutePinIcon = (type: 'origin' | 'destination') => {
+  const isOrigin = type === 'origin';
+  const html = renderToString(
+    <div className="relative flex items-center justify-center">
+      <div className={cn(
+        "relative flex items-center justify-center rounded-full border shadow-lg w-7 h-7 bg-[#141519]",
+        isOrigin ? "border-emerald-400 ring-2 ring-emerald-500/50 shadow-[0_0_12px_rgba(16,185,129,0.8)]" : "border-rose-400 ring-2 ring-rose-500/50 shadow-[0_0_12px_rgba(244,63,94,0.8)]"
+      )}>
+        <MapPin className={cn("w-4 h-4", isOrigin ? "text-emerald-400" : "text-rose-400")} />
+      </div>
+    </div>
+  );
+  return L.divIcon({ html, className: '', iconSize: [28, 28], iconAnchor: [14, 28] });
+};
+
 interface CommandMapProps {
   buses: Bus[];
   issues: UrbanIssue[];
@@ -95,6 +111,9 @@ interface CommandMapProps {
   onIssueSelect: (issue: UrbanIssue) => void;
   onRoadSelect?: (road: RoadSegment) => void;
   selectedRoadId?: string | null;
+  safeRouteResult?: SafeRouteResponse | null;
+  selectedCandidateId?: string | null;
+  onSelectCandidate?: (candidate: RouteCandidate) => void;
 }
 
 export function CommandMap({ 
@@ -107,7 +126,10 @@ export function CommandMap({
   filter, 
   onIssueSelect,
   onRoadSelect,
-  selectedRoadId
+  selectedRoadId,
+  safeRouteResult,
+  selectedCandidateId,
+  onSelectCandidate
 }: CommandMapProps) {
   // Apply filters
   const visibleIssues = issues.filter(i => {
@@ -196,7 +218,7 @@ export function CommandMap({
           );
         })}
 
-        {/* Routes */}
+        {/* Standard Bus Routes */}
         {layers.routes && routes.map((route, idx) => {
           if (!route.waypoints || !Array.isArray(route.waypoints)) return null;
           const validWaypoints = route.waypoints
@@ -211,6 +233,56 @@ export function CommandMap({
             />
           );
         })}
+
+        {/* SafeRoute Risk-Aware Routing Candidate Corridors */}
+        {safeRouteResult?.candidates && safeRouteResult.candidates.map((cand) => {
+          const coords = cand.geometry?.coordinates;
+          if (!coords || !Array.isArray(coords) || coords.length < 2) return null;
+          const positions = coords.map(([lng, lat]) => [lat, lng] as [number, number]);
+          const isSelected = selectedCandidateId ? cand.id === selectedCandidateId : cand.is_recommended;
+          const isRecommended = cand.is_recommended;
+
+          const color = 
+            cand.risk_level === 'LOW' ? '#10b981' :
+            cand.risk_level === 'MODERATE' ? '#eab308' :
+            cand.risk_level === 'ELEVATED' ? '#f97316' : '#ef4444';
+
+          return (
+            <Polyline
+              key={`saferoute-cand-${cand.id}`}
+              positions={positions}
+              pathOptions={{
+                color: isSelected ? (isRecommended ? '#06b6d4' : color) : color,
+                weight: isSelected ? 8 : 4,
+                opacity: isSelected ? 1.0 : 0.45,
+                dashArray: isSelected ? undefined : '6, 6',
+                className: 'saferoute-candidate-polyline cursor-pointer'
+              }}
+              eventHandlers={{
+                click: () => onSelectCandidate && onSelectCandidate(cand)
+              }}
+            />
+          );
+        })}
+
+        {/* SafeRoute Origin and Destination Markers */}
+        {safeRouteResult && safeRouteResult.candidates.length > 0 && (() => {
+          const activeCand = safeRouteResult.candidates.find(c => c.id === selectedCandidateId) 
+            || safeRouteResult.candidates.find(c => c.is_recommended) 
+            || safeRouteResult.candidates[0];
+          const coords = activeCand?.geometry?.coordinates;
+          if (!coords || coords.length < 2) return null;
+
+          const originPos = [coords[0][1], coords[0][0]] as [number, number];
+          const destPos = [coords[coords.length - 1][1], coords[coords.length - 1][0]] as [number, number];
+
+          return (
+            <>
+              <Marker position={originPos} icon={createSafeRoutePinIcon('origin')} />
+              <Marker position={destPos} icon={createSafeRoutePinIcon('destination')} />
+            </>
+          );
+        })()}
 
         {/* Hotspots (Cluster DBSCAN from DB) */}
         {layers.clusters && hotspots.map((spot, idx) => {

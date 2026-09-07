@@ -132,6 +132,52 @@ class Bus(Base, TimestampMixin):
     last_seen = Column(DateTime(timezone=True), nullable=True)
     current_location = Column(Geometry(geometry_type='POINT', srid=4326), nullable=True)
     
+    # Generalized vehicle sensing attributes
+    vehicle_type = Column(String(50), default="bus")  # bus, inspection_vehicle, service_vehicle
+    make_model = Column(String(100), nullable=True)
+    department_id = Column(String(50), ForeignKey("departments.id"), nullable=True)
+    total_distance_km = Column(Float, default=0.0)
+    telemetry_mode = Column(String(50), default="SIMULATED")  # LIVE, REPLAY, SIMULATED, ESTIMATED
+
+    cameras = relationship("Camera", back_populates="vehicle", cascade="all, delete-orphan")
+    inspection_sessions = relationship("InspectionSession", back_populates="vehicle", cascade="all, delete-orphan")
+
+
+class Camera(Base, TimestampMixin):
+    __tablename__ = "cameras"
+    id = Column(String(50), primary_key=True)
+    vehicle_id = Column(String(50), ForeignKey("buses.id"), nullable=False)
+    mount_position = Column(String(50), nullable=False)  # windshield_center, roof_center, bumper_forward, dash_passenger
+    orientation = Column(String(50), nullable=False)     # forward, forward_down, angled_right, angled_left
+    resolution = Column(String(50), default="1080p")
+    fps = Column(Integer, default=30)
+    status = Column(String(50), default="active")        # active, degraded, offline
+    calibration_status = Column(String(50), default="calibrated") # calibrated, needs_calibration, uncalibrated
+    last_health_check = Column(DateTime(timezone=True), nullable=True)
+
+    vehicle = relationship("Bus", back_populates="cameras")
+
+
+class InspectionSession(Base, TimestampMixin):
+    __tablename__ = "inspection_sessions"
+    id = Column(String(50), primary_key=True)
+    vehicle_id = Column(String(50), ForeignKey("buses.id"), nullable=False)
+    camera_id = Column(String(50), ForeignKey("cameras.id"), nullable=True)
+    route_id = Column(String(50), ForeignKey("routes.id"), nullable=True)
+    started_at = Column(DateTime(timezone=True), nullable=False)
+    ended_at = Column(DateTime(timezone=True), nullable=True)
+    status = Column(String(50), default="completed")  # active, completed, interrupted
+    telemetry_provenance = Column(String(50), nullable=False, default="SIMULATED")  # LIVE, REPLAY, SIMULATED, ESTIMATED
+    distance_sensed_km = Column(Float, default=0.0)
+    frames_analyzed = Column(Integer, default=0)
+    detections_count = Column(Integer, default=0)
+    potholes_detected = Column(Integer, default=0)
+    road_segments_covered = Column(JSON, nullable=True)
+
+    vehicle = relationship("Bus", back_populates="inspection_sessions")
+    camera = relationship("Camera")
+
+    
 class RoadSegment(Base, TimestampMixin):
     __tablename__ = "road_segments"
     id = Column(String(50), primary_key=True)
