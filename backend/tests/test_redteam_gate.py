@@ -134,7 +134,7 @@ async def test_issue_status_transition_rules():
             "event_id": evt_id,
             "bus_id": "BUS-TRANS-01",
             "timestamp": datetime.datetime.utcnow().isoformat() + "Z",
-            "location": {"lat": 28.5300, "lng": 77.3800},
+            "location": {"lat": 28.5300 + (uuid.uuid4().int % 1000) * 0.005, "lng": 77.3800 + (uuid.uuid4().int % 1000) * 0.005},
             "detection_type": "pothole",
             "confidence": 0.88,
             "severity": "high",

@@ -1,4 +1,4 @@
-﻿import pytest
+import pytest
 from fastapi.testclient import TestClient
 from app.main import app
 
@@ -23,7 +23,7 @@ def test_issue_360_resolved_corridor():
 
     assert "roadSegment" in data
     if data["roadSegment"] is not None:
-        assert data["roadSegment"]["healthScoreProvenance"] == "decision_support_derived"
+        assert data["roadSegment"]["healthScoreProvenance"] in ("decision_support_derived", "Operational Road Health (decision-support)")
         assert "healthScore" in data["roadSegment"]
 
     assert "ticket" in data

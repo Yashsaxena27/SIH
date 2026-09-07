@@ -317,9 +317,9 @@ export function RoadDrawer({ road, onClose, onIssueSelect }: RoadDrawerProps) {
             )}
 
             <div className="space-y-2">
-              {corridorIssues.map(issue => (
+              {corridorIssues.map((issue, idx) => (
                 <div 
-                  key={issue.id}
+                  key={`${issue.id || 'iss'}-${idx}`}
                   className="p-3 rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-white/[0.06] transition-colors flex items-center justify-between group"
                 >
                   <div className="space-y-1">

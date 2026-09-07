@@ -21,11 +21,11 @@ TICKET_TRANSITIONS = {
     TicketStatus.assigned: [TicketStatus.in_progress],
     TicketStatus.in_progress: [TicketStatus.repair_reported],
     TicketStatus.repair_reported: [TicketStatus.verifying],
-    TicketStatus.verifying: [TicketStatus.verified_resolved, TicketStatus.verified_unresolved],
-    TicketStatus.verified_resolved: [TicketStatus.closed],
+    TicketStatus.verifying: [TicketStatus.verified_resolved, TicketStatus.verified_unresolved, TicketStatus.repair_reported, TicketStatus.reopened],
+    TicketStatus.verified_resolved: [TicketStatus.closed, TicketStatus.reopened],
     TicketStatus.verified_unresolved: [TicketStatus.reopened],
     TicketStatus.reopened: [TicketStatus.in_progress],
-    TicketStatus.closed: [],
+    TicketStatus.closed: [TicketStatus.reopened],
 }
 
 # Map ticket status to corresponding issue status

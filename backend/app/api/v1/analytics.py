@@ -640,7 +640,7 @@ async def get_detection_summary(session: AsyncSession = Depends(get_db)):
     }
 
 
-@router.get('/analytics/hotspots')
+@router.get('/hotspots')
 async def get_hotspots(session: AsyncSession = Depends(get_db)):
     """
     Detects spatial hotspots using PostGIS ST_ClusterDBSCAN.

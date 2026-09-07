@@ -197,7 +197,7 @@ export function CommandMap({
         })}
 
         {/* Routes */}
-        {layers.routes && routes.map(route => {
+        {layers.routes && routes.map((route, idx) => {
           if (!route.waypoints || !Array.isArray(route.waypoints)) return null;
           const validWaypoints = route.waypoints
             .map(wp => getValidLatLng(wp))
@@ -205,7 +205,7 @@ export function CommandMap({
           if (validWaypoints.length < 2) return null;
           return (
             <Polyline
-              key={route.id}
+              key={`route-${route.id || idx}`}
               positions={validWaypoints}
               pathOptions={{ color: '#6366f1', weight: 3, opacity: 0.4, dashArray: '8, 8' }}
             />
@@ -213,19 +213,19 @@ export function CommandMap({
         })}
 
         {/* Hotspots (Cluster DBSCAN from DB) */}
-        {layers.clusters && hotspots.map(spot => {
+        {layers.clusters && hotspots.map((spot, idx) => {
           const pos = getValidLatLng(spot);
           if (!pos) return null;
           return (
             <Circle
-              key={spot.id}
+              key={`hotspot-${spot.id || spot.cluster_id || idx}`}
               center={pos}
-              radius={spot.radius || 50}
+              radius={spot.radius || spot.radius_meters || 50}
               pathOptions={{
                 stroke: true,
-                color: spot.severity === 'critical' ? '#ef4444' : '#f97316',
+                color: (spot.severity || spot.max_severity) === 'critical' ? '#ef4444' : '#f97316',
                 weight: 2,
-                fillColor: spot.severity === 'critical' ? '#ef4444' : '#f97316',
+                fillColor: (spot.severity || spot.max_severity) === 'critical' ? '#ef4444' : '#f97316',
                 fillOpacity: 0.3
               }}
             />

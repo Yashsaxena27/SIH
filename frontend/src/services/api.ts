@@ -47,6 +47,9 @@ export const api = {
   // Verification
   getVerifications: verificationService.getVerifications,
   getVerificationSummary: verificationService.getVerificationSummary,
+  triggerReinspection: verificationService.triggerReinspection,
+  overrideVerification: verificationService.overrideVerification,
+  reopenIssue: verificationService.reopenIssue,
   
   // Roads / Analytics
   getRoads: roadService.getRoads,

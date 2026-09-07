@@ -68,11 +68,19 @@ class DemoSimulator {
     }, 12000);
   }
 
-  async simulateRevisit(issueId: string, fixed: boolean) {
+  async simulateRevisit(issueId: string, options: { fixed?: boolean; scenario?: string } | boolean) {
     if (config.useMockData) {
+      const fixed = typeof options === 'boolean' ? options : options.fixed ?? true;
       return { message: 'Demo revisit simulated', new_status: fixed ? 'verified' : 'reopened' };
     }
-    return client.post(`/demo/simulate-revisit/${encodeURIComponent(issueId)}?fixed=${fixed}`, {});
+    const params = new URLSearchParams();
+    if (typeof options === 'boolean') {
+      params.set('fixed', String(options));
+    } else {
+      if (options.scenario) params.set('scenario', options.scenario);
+      if (options.fixed !== undefined) params.set('fixed', String(options.fixed));
+    }
+    return client.post(`/demo/simulate-revisit/${encodeURIComponent(issueId)}?${params.toString()}`, {});
   }
 }
 

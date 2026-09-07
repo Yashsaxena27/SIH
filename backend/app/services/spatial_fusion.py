@@ -53,3 +53,40 @@ async def find_nearby_issue(
 
     result = await session.execute(query)
     return result.scalar_one_or_none()
+
+
+async def find_nearby_verified_issue(
+    session: AsyncSession,
+    location: GeoPoint,
+    issue_type: str,
+    radius_meters: float = FUSION_RADIUS_METERS,
+    for_update: bool = False
+) -> Optional[UrbanIssue]:
+    """
+    Find an existing verified UrbanIssue of the same type within the given radius (PostGIS geography distance).
+    Used for defect recurrence detection.
+    """
+    point_wkt = f"POINT({location.lng} {location.lat})"
+    query = select(UrbanIssue).where(
+        and_(
+            UrbanIssue.issue_type == issue_type,
+            UrbanIssue.status == IssueStatus.verified,
+            func.ST_DWithin(
+                func.Geography(UrbanIssue.location),
+                func.Geography(func.ST_GeomFromText(point_wkt, 4326)),
+                radius_meters
+            )
+        )
+    ).order_by(
+        func.ST_Distance(
+            func.Geography(UrbanIssue.location),
+            func.Geography(func.ST_GeomFromText(point_wkt, 4326))
+        )
+    ).limit(1)
+
+    if for_update:
+        query = query.with_for_update()
+
+    result = await session.execute(query)
+    return result.scalar_one_or_none()
+

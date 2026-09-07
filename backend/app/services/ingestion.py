@@ -3,8 +3,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, text
 
 from app.schemas.ingestion import DetectionEvent
-from app.models.domain import Detection, Observation, UrbanIssue, Severity, IssueStatus, Bus
-from app.services.spatial_fusion import find_nearby_issue
+from app.models.domain import Detection, Observation, UrbanIssue, Severity, IssueStatus, Bus, Ticket, TicketStatus, TimelineEvent, Alert
+from app.services.spatial_fusion import find_nearby_issue, find_nearby_verified_issue
 from app.services.lifecycle import transition_issue_state
 from app.services.road_segment_linker import link_issue_to_segment
 from app.services.road_health import update_segment_health_for_issue
@@ -120,23 +120,76 @@ async def process_detection_event(session: AsyncSession, event: DetectionEvent):
             await link_issue_to_segment(session, issue, point_wkt)
             
     else:
-        # Create new issue
-        issue_id = f"iss_{uuid.uuid4().hex[:12]}"
-        issue = UrbanIssue(
-            id=issue_id,
-            issue_type=event.detection_type,
-            status=IssueStatus.new,
-            severity=event.severity,
-            location=point_wkt,
-            first_detected_at=event.timestamp,
-            last_observed_at=event.timestamp,
-            observation_count=1,
-            unique_bus_count=1,
-            confidence=event.confidence
+        # Check for recurrence against recently verified issues
+        verified_issue = await find_nearby_verified_issue(
+            session, event.location, event.detection_type, for_update=True
         )
-        session.add(issue)
-        await session.flush()  # Ensure issue.id is available
-        await link_issue_to_segment(session, issue, point_wkt)
+        if verified_issue:
+            # Defect Recurrence Detected: Reopen the EXISTING verified UrbanIssue!
+            issue = verified_issue
+            issue.status = IssueStatus.reopened
+            issue.observation_count += 1
+            issue.last_observed_at = event.timestamp
+            issue.confidence = max(issue.confidence, event.confidence)
+            
+            # Check unique bus
+            existing_bus_obs = await session.execute(
+                select(Observation).where(
+                    Observation.issue_id == issue.id,
+                    Observation.bus_id == event.bus_id
+                ).limit(1)
+            )
+            if not existing_bus_obs.scalar_one_or_none():
+                issue.unique_bus_count += 1
+                
+            # Reopen associated ticket if present
+            ticket_res = await session.execute(
+                select(Ticket).where(Ticket.issue_id == issue.id)
+            )
+            ticket = ticket_res.scalar_one_or_none()
+            if ticket:
+                ticket.status = TicketStatus.reopened
+                
+            # Create Timeline Event
+            session.add(TimelineEvent(
+                id=f"evt_{uuid.uuid4().hex[:12]}",
+                entity_id=issue.id,
+                entity_type="issue",
+                event_type="recurrence_detected",
+                title="Defect Recurrence Detected — Issue Reopened",
+                description=f"New defect detected within 15m of previously verified location by bus {event.bus_id}.",
+                actor="SYSTEM_SPATIAL_FUSION",
+                metadata_json={"detection_id": detection.id, "bus_id": event.bus_id}
+            ))
+            
+            # Create Alert
+            session.add(Alert(
+                id=f"alt_{uuid.uuid4().hex[:12]}",
+                alert_type="defect_recurrence",
+                severity="high",
+                title=f"Defect Recurrence: {issue.id}",
+                message=f"Defect re-emerged on road segment {issue.road_segment_id or 'unassigned'} after verification.",
+                related_entity_id=issue.id,
+                related_entity_type="urban_issue"
+            ))
+        else:
+            # Create new issue
+            issue_id = f"iss_{uuid.uuid4().hex[:12]}"
+            issue = UrbanIssue(
+                id=issue_id,
+                issue_type=event.detection_type,
+                status=IssueStatus.new,
+                severity=event.severity,
+                location=point_wkt,
+                first_detected_at=event.timestamp,
+                last_observed_at=event.timestamp,
+                observation_count=1,
+                unique_bus_count=1,
+                confidence=event.confidence
+            )
+            session.add(issue)
+            await session.flush()  # Ensure issue.id is available
+            await link_issue_to_segment(session, issue, point_wkt)
 
     # 4. Save Validated Observation
     observation = Observation(

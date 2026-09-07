@@ -231,6 +231,16 @@ class Verification(Base, TimestampMixin):
     before_evidence_url = Column(String(500))
     after_evidence_url = Column(String(500))
     notes = Column(String(1000))
+    
+    verifier = Column(String(100), default="TRANSIT_REINSPECTION")
+    evidence_source = Column(String(100), default="bus_dashcam")
+    inspection_job_id = Column(String(50), ForeignKey("inspection_jobs.id"), nullable=True)
+    rationale = Column(String(1000), nullable=True)
+    failure_reason = Column(String(100), nullable=True)
+    comparison_metrics = Column(JSON, nullable=True)
+    is_override = Column(Boolean, default=False)
+    overrides_verification_id = Column(String(50), ForeignKey("verifications.id"), nullable=True)
+    operator_id = Column(String(50), ForeignKey("users.id"), nullable=True)
 
 class Alert(Base, TimestampMixin):
     __tablename__ = "alerts"

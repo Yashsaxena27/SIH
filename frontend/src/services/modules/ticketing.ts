@@ -78,14 +78,57 @@ export const authorityService = {
 };
 
 export const verificationService = {
-  async getVerifications(): Promise<Verification[]> {
+  async getVerifications(params?: { result?: string; issue_id?: string; ticket_id?: string; verifier?: string }): Promise<Verification[]> {
     if (config.useMockData) return delay().then(() => [...mockVerifications]);
-    return client.get<Verification[]>('/verifications');
+    const query = new URLSearchParams();
+    if (params?.result) query.set('result', params.result);
+    if (params?.issue_id) query.set('issue_id', params.issue_id);
+    if (params?.ticket_id) query.set('ticket_id', params.ticket_id);
+    if (params?.verifier) query.set('verifier', params.verifier);
+    const qs = query.toString();
+    return client.get<Verification[]>(`/verifications${qs ? `?${qs}` : ''}`);
   },
 
   async getVerificationSummary(): Promise<VerificationSummary> {
     if (config.useMockData) return delay().then(() => mockVerificationSummary);
     return client.get<VerificationSummary>('/verifications/summary');
+  },
+
+  async triggerReinspection(payload: {
+    issue_id: string;
+    bus_id?: string;
+    coverage_confirmed?: boolean;
+    evidence_quality?: string;
+    conflicting_evidence?: boolean;
+    new_detection?: any;
+    reinspection_evidence_url?: string;
+    notes?: string;
+  }): Promise<any> {
+    const res = await client.post('/verifications/reinspect', payload);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('muin:mutation'));
+    }
+    return res;
+  },
+
+  async overrideVerification(verificationId: string, payload: {
+    result: string;
+    rationale: string;
+    notes?: string;
+  }): Promise<any> {
+    const res = await client.post(`/verifications/${verificationId}/override`, payload);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('muin:mutation'));
+    }
+    return res;
+  },
+
+  async reopenIssue(issueId: string, payload: { reason: string; notes?: string }): Promise<any> {
+    const res = await client.post(`/issues/${issueId}/reopen`, payload);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('muin:mutation'));
+    }
+    return res;
   }
 };
 

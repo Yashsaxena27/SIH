@@ -386,18 +386,29 @@ async def get_issue(issue_id: str, session: AsyncSession = Depends(get_db)):
     else:
         serialized["ticket"] = None
 
-    # Closed-Loop Verifications (Truthful: no fake confidence fallback)
+    # Closed-Loop Verifications (Truthful: no fake confidence fallback, complete Phase 7 provenance)
     serialized["verifications"] = [
         {
             "id": v.id,
             "ticketId": v.ticket_id,
+            "ticket_id": v.ticket_id,
             "busId": v.bus_id,
+            "bus_id": v.bus_id,
             "timestamp": v.timestamp.isoformat() if v.timestamp else None,
             "result": v.result.value if hasattr(v.result, "value") else str(v.result),
             "confidence": v.confidence if v.confidence is not None else None,
             "beforeEvidenceUrl": v.before_evidence_url,
             "afterEvidenceUrl": v.after_evidence_url,
             "notes": v.notes,
+            "verifier": v.verifier or "TRANSIT_REINSPECTION",
+            "evidenceSource": v.evidence_source or "bus_dashcam",
+            "inspectionJobId": v.inspection_job_id,
+            "rationale": v.rationale,
+            "failureReason": v.failure_reason,
+            "comparisonMetrics": v.comparison_metrics,
+            "isOverride": v.is_override or False,
+            "overridesVerificationId": v.overrides_verification_id,
+            "operatorId": v.operator_id,
         }
         for v in verifications
     ]
@@ -646,3 +657,64 @@ async def get_issue_jurisdiction(issue_id: str, session: AsyncSession = Depends(
         } if jur else None,
         "coordinates": {"lat": point.y, "lng": point.x} if point else None,
     }
+
+
+class IssueReopenRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    reason: str
+    notes: Optional[str] = None
+
+
+@router.post("/{issue_id}/reopen")
+async def reopen_issue(
+    issue_id: str,
+    payload: IssueReopenRequest,
+    session: AsyncSession = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(require_role([UserRole.operator, UserRole.admin])),
+):
+    issue = await session.get(UrbanIssue, issue_id)
+    if not issue:
+        raise HTTPException(status_code=404, detail="Issue not found")
+
+    if not payload.reason or not payload.reason.strip():
+        raise HTTPException(status_code=400, detail="Mandatory reason required to reopen an issue")
+
+    issue.status = IssueStatus.reopened
+
+    # Reopen ticket if connected
+    tkt_res = await session.execute(select(Ticket).where(Ticket.issue_id == issue.id))
+    ticket = tkt_res.scalar_one_or_none()
+    if ticket:
+        ticket.status = TicketStatus.reopened
+
+    # Add timeline event
+    evt = TimelineEvent(
+        id=f"evt_{uuid.uuid4().hex[:12]}",
+        entity_id=issue.id,
+        entity_type="issue",
+        event_type="issue_reopened",
+        title="Issue Reopened by Operator",
+        description=payload.reason,
+        actor=current_user.username,
+        metadata_json={"operator_id": current_user.id, "notes": payload.notes}
+    )
+    session.add(evt)
+
+    # Add alert
+    alert = Alert(
+        id=f"alt_{uuid.uuid4().hex[:12]}",
+        alert_type="issue_reopened",
+        severity="high",
+        title=f"Defect Reopened: {issue.id}",
+        message=f"Defect manually reopened by {current_user.username}. Reason: {payload.reason}",
+        related_entity_id=issue.id,
+        related_entity_type="urban_issue"
+    )
+    session.add(alert)
+
+    await session.commit()
+    from app.services.road_health import update_segment_health_for_issue
+    await update_segment_health_for_issue(session, issue)
+
+    return {"message": "Issue successfully reopened", "issue_id": issue.id, "status": issue.status.value}
+
