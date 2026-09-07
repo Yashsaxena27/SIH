@@ -166,3 +166,24 @@ async def simulate_revisit(
         "verification_result": verification.result.value,
         "new_status": issue.status.value
     }
+
+
+@router.post("/reset-golden-scenario")
+async def reset_golden_scenario_endpoint():
+    """
+    DEMO ONLY: Resets the platform to the canonical Delhi-NCR Golden Demo state.
+    Purges demo artifacts and re-seeds deterministic Golden Demo entities:
+    - Corroborated multi-bus critical defect (BUS-001 + BUS-002 on Delhi-Noida Expressway)
+    - Full closed-loop verification lifecycle (Resolved + Inconclusive examples)
+    - PWD work orders and SLA escalation queues
+    - Distributed sensing sessions for fleet intelligence
+    """
+    from scripts.seed_golden_demo import reset_golden_demo, seed_golden_demo
+    await reset_golden_demo()
+    created, updated, skipped = await seed_golden_demo()
+    return {
+        "status": "reset_successful",
+        "scenario": "DELHI_NCR_GOLDEN_SCENARIO",
+        "details": {"created": created, "updated": updated, "skipped": skipped},
+        "message": "Platform reset to canonical Golden Demo state successfully."
+    }

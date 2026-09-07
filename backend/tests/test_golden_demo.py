@@ -44,7 +44,7 @@ async def test_golden_demo_seed_and_idempotency():
     """Ensure seeding creates records and running a second time does not duplicate them."""
     # First seed run
     created, updated, skipped = await seed_golden_demo()
-    assert created["issues"] in (0, 4)  # 4 if fresh, 0 if already seeded
+    assert created["issues"] in (0, 6)  # 6 if fresh, 0 if already seeded
 
     # Second seed run (idempotency check)
     created2, updated2, skipped2 = await seed_golden_demo()
@@ -53,9 +53,9 @@ async def test_golden_demo_seed_and_idempotency():
     assert created2["observations"] == 0
     assert created2["tickets"] == 0
     assert created2["verifications"] == 0
-    assert updated2["issues"] == 4
-    assert updated2["tickets"] == 3
-    assert updated2["verifications"] == 2
+    assert updated2["issues"] == 6
+    assert updated2["tickets"] == 5
+    assert updated2["verifications"] == 3
 
 
 @pytest.mark.asyncio
@@ -194,7 +194,7 @@ async def test_safe_reset_and_reseed():
         golden_issues_pre = await session.scalar(
             select(func.count(UrbanIssue.id)).where(UrbanIssue.id.like("iss_demo_gold_%"))
         )
-        assert golden_issues_pre == 4
+        assert golden_issues_pre == 6
 
     # Perform safe reset
     await reset_golden_demo()
@@ -211,13 +211,13 @@ async def test_safe_reset_and_reseed():
         assert golden_tickets_post == 0
 
         total_issues_post = await session.scalar(select(func.count(UrbanIssue.id)))
-        assert total_issues_post == total_issues_pre - 4  # ONLY the 4 golden issues were removed
+        assert total_issues_post == total_issues_pre - 6  # ONLY the 6 golden issues were removed
 
     # Re-seed to restore Golden Demo data
     created, updated, skipped = await seed_golden_demo()
-    assert created["issues"] == 4
-    assert created["tickets"] == 3
-    assert created["verifications"] == 2
+    assert created["issues"] == 6
+    assert created["tickets"] == 5
+    assert created["verifications"] == 3
 
 
 def test_analytics_reflects_golden_demo(client):

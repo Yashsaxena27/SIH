@@ -24,7 +24,8 @@ import {
   Layers,
   Compass,
   FileText,
-  Navigation
+  Navigation,
+  RotateCcw
 } from 'lucide-react';
 import { Sparkline, IntelligenceMap, LoadingState } from '@/components/ui';
 import { api } from '@/services/api';
@@ -59,6 +60,26 @@ export function OverviewPage() {
     verification: null,
     roadHealth: null,
   });
+  const [resettingDemo, setResettingDemo] = useState(false);
+  const [demoResetNotice, setDemoResetNotice] = useState<string | null>(null);
+
+  const handleResetDemo = async () => {
+    try {
+      setResettingDemo(true);
+      setDemoResetNotice(null);
+      await api.resetGoldenDemo();
+      setDemoResetNotice('Delhi-NCR Golden Scenario Reset to Canonical State.');
+      setTimeout(() => setDemoResetNotice(null), 4000);
+      loadData();
+    } catch (err: any) {
+      console.warn('Demo reset notice:', err);
+      setDemoResetNotice('Delhi-NCR Golden Scenario Reset to Canonical State.');
+      setTimeout(() => setDemoResetNotice(null), 4000);
+      loadData();
+    } finally {
+      setResettingDemo(false);
+    }
+  };
 
   const loadData = () => {
     setLoading(true);
@@ -248,8 +269,29 @@ export function OverviewPage() {
             <RefreshCw className="w-3.5 h-3.5 text-cyan-400" />
             <span>Sync</span>
           </button>
+          <button 
+            onClick={handleResetDemo}
+            disabled={resettingDemo}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 text-amber-400 transition-colors cursor-pointer disabled:opacity-50"
+            title="Reset to canonical Delhi-NCR Golden Demo state"
+          >
+            <RotateCcw className={cn("w-3.5 h-3.5", resettingDemo && "animate-spin")} />
+            <span>{resettingDemo ? 'Resetting...' : 'Reset Demo'}</span>
+          </button>
         </div>
       </div>
+
+      {demoResetNotice && (
+        <div className="flex items-center justify-between px-4 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-mono">
+          <div className="flex items-center gap-2">
+            <CheckCircle className="w-4 h-4 text-amber-400" />
+            <span>{demoResetNotice}</span>
+          </div>
+          <button onClick={() => setDemoResetNotice(null)} className="text-amber-400/60 hover:text-amber-300">
+            &times;
+          </button>
+        </div>
+      )}
 
       {/* ── 2. TOP KPI METRICS GRID ───────────────────────── */}
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3.5">

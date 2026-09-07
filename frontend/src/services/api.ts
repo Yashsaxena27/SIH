@@ -1,6 +1,7 @@
 // Facade for backward compatibility with UI components.
 // It routes all API calls to the newly architected modular services.
 
+import { client } from './core/client';
 import { issueService } from './modules/issueService';
 import { ticketService, verificationService, authorityService } from './modules/ticketing';
 import { fleetService, routeService } from './modules/fleetService';
@@ -11,6 +12,9 @@ import { saferouteService } from './modules/saferouteService';
 import { missionControlService } from './modules/missionControlService';
 
 export const api = {
+  // Golden Demo Control
+  resetGoldenDemo: () => client.post<any>('/demo/reset-golden-scenario'),
+
   // Mission Control
   getMissionControlOverview: missionControlService.getOverview,
   getActionQueue: missionControlService.getActionQueue,

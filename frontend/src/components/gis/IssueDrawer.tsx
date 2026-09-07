@@ -280,7 +280,7 @@ export function IssueDrawer({ issue, onClose, onRoadSelect }: IssueDrawerProps) 
                   <div className="flex flex-wrap justify-center gap-1.5 mb-2">
                     {issue.observingBuses && issue.observingBuses.length > 0 ? (
                       issue.observingBuses.slice(0, 4).map((busNum, i) => (
-                        <div key={i} className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/[0.04] border border-white/[0.08] text-[10px] font-mono text-white">
+                        <div key={`obs-bus-${busNum}-${i}`} className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/[0.04] border border-white/[0.08] text-[10px] font-mono text-white">
                           <Bus className="w-3 h-3 text-cyan-400" />
                           <span>{busNum}</span>
                         </div>
@@ -323,7 +323,7 @@ export function IssueDrawer({ issue, onClose, onRoadSelect }: IssueDrawerProps) 
                     { title: 'Issue Confirmed', desc: 'Threshold met via multi-bus validation', time: issue.firstDetectedAt ? timeAgo(new Date(issue.firstDetectedAt).getTime() + 7200000) : 'Recent', icon: ShieldCheck, color: 'text-emerald-400' },
                     { title: 'First Detection', desc: 'Initial anomaly flagged by bus sensor', time: issue.firstDetectedAt ? timeAgo(issue.firstDetectedAt) : 'Recent', icon: AlertTriangle, color: 'text-amber-400' },
                   ].map((evt, i) => (
-                    <div key={i} className="relative pl-5">
+                    <div key={`timeline-${evt.title.replace(/\s+/g, '-').toLowerCase()}-${i}`} className="relative pl-5">
                       <div className="absolute -left-[17px] top-0.5 w-[20px] h-[20px] rounded-full bg-[#141519] border border-white/[0.1] flex items-center justify-center">
                         <evt.icon className={cn("w-2.5 h-2.5", evt.color)} />
                       </div>

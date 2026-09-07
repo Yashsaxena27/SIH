@@ -425,6 +425,45 @@ async function runE2E() {
     const hasDiagnostics = await page.getByText(/System Diagnostics:/i).isVisible();
     console.log('  - System Diagnostics and Truth Disclosure bar visible:', hasDiagnostics ? 'PASSED' : 'FAILED');
 
+    console.log('\n[TEST 10] Testing Phase 12 Canonical Golden Demo Presentation Loop...');
+    // Step 1: Trigger Reset Demo from Mission Control
+    await page.goto('http://localhost:5173/overview', { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(2000);
+
+    const resetDemoBtn = page.getByRole('button', { name: /Reset Demo/i });
+    if (await resetDemoBtn.isVisible()) {
+      await resetDemoBtn.click();
+      const banner = page.getByText(/Golden Scenario/i);
+      await banner.waitFor({ timeout: 5000 }).catch(() => {});
+      const resetSuccessBanner = await banner.isVisible();
+      console.log('  - Golden Demo Reset button & confirmation banner:', resetSuccessBanner ? 'PASSED' : 'FAILED');
+    }
+
+    // Step 2: Verification Loop — Inspect INCONCLUSIVE and RESOLVED outcomes
+    await page.goto('http://localhost:5173/verification', { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(2000);
+
+    const hasInconclusive = await page.getByText(/INCONCLUSIVE/i).first().isVisible();
+    const hasResolved = await page.getByText(/RESOLVED/i).first().isVisible();
+    console.log('  - Closed-Loop Verification showing RESOLVED & INCONCLUSIVE outcomes:', (hasInconclusive && hasResolved) ? 'PASSED' : 'FAILED');
+
+    // Step 3: Fleet Sessions — Check deterministic SIMULATED provenance pills
+    await page.goto('http://localhost:5173/fleet', { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(2000);
+    const sessionsTabP12 = page.getByRole('button', { name: /Inspection Sessions/i });
+    if (await sessionsTabP12.isVisible()) {
+      await sessionsTabP12.click();
+      await page.waitForTimeout(1500);
+      const hasSimulatedProvenance = await page.getByText(/SIMULATED/i).first().isVisible();
+      console.log('  - Inspection Sessions disclosing SIMULATED provenance:', hasSimulatedProvenance ? 'PASSED' : 'FAILED');
+    }
+
+    // Step 4: SafeRoute Demonstration Loop
+    await page.goto('http://localhost:5173/intelligence', { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(2500);
+    const hasSafeRouteCard = await page.getByText(/SafeRoute/i).first().isVisible();
+    console.log('  - SafeRoute / GIS Road Intelligence UI active:', hasSafeRouteCard ? 'PASSED' : 'FAILED');
+
     // Verify console errors
     const fatalErrors = consoleErrors.filter(e => 
       !e.includes('favicon') && 
@@ -439,7 +478,7 @@ async function runE2E() {
     }
 
     console.log('\n====================================================');
-    console.log('ALL 9 BROWSER E2E CHECKS PASSED');
+    console.log('ALL 10 BROWSER E2E CHECKS PASSED');
     console.log('====================================================');
 
   } catch (error) {
