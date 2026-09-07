@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { Filter, ChevronDown, ChevronUp, Layers, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export type IntelligenceFilter = 'ALL' | 'ROAD' | 'TRAFFIC' | 'WATER' | 'SAFETY';
+export type IntelligenceFilter = 'ALL' | 'ROAD' | 'CORROBORATED' | 'SAFETY';
 
 interface FilterBarProps {
   activeFilter: IntelligenceFilter;
@@ -53,11 +53,10 @@ export function FilterBar({ activeFilter, onFilterChange }: FilterBarProps) {
               onChange={(e) => onFilterChange(e.target.value as IntelligenceFilter)}
               className="w-full bg-white/[0.03] border border-white/[0.08] text-white text-xs font-mono rounded-lg px-3 py-2 focus:outline-none focus:border-primary transition-colors cursor-pointer"
             >
-              <option value="ALL" className="bg-[#141519] text-white">All Events & Anomalies</option>
-              <option value="ROAD" className="bg-[#141519] text-white">Road Surface Health</option>
-              <option value="TRAFFIC" className="bg-[#141519] text-white">Traffic Congestion</option>
-              <option value="WATER" className="bg-[#141519] text-white">Waterlogging Hazards</option>
-              <option value="SAFETY" className="bg-[#141519] text-white">Critical Safety Hazards</option>
+              <option value="ALL" className="bg-[#141519] text-white">All Monitored Defects</option>
+              <option value="ROAD" className="bg-[#141519] text-white">Pothole Defect Detections</option>
+              <option value="CORROBORATED" className="bg-[#141519] text-white">Multi-Bus Corroborated</option>
+              <option value="SAFETY" className="bg-[#141519] text-white">Critical Severity Hazards</option>
             </select>
           </div>
 

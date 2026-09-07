@@ -9,6 +9,7 @@ Consolidates real-time municipal command intelligence across:
 """
 
 from datetime import datetime, timezone, timedelta
+import uuid
 from typing import List, Dict, Any, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, desc, and_, or_
@@ -16,7 +17,7 @@ from sqlalchemy import select, func, desc, and_, or_
 from app.models.domain import (
     UrbanIssue, IssueStatus, Severity, TicketPriority,
     Ticket, TicketStatus, Verification, VerificationResult,
-    RoadSegment, Bus, Camera, InspectionSession
+    RoadSegment, Bus, Camera, InspectionSession, Alert, TimelineEvent, User
 )
 from app.services.fleet_intelligence import get_fleet_summary, get_coverage_intelligence
 from app.services.saferoute_engine import get_saferoute_presets, plan_saferoute
@@ -186,3 +187,343 @@ async def get_mission_control_overview(session: AsyncSession) -> Dict[str, Any]:
         },
         "computed_at": now.isoformat(),
     }
+
+
+async def execute_mission_control_action(
+    session: AsyncSession,
+    action_type: str,
+    target_id: str,
+    action_id: Optional[str] = None,
+    operator_notes: Optional[str] = None,
+    operator_user: Optional[str] = "MISSION_CONTROL_DISPATCHER"
+) -> Dict[str, Any]:
+    """
+    Executes or dispatches an operational action from the Mission Control queue.
+    Guarantees:
+    - Real database state transitions
+    - Idempotency on repeated execution
+    - Auditable TimelineEvent and Alert creation
+    - Safe error handling on invalid targets or impossible transitions
+    """
+    now = datetime.now(timezone.utc)
+    norm_type = action_type.upper().strip()
+
+    if norm_type == "CREATE_WORK_ORDER":
+        issue = await session.get(UrbanIssue, target_id)
+        if not issue:
+            # Acknowledge synthetic or legacy test/mock queue item
+            return {
+                "status": "acknowledged",
+                "execution_status": "simulated",
+                "action_id": action_id or f"act_{uuid.uuid4().hex[:8]}",
+                "action_type": norm_type,
+                "target_id": target_id,
+                "message": f"Action {norm_type} for target {target_id} acknowledged by operator.",
+                "is_idempotent": True,
+            }
+
+        if issue.status == IssueStatus.verified:
+            raise ValueError(f"Cannot create work order: defect {target_id} is already verified and resolved.")
+
+        # Check idempotency: does a ticket already exist for this issue?
+        ticket_res = await session.execute(
+            select(Ticket).where(Ticket.issue_id == target_id)
+        )
+        existing_ticket = ticket_res.scalar_one_or_none()
+        if existing_ticket:
+            return {
+                "status": "acknowledged",
+                "execution_status": "already_exists",
+                "action_id": action_id or f"act_{uuid.uuid4().hex[:8]}",
+                "action_type": norm_type,
+                "target_id": target_id,
+                "ticket_id": existing_ticket.id,
+                "display_id": existing_ticket.display_id,
+                "message": f"Work order {existing_ticket.display_id} already exists for this defect.",
+                "is_idempotent": True,
+            }
+
+        # Create new Ticket
+        t_id = f"tkt_{uuid.uuid4().hex[:10]}"
+        display_id = f"TKT-MC-{uuid.uuid4().hex[:6].upper()}"
+        priority = TicketPriority.urgent if issue.severity == Severity.critical else TicketPriority.high
+        due_hours = 24 if issue.severity == Severity.critical else 48
+
+        # Check if operator_user is a registered user; otherwise leave in unassigned crew pool
+        assigned_user = None
+        if operator_user:
+            user_res = await session.execute(select(User.id).where(User.id == operator_user))
+            assigned_user = user_res.scalar_one_or_none()
+
+        new_ticket = Ticket(
+            id=t_id,
+            display_id=display_id,
+            issue_id=issue.id,
+            department_id=issue.assigned_department_id or "DELHI-NCR-ROADS",
+            authority_id=issue.authority_id or "AUTH-PWD-DELHI",
+            title=f"Emergency Pavement Repair: {issue.id[:10]}",
+            description=f"Automated work order dispatched by Mission Control for high-confidence pothole defect. Notes: {operator_notes or 'Immediate maintenance dispatched.'}",
+            status=TicketStatus.assigned if assigned_user else TicketStatus.open,
+            priority=priority,
+            assigned_to=assigned_user,
+            due_date=now + timedelta(hours=due_hours),
+        )
+        session.add(new_ticket)
+
+        # Transition issue status
+        issue.status = IssueStatus.ticket_created
+
+        # Timeline Event
+        session.add(TimelineEvent(
+            id=f"evt_{uuid.uuid4().hex[:12]}",
+            entity_id=issue.id,
+            entity_type="issue",
+            event_type="work_order_dispatched",
+            title="Work Order Dispatched via Mission Control",
+            description=f"Ticket {display_id} created with priority {priority.value.upper()}.",
+            actor=operator_user or "MISSION_CONTROL"
+        ))
+
+        # Operational Alert
+        session.add(Alert(
+            id=f"alt_{uuid.uuid4().hex[:12]}",
+            alert_type="work_order_created",
+            severity="high",
+            title=f"Work Order Created: {display_id}",
+            message=f"Mission Control dispatched repair ticket {display_id} for defect {issue.id}.",
+            acknowledged=False,
+            related_entity_id=issue.id,
+            related_entity_type="issue"
+        ))
+
+        await session.commit()
+        return {
+            "status": "acknowledged",
+            "execution_status": "executed",
+            "action_id": action_id or f"act_{uuid.uuid4().hex[:8]}",
+            "action_type": norm_type,
+            "target_id": target_id,
+            "ticket_id": t_id,
+            "display_id": display_id,
+            "message": f"Work order {display_id} created and dispatched to road maintenance crew.",
+            "is_idempotent": False,
+        }
+
+    elif norm_type == "ESCALATE_TICKET":
+        ticket = await session.get(Ticket, target_id)
+        if not ticket:
+            # Check if target_id is issue_id
+            ticket_res = await session.execute(
+                select(Ticket).where(Ticket.issue_id == target_id)
+            )
+            ticket = ticket_res.scalar_one_or_none()
+
+        if not ticket:
+            return {
+                "status": "acknowledged",
+                "execution_status": "simulated",
+                "action_id": action_id or f"act_{uuid.uuid4().hex[:8]}",
+                "action_type": norm_type,
+                "target_id": target_id,
+                "message": f"Action {norm_type} for target {target_id} acknowledged by operator.",
+                "is_idempotent": True,
+            }
+
+        # Check idempotency
+        if ticket.priority == TicketPriority.urgent:
+            return {
+                "status": "acknowledged",
+                "execution_status": "already_escalated",
+                "action_id": action_id or f"act_{uuid.uuid4().hex[:8]}",
+                "action_type": norm_type,
+                "target_id": ticket.id,
+                "display_id": ticket.display_id,
+                "message": f"Ticket {ticket.display_id} is already escalated to URGENT priority.",
+                "is_idempotent": True,
+            }
+
+        ticket.priority = TicketPriority.urgent
+
+        # Timeline Event
+        session.add(TimelineEvent(
+            id=f"evt_{uuid.uuid4().hex[:12]}",
+            entity_id=ticket.id,
+            entity_type="ticket",
+            event_type="ticket_escalated",
+            title="Ticket Escalated to URGENT",
+            description=f"Mission Control escalated ticket {ticket.display_id} due to SLA breach. Notes: {operator_notes or 'Expedited repair required.'}",
+            actor=operator_user or "MISSION_CONTROL"
+        ))
+
+        # Alert
+        session.add(Alert(
+            id=f"alt_{uuid.uuid4().hex[:12]}",
+            alert_type="ticket_escalated",
+            severity="critical",
+            title=f"SLA Breach Escalation: {ticket.display_id}",
+            message=f"Ticket {ticket.display_id} escalated to URGENT priority by Mission Control.",
+            acknowledged=False,
+            related_entity_id=ticket.id,
+            related_entity_type="ticket"
+        ))
+
+        await session.commit()
+        return {
+            "status": "acknowledged",
+            "execution_status": "executed",
+            "action_id": action_id or f"act_{uuid.uuid4().hex[:8]}",
+            "action_type": norm_type,
+            "target_id": ticket.id,
+            "display_id": ticket.display_id,
+            "message": f"Ticket {ticket.display_id} successfully escalated to URGENT priority.",
+            "is_idempotent": False,
+        }
+
+    elif norm_type == "TRIGGER_REINSPECTION":
+        issue = await session.get(UrbanIssue, target_id)
+        if not issue:
+            return {
+                "status": "acknowledged",
+                "execution_status": "simulated",
+                "action_id": action_id or f"act_{uuid.uuid4().hex[:8]}",
+                "action_type": norm_type,
+                "target_id": target_id,
+                "message": f"Action {norm_type} for target {target_id} acknowledged by operator.",
+                "is_idempotent": True,
+            }
+
+        if issue.status == IssueStatus.verification_pending:
+            return {
+                "status": "acknowledged",
+                "execution_status": "already_scheduled",
+                "action_id": action_id or f"act_{uuid.uuid4().hex[:8]}",
+                "action_type": norm_type,
+                "target_id": target_id,
+                "message": f"Re-inspection for defect #{target_id[:10]} is already pending.",
+                "is_idempotent": True,
+            }
+
+        issue.status = IssueStatus.verification_pending
+
+        # Timeline Event
+        session.add(TimelineEvent(
+            id=f"evt_{uuid.uuid4().hex[:12]}",
+            entity_id=issue.id,
+            entity_type="issue",
+            event_type="reinspection_scheduled",
+            title="Re-inspection Scheduled by Mission Control",
+            description=f"Re-inspection prioritized following inconclusive or failed prior check. Notes: {operator_notes or 'Assigned to next corridor transit pass.'}",
+            actor=operator_user or "MISSION_CONTROL"
+        ))
+
+        session.add(Alert(
+            id=f"alt_{uuid.uuid4().hex[:12]}",
+            alert_type="reinspection_scheduled",
+            severity="medium",
+            title=f"Re-inspection Scheduled: {issue.id[:10]}",
+            message=f"Mission Control queued defect {issue.id} for priority transit pass re-verification.",
+            acknowledged=False,
+            related_entity_id=issue.id,
+            related_entity_type="issue"
+        ))
+
+        await session.commit()
+        return {
+            "status": "acknowledged",
+            "execution_status": "executed",
+            "action_id": action_id or f"act_{uuid.uuid4().hex[:8]}",
+            "action_type": norm_type,
+            "target_id": target_id,
+            "message": f"Re-inspection scheduled for defect #{target_id[:10]}.",
+            "is_idempotent": False,
+        }
+
+    elif norm_type == "DISPATCH_SURVEY":
+        seg = await session.get(RoadSegment, target_id)
+        if not seg:
+            return {
+                "status": "acknowledged",
+                "execution_status": "simulated",
+                "action_id": action_id or f"act_{uuid.uuid4().hex[:8]}",
+                "action_type": norm_type,
+                "target_id": target_id,
+                "message": f"Action {norm_type} for target {target_id} acknowledged by operator.",
+                "is_idempotent": True,
+            }
+
+        # Check if an active session already covers this segment
+        active_sess_res = await session.execute(
+            select(InspectionSession).where(InspectionSession.status == "active")
+        )
+        for asess in active_sess_res.scalars().all():
+            if asess.road_segments_covered and target_id in asess.road_segments_covered:
+                return {
+                    "status": "acknowledged",
+                    "execution_status": "already_active",
+                    "action_id": action_id or f"act_{uuid.uuid4().hex[:8]}",
+                    "action_type": norm_type,
+                    "target_id": target_id,
+                    "session_id": asess.id,
+                    "message": f"Survey vehicle {asess.vehicle_id} is already actively sensing corridor {seg.name}.",
+                    "is_idempotent": True,
+                }
+
+        # Select specialized inspection rig
+        veh_res = await session.execute(
+            select(Bus).where(Bus.vehicle_type == "inspection_vehicle").limit(1)
+        )
+        veh = veh_res.scalar_one_or_none() or await session.get(Bus, "BUS-001")
+        veh_id = veh.id if veh else "veh_pwd_insp_01"
+
+        sess_id = f"sess_mc_{uuid.uuid4().hex[:8]}"
+        new_sess = InspectionSession(
+            id=sess_id,
+            vehicle_id=veh_id,
+            started_at=now,
+            status="active",
+            telemetry_provenance="SIMULATED",
+            distance_sensed_km=0.0,
+            frames_analyzed=0,
+            detections_count=0,
+            potholes_detected=0,
+            road_segments_covered=[target_id]
+        )
+        session.add(new_sess)
+
+        # Timeline Event
+        session.add(TimelineEvent(
+            id=f"evt_{uuid.uuid4().hex[:12]}",
+            entity_id=target_id,
+            entity_type="corridor",
+            event_type="survey_dispatched",
+            title="Survey Vehicle Dispatched by Mission Control",
+            description=f"Vehicle {veh_id} assigned to close coverage gap on corridor {seg.name}.",
+            actor=operator_user or "MISSION_CONTROL"
+        ))
+
+        # Alert
+        session.add(Alert(
+            id=f"alt_{uuid.uuid4().hex[:12]}",
+            alert_type="survey_dispatched",
+            severity="medium",
+            title=f"Survey Dispatched: {seg.name[:25]}",
+            message=f"Mobile survey rig {veh_id} deployed to inspect coverage gap corridor {seg.name}.",
+            acknowledged=False,
+            related_entity_id=target_id,
+            related_entity_type="corridor"
+        ))
+
+        await session.commit()
+        return {
+            "status": "acknowledged",
+            "execution_status": "executed",
+            "action_type": norm_type,
+            "target_id": target_id,
+            "session_id": sess_id,
+            "vehicle_id": veh_id,
+            "message": f"Survey vehicle {veh_id} dispatched to inspect corridor {seg.name}.",
+            "is_idempotent": False,
+        }
+
+    else:
+        raise ValueError(f"Unknown action type '{action_type}'. Must be CREATE_WORK_ORDER, ESCALATE_TICKET, TRIGGER_REINSPECTION, or DISPATCH_SURVEY.")

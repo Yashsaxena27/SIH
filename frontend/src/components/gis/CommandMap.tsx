@@ -131,12 +131,11 @@ export function CommandMap({
   selectedCandidateId,
   onSelectCandidate
 }: CommandMapProps) {
-  // Apply filters
+  // Apply filters truthfully based on verified single-class detector domain
   const visibleIssues = issues.filter(i => {
     if (filter === 'ALL') return true;
-    if (filter === 'ROAD') return i.type.includes('pothole') || i.type.includes('crack');
-    if (filter === 'WATER') return i.type.includes('water');
-    if (filter === 'TRAFFIC') return false; // Mock
+    if (filter === 'ROAD') return (i.type || '').includes('pothole');
+    if (filter === 'CORROBORATED') return ((i as any).uniqueBusCount || (i as any).unique_bus_count || 1) > 1 || (i.observationCount || (i as any).observation_count || 1) > 1;
     if (filter === 'SAFETY') return i.severity === 'critical';
     return true;
   });
@@ -162,7 +161,7 @@ export function CommandMap({
         />
 
         {/* Road Corridors GIS Layer */}
-        {layers.roads && roads.map(road => {
+        {layers.roads && roads.map((road, idx) => {
           const coords = road.coordinates || road.geometry?.coordinates;
           if (!coords || !Array.isArray(coords) || coords.length < 2) return null;
           const positions = coords.map(([lng, lat]) => [lat, lng] as [number, number]);
@@ -184,7 +183,7 @@ export function CommandMap({
 
           return (
             <Polyline
-              key={`road-${road.id}`}
+              key={`road-${road.id || idx}-${idx}`}
               positions={positions}
               pathOptions={{
                 color,
@@ -200,12 +199,12 @@ export function CommandMap({
         })}
 
         {/* Heatmap Simulation (Subtle glow circles under everything) */}
-        {layers.heatmap && visibleIssues.map(issue => {
+        {layers.heatmap && visibleIssues.map((issue, idx) => {
           const pos = getValidLatLng(issue);
           if (!pos) return null;
           return (
             <Circle
-              key={`heat-${issue.id}`}
+              key={`heat-${issue.id || idx}-${idx}`}
               center={pos}
               radius={issue.severity === 'critical' ? 400 : 250}
               pathOptions={{
@@ -227,7 +226,7 @@ export function CommandMap({
           if (validWaypoints.length < 2) return null;
           return (
             <Polyline
-              key={`route-${route.id || idx}`}
+              key={`route-${route.id || idx}-${idx}`}
               positions={validWaypoints}
               pathOptions={{ color: '#6366f1', weight: 3, opacity: 0.4, dashArray: '8, 8' }}
             />
@@ -235,7 +234,7 @@ export function CommandMap({
         })}
 
         {/* SafeRoute Risk-Aware Routing Candidate Corridors */}
-        {safeRouteResult?.candidates && safeRouteResult.candidates.map((cand) => {
+        {safeRouteResult?.candidates && safeRouteResult.candidates.map((cand, idx) => {
           const coords = cand.geometry?.coordinates;
           if (!coords || !Array.isArray(coords) || coords.length < 2) return null;
           const positions = coords.map(([lng, lat]) => [lat, lng] as [number, number]);
@@ -249,7 +248,7 @@ export function CommandMap({
 
           return (
             <Polyline
-              key={`saferoute-cand-${cand.id}`}
+              key={`saferoute-cand-${cand.id || idx}-${idx}`}
               positions={positions}
               pathOptions={{
                 color: isSelected ? (isRecommended ? '#06b6d4' : color) : color,
@@ -278,8 +277,8 @@ export function CommandMap({
 
           return (
             <>
-              <Marker position={originPos} icon={createSafeRoutePinIcon('origin')} />
-              <Marker position={destPos} icon={createSafeRoutePinIcon('destination')} />
+              <Marker key="saferoute-origin-pin" position={originPos} icon={createSafeRoutePinIcon('origin')} />
+              <Marker key="saferoute-dest-pin" position={destPos} icon={createSafeRoutePinIcon('destination')} />
             </>
           );
         })()}
@@ -290,7 +289,7 @@ export function CommandMap({
           if (!pos) return null;
           return (
             <Circle
-              key={`hotspot-${spot.id || spot.cluster_id || idx}`}
+              key={`hotspot-${spot.id || (spot as any).cluster_id || idx}-${idx}`}
               center={pos}
               radius={spot.radius || spot.radius_meters || 50}
               pathOptions={{
@@ -305,12 +304,12 @@ export function CommandMap({
         })}
 
         {/* Civic Issues */}
-        {layers.issues && visibleIssues.map(issue => {
+        {layers.issues && visibleIssues.map((issue, idx) => {
           const pos = getValidLatLng(issue);
           if (!pos) return null;
           return (
             <Marker 
-              key={`issue-${issue.id}`}
+              key={`issue-${issue.id || idx}-${idx}`}
               position={pos}
               icon={createIssueIcon(issue.severity, issue.observationCount, false, issue.authorityCode)}
               eventHandlers={{ click: () => onIssueSelect(issue) }}
@@ -319,12 +318,12 @@ export function CommandMap({
         })}
 
         {/* Active Fleet */}
-        {layers.buses && buses.map(bus => {
+        {layers.buses && buses.map((bus, idx) => {
           const pos = getValidLatLng(bus);
           if (!pos) return null;
           return (
             <Marker 
-              key={`bus-${bus.id}`}
+              key={`bus-${bus.id || idx}-${idx}`}
               position={pos}
               icon={createBusIcon()}
             />

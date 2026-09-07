@@ -10,7 +10,7 @@ from typing import Optional, Dict, Any
 from pydantic import BaseModel, ConfigDict
 
 from app.core.database import get_db
-from app.services.mission_control_engine import get_mission_control_overview
+from app.services.mission_control_engine import get_mission_control_overview, execute_mission_control_action
 
 router = APIRouter(prefix="/api/v1/mission-control", tags=["Mission Control"])
 
@@ -60,10 +60,18 @@ async def execute_action(
     """
     Executes or dispatches an operational action from the Mission Control queue.
     """
-    return {
-        "status": "acknowledged",
-        "action_id": request.action_id,
-        "action_type": request.action_type,
-        "target_id": request.target_id,
-        "message": f"Action {request.action_type} for target {request.target_id} acknowledged by municipal dispatcher.",
-    }
+    try:
+        return await execute_mission_control_action(
+            session=session,
+            action_type=request.action_type,
+            target_id=request.target_id,
+            action_id=request.action_id,
+            operator_notes=request.operator_notes,
+        )
+    except ValueError as val_err:
+        msg = str(val_err)
+        if "not found" in msg.lower():
+            raise HTTPException(status_code=404, detail=msg)
+        raise HTTPException(status_code=400, detail=msg)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Mission Control execution error: {str(exc)}")

@@ -205,11 +205,32 @@ async def start_inspection_session(
     route_id: Optional[str] = None,
     telemetry_provenance: str = "SIMULATED"
 ) -> Dict[str, Any]:
-    """Starts a new active distributed sensing session."""
-    # Verify vehicle exists
+    """Starts a new active distributed sensing session with defensive validation."""
+    # 1. Verify vehicle exists
     veh = await session.get(Bus, vehicle_id)
     if not veh:
         raise ValueError(f"Vehicle {vehicle_id} not found.")
+
+    # 2. Verify camera exists and belongs to vehicle
+    if camera_id:
+        cam = await session.get(Camera, camera_id)
+        if not cam:
+            raise ValueError(f"Camera {camera_id} not found.")
+        if cam.vehicle_id != vehicle_id:
+            raise ValueError(f"Camera {camera_id} is not mounted on vehicle {vehicle_id}.")
+
+    # 3. Verify route if specified
+    if route_id:
+        from app.models.domain import Route
+        rt = await session.get(Route, route_id)
+        if not rt:
+            raise ValueError(f"Route {route_id} not found.")
+
+    # 4. Strict telemetry provenance validation
+    valid_provenances = {"LIVE", "REPLAY", "SIMULATED", "ESTIMATED"}
+    norm_prov = (telemetry_provenance or "SIMULATED").upper().strip()
+    if norm_prov not in valid_provenances:
+        raise ValueError(f"Invalid telemetry provenance '{telemetry_provenance}'. Must be one of: {', '.join(sorted(valid_provenances))}.")
 
     session_id = f"sess_{uuid.uuid4().hex[:12]}"
     now_utc = datetime.now(timezone.utc)
@@ -221,7 +242,7 @@ async def start_inspection_session(
         route_id=route_id,
         started_at=now_utc,
         status="active",
-        telemetry_provenance=telemetry_provenance,
+        telemetry_provenance=norm_prov,
         distance_sensed_km=0.0,
         frames_analyzed=0,
         detections_count=0,
@@ -256,25 +277,31 @@ async def end_inspection_session(
     potholes_detected: int = 0,
     road_segments_covered: Optional[List[str]] = None
 ) -> Dict[str, Any]:
-    """Closes an active inspection session and updates vehicle odometer."""
+    """Closes an active inspection session and updates vehicle odometer defensively."""
     sess = await session.get(InspectionSession, session_id)
     if not sess:
         raise ValueError(f"Session {session_id} not found.")
 
+    # Defensive bounds clamping (protects against negative metrics or corruption)
+    clamped_dist = max(0.0, float(distance_km or 0.0))
+    clamped_frames = max(0, int(frames_analyzed or 0))
+    clamped_dets = max(0, int(detections_count or 0))
+    clamped_potholes = max(0, int(potholes_detected or 0))
+
     now_utc = datetime.now(timezone.utc)
     sess.ended_at = now_utc
     sess.status = "completed"
-    sess.distance_sensed_km = distance_km
-    sess.frames_analyzed = frames_analyzed
-    sess.detections_count = detections_count
-    sess.potholes_detected = potholes_detected
+    sess.distance_sensed_km = clamped_dist
+    sess.frames_analyzed = clamped_frames
+    sess.detections_count = clamped_dets
+    sess.potholes_detected = clamped_potholes
     if road_segments_covered:
         sess.road_segments_covered = road_segments_covered
 
-    # Update vehicle odometer
+    # Update vehicle odometer defensively
     veh = await session.get(Bus, sess.vehicle_id)
     if veh:
-        veh.total_distance_km = (veh.total_distance_km or 0.0) + distance_km
+        veh.total_distance_km = (veh.total_distance_km or 0.0) + clamped_dist
         veh.last_seen = now_utc
 
     await session.commit()
@@ -322,7 +349,11 @@ async def get_coverage_intelligence(session: AsyncSession) -> Dict[str, Any]:
         if last_pass:
             if last_pass.tzinfo is None:
                 last_pass = last_pass.replace(tzinfo=timezone.utc)
-            days_ago = round((now - last_pass).total_seconds() / 86400.0, 1)
+            # Guard against sensor clock skew (future timestamps clamped to 0.0)
+            if last_pass > now:
+                days_ago = 0.0
+            else:
+                days_ago = round((now - last_pass).total_seconds() / 86400.0, 1)
             if days_ago <= 2.0:
                 coverage_status = "RECENT"
             elif days_ago <= 7.0:

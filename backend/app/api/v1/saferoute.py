@@ -77,13 +77,44 @@ async def get_corridor_risk_profiles(session: AsyncSession = Depends(get_db)):
     """
     Returns all road network segments with their current operational risk scores
     and contributing factor breakdowns.
+    Uses batch pre-fetching to prevent N+1 database queries.
     """
+    from app.models.domain import UrbanIssue, Verification, VerificationResult
+    from app.services.saferoute_engine import ACTIVE_ISSUE_STATUSES
+    from sqlalchemy import func
+
     res = await session.execute(select(RoadSegment).order_by(RoadSegment.name.asc()))
     segments = res.scalars().all()
 
+    # 1. Batch fetch all active issues on segments
+    issues_res = await session.execute(
+        select(UrbanIssue)
+        .where(UrbanIssue.road_segment_id.isnot(None))
+        .where(UrbanIssue.status.in_(ACTIVE_ISSUE_STATUSES))
+    )
+    all_issues = issues_res.scalars().all()
+    issues_by_seg: Dict[str, List[Any]] = {}
+    for iss in all_issues:
+        issues_by_seg.setdefault(iss.road_segment_id, []).append(iss)
+
+    # 2. Batch fetch unresolved verifications count by issue_id
+    verif_res = await session.execute(
+        select(Verification.issue_id, func.count(Verification.id))
+        .where(Verification.result.in_([VerificationResult.unresolved, VerificationResult.inconclusive]))
+        .group_by(Verification.issue_id)
+    )
+    verifs_by_issue = dict(verif_res.all())
+
     profiles = []
     for s in segments:
-        prof = await get_segment_risk_profile(session, s)
+        seg_issues = issues_by_seg.get(s.id, [])
+        unresolved_count = sum(verifs_by_issue.get(iss.id, 0) for iss in seg_issues)
+        prof = await get_segment_risk_profile(
+            session=session,
+            segment=s,
+            prefetched_issues=seg_issues,
+            prefetched_unresolved_count=unresolved_count
+        )
         # Exclude raw coordinates for lighter payload
         prof_clean = {k: v for k, v in prof.items() if k != "coordinates"}
         profiles.append(prof_clean)

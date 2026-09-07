@@ -80,18 +80,27 @@ def haversine_distance_meters(lat1: float, lon1: float, lat2: float, lon2: float
     return R * c
 
 
-async def get_segment_risk_profile(session: AsyncSession, segment: RoadSegment) -> Dict[str, Any]:
+async def get_segment_risk_profile(
+    session: AsyncSession,
+    segment: RoadSegment,
+    prefetched_issues: Optional[List[UrbanIssue]] = None,
+    prefetched_unresolved_count: Optional[int] = None
+) -> Dict[str, Any]:
     """
     Computes a deterministic segment risk profile consuming canonical
     Operational Road Health and active defect distributions.
+    Supports pre-fetched batch issues & verifications to prevent N+1 query traps.
     """
-    # 1. Fetch active issues on segment
-    issues_res = await session.execute(
-        select(UrbanIssue)
-        .where(UrbanIssue.road_segment_id == segment.id)
-        .where(UrbanIssue.status.in_(ACTIVE_ISSUE_STATUSES))
-    )
-    issues = issues_res.scalars().all()
+    # 1. Fetch or use pre-fetched active issues on segment
+    if prefetched_issues is not None:
+        issues = prefetched_issues
+    else:
+        issues_res = await session.execute(
+            select(UrbanIssue)
+            .where(UrbanIssue.road_segment_id == segment.id)
+            .where(UrbanIssue.status.in_(ACTIVE_ISSUE_STATUSES))
+        )
+        issues = issues_res.scalars().all()
 
     active_count = len(issues)
     critical_count = sum(1 for i in issues if i.severity == Severity.critical)
@@ -100,16 +109,19 @@ async def get_segment_risk_profile(session: AsyncSession, segment: RoadSegment) 
     low_count = sum(1 for i in issues if i.severity == Severity.low)
     corroborated_count = sum(1 for i in issues if (i.unique_bus_count or 1) > 1)
 
-    # 2. Fetch unresolved verifications on segment
-    issue_ids = [i.id for i in issues]
-    unresolved_verifs = 0
-    if issue_ids:
-        verif_res = await session.execute(
-            select(func.count(Verification.id))
-            .where(Verification.issue_id.in_(issue_ids))
-            .where(Verification.result.in_([VerificationResult.unresolved, VerificationResult.inconclusive]))
-        )
-        unresolved_verifs = verif_res.scalar() or 0
+    # 2. Fetch or use pre-fetched unresolved verifications on segment
+    if prefetched_unresolved_count is not None:
+        unresolved_verifs = prefetched_unresolved_count
+    else:
+        issue_ids = [i.id for i in issues]
+        unresolved_verifs = 0
+        if issue_ids:
+            verif_res = await session.execute(
+                select(func.count(Verification.id))
+                .where(Verification.issue_id.in_(issue_ids))
+                .where(Verification.result.in_([VerificationResult.unresolved, VerificationResult.inconclusive]))
+            )
+            unresolved_verifs = verif_res.scalar() or 0
 
     # 3. Canonical health score
     health_score = segment.health_score if segment.health_score is not None else 100.0
@@ -280,6 +292,7 @@ def build_route_candidate(
         "estimated_distance_meters": total_length_m,
         "estimated_duration_minutes": total_duration_min,
         "timing_label": "ESTIMATED",
+        "timing_mode": "ESTIMATED",
         "overall_risk_score": overall_risk_score,
         "risk_level": risk_level,
         "total_active_defects": total_active_defects,
@@ -325,6 +338,23 @@ async def plan_saferoute(
     evaluates deterministic risk, and selects the optimal recommendation
     for the requested mode (FASTEST, SAFEST, or BALANCED).
     """
+    # Input edge-case validations
+    if not origin_name or not origin_name.strip() or not destination_name or not destination_name.strip():
+        raise ValueError("Origin and destination must be non-empty location or corridor names.")
+
+    norm_orig = origin_name.strip().lower()
+    norm_dest = destination_name.strip().lower()
+    if norm_orig == norm_dest:
+        raise ValueError("Origin and destination cannot be identical for corridor route planning.")
+
+    if origin_coords and destination_coords:
+        dist_m = haversine_distance_meters(
+            origin_coords[0], origin_coords[1],
+            destination_coords[0], destination_coords[1]
+        )
+        if dist_m < 10.0:
+            raise ValueError("Origin and destination coordinates are too close (<10m) for corridor planning.")
+
     normalized_mode = mode.upper().strip()
     if normalized_mode not in ("FASTEST", "SAFEST", "BALANCED"):
         normalized_mode = "SAFEST"
@@ -500,6 +530,7 @@ async def plan_saferoute(
         "candidates": candidates_raw,
         "candidate_count": len(candidates_raw),
         "data_freshness": "ESTIMATED_ROAD_GRAPH",
+        "timing_mode": "ESTIMATED",
         "timing_provenance": "ESTIMATED (Calculated from road hierarchy design speeds; not live traffic)",
         "computed_at": now_utc,
     }
