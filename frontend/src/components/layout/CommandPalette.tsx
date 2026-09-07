@@ -112,7 +112,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
       title: 'Quick Actions',
       items: [
         { icon: MapPin, label: 'Open Live Map', desc: 'View real-time GIS defect intelligence', action: () => navigate('/map') },
-        { icon: AlertTriangle, label: 'View Road Issues', desc: 'Review detected potholes and cracks', action: () => navigate('/issues') },
+        { icon: AlertTriangle, label: 'View Road Issues', desc: 'Review detected road potholes', action: () => navigate('/issues') },
         { icon: Ticket, label: 'Municipal Tickets', desc: 'Review active repair work orders', action: () => navigate('/tickets') },
       ]
     }
