@@ -1,6 +1,6 @@
 import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, text
 
 from app.schemas.ingestion import DetectionEvent
 from app.models.domain import Detection, Observation, UrbanIssue, Severity, IssueStatus, Bus
@@ -47,10 +47,34 @@ async def process_detection_event(session: AsyncSession, event: DetectionEvent):
     existing_detection = await session.execute(
         select(Detection).where(Detection.event_id == event.event_id)
     )
-    if existing_detection.scalar_one_or_none():
-        return # Already processed
+    existing_det = existing_detection.scalar_one_or_none()
+    if existing_det:
+        obs = await session.execute(
+            select(Observation).where(Observation.detection_id == existing_det.id).limit(1)
+        )
+        obs_row = obs.scalar_one_or_none()
+        if obs_row:
+            return await session.get(UrbanIssue, obs_row.issue_id)
+        return None
 
-    # 2. Save Raw Detection
+    # 2. Acquire spatial advisory transaction locks to serialize concurrent ingestions
+    # Discretize coordinates into spatial buckets (~45m per cell)
+    step = 0.0004
+    lat_b = int(round(event.location.lat / step))
+    lng_b = int(round(event.location.lng / step))
+    # Lock current and immediate neighbor buckets in sorted order to prevent deadlocks
+    lock_keys = sorted([
+        f"fusion_{event.detection_type}_{lat_b + dy}_{lng_b + dx}"
+        for dy in (-1, 0, 1)
+        for dx in (-1, 0, 1)
+    ])
+    for lk in lock_keys:
+        await session.execute(
+            text("SELECT pg_advisory_xact_lock(hashtext(:k))"),
+            {"k": lk}
+        )
+
+    # 3. Save Raw Detection
     detection_id = f"det_{uuid.uuid4().hex[:12]}"
     point_wkt = f"POINT({event.location.lng} {event.location.lat})"
     
@@ -68,9 +92,9 @@ async def process_detection_event(session: AsyncSession, event: DetectionEvent):
     )
     session.add(detection)
     
-    # 3. Spatial Fusion
+    # 4. Spatial Fusion with row-level lock
     nearby_issue = await find_nearby_issue(
-        session, event.location, event.detection_type
+        session, event.location, event.detection_type, for_update=True
     )
 
     if nearby_issue:

@@ -79,6 +79,16 @@ export const analyticsService = {
   async getActivityFeed(): Promise<ActivityEvent[]> {
     if (config.useMockData) return delay().then(() => [...mockActivityFeed]);
     return client.get<ActivityEvent[]>('/system/activity');
+  },
+
+  async getBadges(): Promise<{ issues: number; tickets: number; alerts: number; verifications: number }> {
+    if (config.useMockData) return delay().then(() => ({ issues: 12, tickets: 5, alerts: 3, verifications: 8 }));
+    return client.get<{ issues: number; tickets: number; alerts: number; verifications: number }>('/analytics/badges');
+  },
+
+  async acknowledgeAlert(alertId: string): Promise<any> {
+    if (config.useMockData) return delay().then(() => ({ status: 'acknowledged', alert_id: alertId }));
+    return client.patch(`/system/alerts/${alertId}/acknowledge`);
   }
 };
 

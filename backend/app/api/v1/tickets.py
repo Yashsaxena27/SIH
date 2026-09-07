@@ -6,13 +6,18 @@ from typing import Optional, List, Dict, Any
 import uuid
 
 from app.core.database import get_db
-from app.models.domain import Ticket, TicketStatus, Department, UrbanIssue, IssueStatus, Authority
+from app.core.auth import get_current_user, require_role, AuthenticatedUser
+from app.models.domain import Ticket, TicketStatus, Department, UrbanIssue, IssueStatus, Authority, UserRole, TimelineEvent
 
 router = APIRouter(prefix="/api/v1/tickets", tags=["Tickets"])
 
 
 @router.post("")
-async def create_ticket(issue_id: str, session: AsyncSession = Depends(get_db)):
+async def create_ticket(
+    issue_id: str,
+    session: AsyncSession = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(require_role([UserRole.admin, UserRole.operator, UserRole.officer]))
+):
     """Create one active repair ticket for an issue, idempotently."""
     issue = await session.get(UrbanIssue, issue_id)
     if not issue:
@@ -263,7 +268,8 @@ class TicketAssignment(BaseModel):
 async def update_ticket_status(
     ticket_id: str,
     body: TicketStatusUpdate,
-    session: AsyncSession = Depends(get_db)
+    session: AsyncSession = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(require_role([UserRole.admin, UserRole.operator, UserRole.officer]))
 ):
     """Transition a ticket to a new status with validation."""
     try:
@@ -289,7 +295,8 @@ async def update_ticket_status(
 async def assign_ticket_endpoint(
     ticket_id: str,
     body: TicketAssignment,
-    session: AsyncSession = Depends(get_db)
+    session: AsyncSession = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(require_role([UserRole.admin, UserRole.operator, UserRole.officer]))
 ):
     """Assign a ticket to an operator (demo/operator assignment)."""
     try:

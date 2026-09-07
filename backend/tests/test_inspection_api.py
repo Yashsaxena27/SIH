@@ -10,6 +10,8 @@ async def test_inspection_api_endpoints():
         base_url="http://test",
     ) as client:
 
+        AUTH_HEADERS = {"Authorization": "Bearer demo-operator-token"}
+
         # 1. List inspections (empty initially)
         res_list = await client.get("/api/v1/inspection")
         assert res_list.status_code == 200
@@ -20,7 +22,8 @@ async def test_inspection_api_endpoints():
         res_bad = await client.post(
             "/api/v1/inspection/video",
             files={"video": ("test.txt", fake_file, "text/plain")},
-            data={"bus_id": "BUS-001"}
+            data={"bus_id": "BUS-001"},
+            headers=AUTH_HEADERS
         )
         assert res_bad.status_code == 400
         assert "Invalid video format" in res_bad.json()["detail"]
@@ -31,7 +34,8 @@ async def test_inspection_api_endpoints():
         res_upload = await client.post(
             "/api/v1/inspection/video",
             files={"video": ("sample_test.mp4", fake_mp4, "video/mp4")},
-            data={"bus_id": "BUS-001"}
+            data={"bus_id": "BUS-001"},
+            headers=AUTH_HEADERS
         )
         assert res_upload.status_code == 200
         data = res_upload.json()

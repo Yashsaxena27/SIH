@@ -1,7 +1,10 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import field_validator
+from pydantic import field_validator, model_validator
 from typing import List, Union
 import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Urban Intelligence Network API"
@@ -13,7 +16,7 @@ class Settings(BaseSettings):
     REDIS_URL: str = "redis://localhost:6379/0"
     
     # Security
-    JWT_SECRET: str = "supersecretkey_change_in_production"
+    JWT_SECRET: str = "supersecretkey_change_in_production_delhi_2026"
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 1 week for demo
     
@@ -63,6 +66,14 @@ class Settings(BaseSettings):
     DEMO_MODE: bool = True
     LOG_LEVEL: str = "INFO"
 
+    @model_validator(mode="after")
+    def validate_production_security(self):
+        if not self.DEMO_MODE:
+            if not self.JWT_SECRET or "change_in_production" in self.JWT_SECRET or len(self.JWT_SECRET) < 32:
+                raise ValueError("Production mode requires secure JWT_SECRET of at least 32 characters (RFC 7518 Section 3.2)")
+        return self
+
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
 settings = Settings()
+

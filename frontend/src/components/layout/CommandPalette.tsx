@@ -17,6 +17,9 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+import { issueService } from '@/services/modules/issueService';
+import type { UrbanIssue } from '@/types';
+
 interface CommandPaletteProps {
   isOpen: boolean;
   onClose: () => void;
@@ -24,6 +27,10 @@ interface CommandPaletteProps {
 
 export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
   const [query, setQuery] = useState('');
+  const [issueResults, setIssueResults] = useState<UrbanIssue[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
@@ -31,53 +38,131 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
   useEffect(() => {
     if (isOpen) {
       setTimeout(() => inputRef.current?.focus(), 100);
+      setSelectedIndex(0);
+      setSearchError(null);
     } else {
       setQuery('');
+      setIssueResults([]);
+      setSelectedIndex(0);
+      setSearchError(null);
     }
   }, [isOpen]);
 
-  // Handle escape key
+  // Live debounced search against issues API
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
-        onClose();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+    const trimmed = query.trim();
+    setSearchError(null);
+    setSelectedIndex(0);
+    if (trimmed.length <= 1) {
+      setIssueResults([]);
+      setIsLoading(false);
+      return;
+    }
 
-  // Mock search results based on query
+    const timer = setTimeout(async () => {
+      setIsLoading(true);
+      try {
+        const results = await issueService.getIssues({ search: trimmed, limit: 6 });
+        setIssueResults(results);
+      } catch (err: any) {
+        console.error('CommandPalette search error:', err);
+        setSearchError('Registry search temporarily unavailable. Verify backend connectivity.');
+      } finally {
+        setIsLoading(false);
+      }
+    }, 200);
+
+    return () => clearTimeout(timer);
+  }, [query]);
+
+  // Filtered system navigation commands
+  const systemPages = [
+    { name: 'Live Map / Intelligence', path: '/map', desc: 'Real-time spatial defect network', icon: MapPin },
+    { name: 'Issues Registry', path: '/issues', desc: 'Browse and inspect detected road issues', icon: AlertTriangle },
+    { name: 'Municipal Tickets', path: '/tickets', desc: 'Manage department work orders and SLAs', icon: Ticket },
+    { name: 'Fleet Tracker', path: '/fleet', desc: 'Monitor inspection transit vehicles', icon: Bus },
+    { name: 'Corridor Routes', path: '/routes', desc: 'Transit route coverage and distress index', icon: RouteIcon },
+  ];
+
+  const matchingPages = query.length > 0
+    ? systemPages.filter(p => p.name.toLowerCase().includes(query.toLowerCase()) || p.path.toLowerCase().includes(query.toLowerCase()))
+    : [];
+
   const searchGroups = query.length > 1 ? [
-    {
-      title: 'Issues',
-      items: [
-        { icon: AlertTriangle, label: 'PTH-0847', desc: 'Critical Pothole on Ring Road', action: () => navigate('/issues/1') },
-        { icon: AlertTriangle, label: 'CRK-1024', desc: 'Severe Road Crack on MG Road', action: () => navigate('/issues/2') },
-      ]
-    },
-    {
-      title: 'Tickets',
-      items: [
-        { icon: Ticket, label: 'TKT-2024-001', desc: 'Assign repair team to Ring Road', action: () => navigate('/tickets') },
-      ]
-    },
-    {
-      title: 'Fleet & Assets',
-      items: [
-        { icon: Bus, label: 'Bus DL-1P-2847', desc: 'Active · Route R-17A', action: () => navigate('/fleet') },
-        { icon: RouteIcon, label: 'Route R-17A', desc: 'Vikas Marg to Connaught Place', action: () => navigate('/routes') },
-      ]
-    },
+    ...(issueResults.length > 0 ? [{
+      title: `Issues Found (${issueResults.length})`,
+      items: issueResults.map(i => ({
+        icon: AlertTriangle,
+        label: i.id,
+        desc: `${i.issueType?.toUpperCase()} · ${i.severity?.toUpperCase()} · ${i.roadSegmentId || i.authorityId || 'Corridor Defect'}`,
+        action: () => navigate(`/issues/${i.id}`)
+      }))
+    }] : []),
+    ...(matchingPages.length > 0 ? [{
+      title: 'Navigation',
+      items: matchingPages.map(p => ({
+        icon: p.icon,
+        label: p.name,
+        desc: p.desc,
+        action: () => navigate(p.path)
+      }))
+    }] : []),
   ] : [
     {
       title: 'Quick Actions',
       items: [
-        { icon: MapPin, label: 'Open Live Map', desc: 'View real-time fleet positions', action: () => navigate('/live-map') },
-        { icon: AlertTriangle, label: 'View Critical Issues', desc: 'Filter issues by critical severity', action: () => navigate('/issues') },
+        { icon: MapPin, label: 'Open Live Map', desc: 'View real-time GIS defect intelligence', action: () => navigate('/map') },
+        { icon: AlertTriangle, label: 'View Road Issues', desc: 'Review detected potholes and cracks', action: () => navigate('/issues') },
+        { icon: Ticket, label: 'Municipal Tickets', desc: 'Review active repair work orders', action: () => navigate('/tickets') },
       ]
     }
   ];
+
+  const flatItems = searchGroups.flatMap(g => g.items);
+
+  const flatItemsRef = useRef(flatItems);
+  flatItemsRef.current = flatItems;
+
+  const selectedIndexRef = useRef(selectedIndex);
+  selectedIndexRef.current = selectedIndex;
+
+  const handleKeyNavigation = (e: React.KeyboardEvent | KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      onClose();
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      const len = flatItemsRef.current.length;
+      setSelectedIndex(prev => (len === 0 ? 0 : (prev + 1) % len));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      const len = flatItemsRef.current.length;
+      setSelectedIndex(prev => (len === 0 ? 0 : (prev - 1 + len) % len));
+    } else if (e.key === 'Enter') {
+      const items = flatItemsRef.current;
+      const idx = selectedIndexRef.current;
+      if (items[idx]) {
+        e.preventDefault();
+        items[idx].action();
+        onClose();
+      }
+    }
+  };
+
+  // Keyboard navigation
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Avoid double-handling if fired from input that already called preventDefault
+      if (e.defaultPrevented) return;
+      handleKeyNavigation(e);
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
+  let globalItemIndex = 0;
 
   return (
     <AnimatePresence>
@@ -110,6 +195,7 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
                   type="text"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
+                  onKeyDown={handleKeyNavigation}
                   placeholder="Search MUIN..."
                   className="flex-1 bg-transparent text-white/90 placeholder:text-white/30 text-base outline-none"
                 />
@@ -120,44 +206,76 @@ export function CommandPalette({ isOpen, onClose }: CommandPaletteProps) {
 
               {/* Results Area */}
               <div className="flex-1 overflow-y-auto p-2 scrollbar-thin">
+                {searchError && (
+                  <div className="mx-2 my-3 p-3 rounded-xl bg-red-500/10 border border-red-500/20 text-center text-xs text-red-400">
+                    {searchError}
+                  </div>
+                )}
+
                 {searchGroups.map((group, groupIdx) => (
                   <div key={group.title} className={cn(groupIdx > 0 && "mt-4")}>
                     <div className="px-3 pb-2 text-[10px] font-semibold text-white/30 uppercase tracking-[0.1em]">
                       {group.title}
                     </div>
                     <div className="space-y-1">
-                      {group.items.map((item, itemIdx) => (
-                        <button
-                          key={itemIdx}
-                          onClick={() => {
-                            item.action();
-                            onClose();
-                          }}
-                          className="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl hover:bg-white/[0.05] transition-colors group/item text-left"
-                        >
-                          <div className="flex items-center gap-3 min-w-0">
-                            <div className="w-8 h-8 rounded-lg bg-white/[0.04] border border-white/[0.05] flex items-center justify-center flex-shrink-0 group-hover/item:bg-accent-primary/10 group-hover/item:text-accent-primary-hover group-hover/item:border-accent-primary/20 transition-colors">
-                              <item.icon className="w-4 h-4 text-white/40 group-hover/item:text-accent-primary-hover transition-colors" />
-                            </div>
-                            <div className="min-w-0">
-                              <div className="text-sm font-medium text-white/85 group-hover/item:text-white transition-colors truncate">
-                                {item.label}
+                      {group.items.map((item) => {
+                        const currentIdx = globalItemIndex++;
+                        const isSelected = currentIdx === selectedIndex;
+
+                        return (
+                          <button
+                            key={currentIdx}
+                            onClick={() => {
+                              item.action();
+                              onClose();
+                            }}
+                            onMouseEnter={() => setSelectedIndex(currentIdx)}
+                            className={cn(
+                              "w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl transition-colors group/item text-left",
+                              isSelected ? "bg-white/[0.12] ring-1 ring-accent-primary/40 text-white" : "hover:bg-white/[0.05]"
+                            )}
+                          >
+                            <div className="flex items-center gap-3 min-w-0">
+                              <div className={cn(
+                                "w-8 h-8 rounded-lg border flex items-center justify-center flex-shrink-0 transition-colors",
+                                isSelected 
+                                  ? "bg-accent-primary/20 text-accent-primary-hover border-accent-primary/40"
+                                  : "bg-white/[0.04] border-white/[0.05] text-white/40 group-hover/item:text-accent-primary-hover"
+                              )}>
+                                <item.icon className="w-4 h-4" />
                               </div>
-                              <div className="text-xs text-white/40 truncate">
-                                {item.desc}
+                              <div className="min-w-0">
+                                <div className={cn(
+                                  "text-sm font-medium transition-colors truncate",
+                                  isSelected ? "text-white" : "text-white/85 group-hover/item:text-white"
+                                )}>
+                                  {item.label}
+                                </div>
+                                <div className="text-xs text-white/40 truncate">
+                                  {item.desc}
+                                </div>
                               </div>
                             </div>
-                          </div>
-                          <ArrowRight className="w-4 h-4 text-white/10 group-hover/item:text-white/40 transition-colors flex-shrink-0" />
-                        </button>
-                      ))}
+                            <ArrowRight className={cn(
+                              "w-4 h-4 transition-colors flex-shrink-0",
+                              isSelected ? "text-white" : "text-white/10 group-hover/item:text-white/40"
+                            )} />
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 ))}
 
-                {query.length > 1 && searchGroups.every(g => g.items.length === 0) && (
+                {isLoading && (
+                  <div className="px-4 py-8 text-center text-sm text-white/40 animate-pulse">
+                    Searching road defect registry...
+                  </div>
+                )}
+
+                {!isLoading && !searchError && query.length > 1 && searchGroups.every(g => g.items.length === 0) && (
                   <div className="px-4 py-8 text-center text-sm text-white/40">
-                    No results found for "{query}"
+                    No issues or commands found for "{query}"
                   </div>
                 )}
               </div>

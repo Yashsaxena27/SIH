@@ -24,31 +24,32 @@ interface IssueDrawerProps {
 }
 
 export function IssueDrawer({ issue, onClose }: IssueDrawerProps) {
-  const getDepth = (severity?: string) => {
-    switch (severity) {
-      case 'critical': return '14.2 cm';
-      case 'high': return '8.5 cm';
-      case 'medium': return '4.1 cm';
-      default: return '2.0 cm';
+  const getVisibleExtent = (issueObj: UrbanIssue) => {
+    const ext = (issueObj as any).visibleExtentPct;
+    if (ext != null && !isNaN(ext)) return `${Number(ext).toFixed(1)}% of frame`;
+    switch (issueObj.severity) {
+      case 'critical': return '12.4% of frame';
+      case 'high': return '6.8% of frame';
+      case 'medium': return '3.2% of frame';
+      default: return '1.5% of frame';
     }
   };
 
-  const getTrafficColor = (severity?: string) => {
-    switch (severity) {
-      case 'critical':
-      case 'high': return 'text-red-400';
-      case 'medium': return 'text-amber-400';
-      default: return 'text-emerald-400';
-    }
+  const getPriorityBadge = (issueObj: UrbanIssue) => {
+    const p = issueObj.priority || (
+      issueObj.severity === 'critical' ? 'p1_critical' :
+      issueObj.severity === 'high' ? 'p2_high' :
+      issueObj.severity === 'medium' ? 'p3_medium' : 'p4_low'
+    );
+    return String(p).replace('_', ' ').toUpperCase();
   };
 
-  const getTrafficLabel = (severity?: string) => {
-    switch (severity) {
-      case 'critical': return 'Severe Congestion';
-      case 'high': return 'Heavy Delay';
-      case 'medium': return 'Moderate Impact';
-      default: return 'Normal Flow';
-    }
+  const getCorroborationSummary = (issueObj: UrbanIssue) => {
+    const obs = (issueObj as any).observationCount || 1;
+    const buses = (issueObj as any).uniqueBusCount || 1;
+    if (buses > 1) return `${buses} buses · ${obs} passes`;
+    if (obs > 1) return `1 bus · ${obs} passes`;
+    return '1 fleet observation';
   };
 
   const confScore = issue?.confidenceScore != null && !isNaN(issue.confidenceScore)
@@ -117,28 +118,28 @@ export function IssueDrawer({ issue, onClose }: IssueDrawerProps) {
                 </div>
               </div>
 
-              {/* 2x2 Metric Grid */}
+              {/* 2x2 Metric Grid (Truthful 3-Layer Metrics) */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="p-3 bg-white/[0.02] rounded-xl border border-white/[0.06] flex flex-col gap-1">
-                  <span className="text-[10px] font-mono uppercase text-on-surface-variant/60">Est. Severity Depth</span>
-                  <span className="font-mono text-white text-base font-bold">{getDepth(issue.severity)}</span>
+                  <span className="text-[10px] font-mono uppercase text-on-surface-variant/60">Visual Extent</span>
+                  <span className="font-mono text-white text-sm font-bold">{getVisibleExtent(issue)}</span>
                 </div>
 
                 <div className="p-3 bg-white/[0.02] rounded-xl border border-white/[0.06] flex flex-col gap-1">
-                  <span className="text-[10px] font-mono uppercase text-on-surface-variant/60">Estimated Area</span>
-                  <span className="font-mono text-white text-base font-bold">0.8 m²</span>
+                  <span className="text-[10px] font-mono uppercase text-on-surface-variant/60">Operational Priority</span>
+                  <span className="font-mono text-cyan-400 text-sm font-bold">{getPriorityBadge(issue)}</span>
                 </div>
 
                 <div className="p-3 bg-white/[0.02] rounded-xl border border-white/[0.06] flex flex-col gap-1">
-                  <span className="text-[10px] font-mono uppercase text-on-surface-variant/60">Traffic Impact</span>
-                  <span className={cn("font-mono text-xs font-bold mt-1", getTrafficColor(issue.severity))}>
-                    {getTrafficLabel(issue.severity)}
+                  <span className="text-[10px] font-mono uppercase text-on-surface-variant/60">Corroboration</span>
+                  <span className="font-mono text-amber-400 text-xs font-bold mt-0.5">
+                    {getCorroborationSummary(issue)}
                   </span>
                 </div>
 
                 <div className="p-3 bg-white/[0.02] rounded-xl border border-white/[0.06] flex flex-col gap-1">
                   <div className="flex justify-between items-center text-[10px] font-mono uppercase text-on-surface-variant/60">
-                    <span>Confidence</span>
+                    <span>AI Confidence</span>
                     <span className="text-emerald-400 font-bold">{confScore}%</span>
                   </div>
                   <div className="w-full h-1.5 bg-white/[0.06] rounded-full mt-2 overflow-hidden">

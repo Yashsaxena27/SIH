@@ -36,7 +36,14 @@ def test_evidence_static_mount():
     assert res_live.status_code == 200
 
     # Test evidence static endpoint
-    evidence_file = next(Path("backend/evidence").glob("*.jpg"))
+    evidence_dir = Path("evidence") if Path("evidence").is_dir() else Path("backend/evidence")
+    jpg_files = list(evidence_dir.glob("*.jpg"))
+    if not jpg_files:
+        evidence_dir.mkdir(parents=True, exist_ok=True)
+        dummy_file = evidence_dir / "test_fixture.jpg"
+        dummy_file.write_bytes(b"\xff\xd8\xff\xe0\x00\x10JFIF\x00\x01\x01\x01\x00H\x00H\x00\x00\xff\xdb\x00C\x00\xff\xd9")
+        jpg_files = [dummy_file]
+    evidence_file = jpg_files[0]
     res_evidence = client.get(f"/evidence/{evidence_file.name}")
     assert res_evidence.status_code == 200
     assert res_evidence.headers["content-type"] == "image/jpeg"

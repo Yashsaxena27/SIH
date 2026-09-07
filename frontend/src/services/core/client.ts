@@ -6,9 +6,10 @@ class ApiClient {
   private async fetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
     
-    // Future expansion: Add Auth headers here
+    const token = (typeof localStorage !== 'undefined' ? localStorage.getItem('auth_token') : null) || 'demo-operator-token';
     const headers = {
       'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
       ...options.headers,
     };
 
@@ -17,7 +18,7 @@ class ApiClient {
     if (!response.ok) {
       // Standardized error handling
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `API Error: ${response.status} ${response.statusText}`);
+      throw new Error(errorData.detail || errorData.message || `API Error: ${response.status} ${response.statusText}`);
     }
 
     // Handle 204 No Content
@@ -40,8 +41,12 @@ class ApiClient {
 
   async postForm<T>(endpoint: string, formData: FormData): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
+    const token = (typeof localStorage !== 'undefined' ? localStorage.getItem('auth_token') : null) || 'demo-operator-token';
     const response = await fetch(url, {
       method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
       body: formData,
     });
     if (!response.ok) {

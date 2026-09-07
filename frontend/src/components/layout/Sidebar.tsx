@@ -3,7 +3,7 @@
 // Design: Stitch reference — flat nav, active pill, brand block
 // ============================================================
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -26,6 +26,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { analyticsService } from '@/services/modules/analyticsService';
 
 // ── Navigation schema ─────────────────────────────────────────
 interface NavItem {
@@ -34,18 +35,6 @@ interface NavItem {
   icon: LucideIcon;
   badge?: number;
 }
-
-const navItems: NavItem[] = [
-  { label: 'Overview',         path: '/overview',     icon: LayoutDashboard },
-  { label: 'AI Inspection',    path: '/inspection',   icon: Video },
-  { label: 'Live Map',         path: '/live-map',     icon: Map },
-  { label: 'Road Health',      path: '/road-health',  icon: Activity },
-  { label: 'Issues',           path: '/issues',       icon: AlertTriangle, badge: 12 },
-  { label: 'Verification',     path: '/verification', icon: ClipboardCheck },
-  { label: 'Analytics',        path: '/analytics',    icon: BarChart3 },
-  { label: 'Tickets',          path: '/tickets',      icon: AlertCircle, badge: 5 },
-  { label: 'Settings',         path: '/settings',     icon: Settings },
-];
 
 // ── Props ─────────────────────────────────────────────────────
 interface SidebarProps {
@@ -58,6 +47,44 @@ interface SidebarProps {
 export function Sidebar({ collapsed, onToggle, mobileOpen, onMobileClose }: SidebarProps) {
   const location = useLocation();
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
+  const [badges, setBadges] = useState<{ issues?: number; tickets?: number }>({});
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchBadges = () => {
+      analyticsService.getBadges()
+        .then(b => {
+          if (isMounted && b) {
+            setBadges({ issues: b.issues, tickets: b.tickets });
+          }
+        })
+        .catch(() => {});
+    };
+
+    fetchBadges();
+
+    const handleMutation = () => fetchBadges();
+    window.addEventListener('muin:mutation', handleMutation);
+    const interval = setInterval(fetchBadges, 15000);
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener('muin:mutation', handleMutation);
+      clearInterval(interval);
+    };
+  }, []);
+
+  const navItems: NavItem[] = [
+    { label: 'Overview',         path: '/overview',     icon: LayoutDashboard },
+    { label: 'AI Inspection',    path: '/inspection',   icon: Video },
+    { label: 'Live Map',         path: '/live-map',     icon: Map },
+    { label: 'Road Health',      path: '/road-health',  icon: Activity },
+    { label: 'Issues',           path: '/issues',       icon: AlertTriangle, badge: badges.issues },
+    { label: 'Verification',     path: '/verification', icon: ClipboardCheck },
+    { label: 'Analytics',        path: '/analytics',    icon: BarChart3 },
+    { label: 'Tickets',          path: '/tickets',      icon: AlertCircle, badge: badges.tickets },
+    { label: 'Settings',         path: '/settings',     icon: Settings },
+  ];
 
   const isActive = useCallback((path: string) => {
     if (path === '/overview') return location.pathname === '/overview' || location.pathname === '/';

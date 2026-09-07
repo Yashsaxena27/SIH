@@ -12,7 +12,11 @@ export const ticketService = {
       await delay(200);
       return { issueId, status: 'open', created: true };
     }
-    return client.post(`/tickets?issue_id=${encodeURIComponent(issueId)}`, {});
+    const res = await client.post(`/tickets?issue_id=${encodeURIComponent(issueId)}`, {});
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('muin:mutation'));
+    }
+    return res;
   },
 
   async getTickets(params?: { authority?: string; department_id?: string; status?: string }): Promise<Ticket[]> {
@@ -46,7 +50,11 @@ export const ticketService = {
       await delay(200);
       return { id, status };
     }
-    return client.put(`/tickets/${id}/status`, { status });
+    const res = await client.put(`/tickets/${id}/status`, { status });
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('muin:mutation'));
+    }
+    return res;
   },
 
   async assignTicket(id: string, assignedTo: string): Promise<any> {
@@ -54,7 +62,11 @@ export const ticketService = {
       await delay(200);
       return { id, status: 'assigned', assignedTo };
     }
-    return client.post(`/tickets/${id}/assign`, { assigned_to: assignedTo });
+    const res = await client.post(`/tickets/${id}/assign`, { assigned_to: assignedTo });
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('muin:mutation'));
+    }
+    return res;
   }
 };
 

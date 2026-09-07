@@ -3,6 +3,7 @@ from fastapi.testclient import TestClient
 from app.main import app
 
 client = TestClient(app)
+AUTH_HEADERS = {"Authorization": "Bearer demo-operator-token"}
 
 def test_unresolved_issue_ticket_creation_rejected():
     """Verify that creating a work ticket for an unresolved jurisdiction issue is rejected with HTTP 400."""
@@ -13,7 +14,7 @@ def test_unresolved_issue_ticket_creation_rejected():
     assert unresolved_issue is not None, "At least one unresolved issue must exist in DB."
     target_id = unresolved_issue["id"]
 
-    res = client.post(f"/api/v1/tickets?issue_id={target_id}")
+    res = client.post(f"/api/v1/tickets?issue_id={target_id}", headers=AUTH_HEADERS)
     assert res.status_code == 400
     detail = res.json().get("detail", "")
     assert "unresolved" in detail.lower()
@@ -30,7 +31,7 @@ def test_ticket_lifecycle_transitions():
     ticket_id = ticket["id"]
 
     if ticket.get("status") == "open":
-        invalid_res = client.put(f"/api/v1/tickets/{ticket_id}/status", json={"status": "verified_resolved"})
+        invalid_res = client.put(f"/api/v1/tickets/{ticket_id}/status", json={"status": "verified_resolved"}, headers=AUTH_HEADERS)
         assert invalid_res.status_code == 422, f"Expected 422 for invalid transition, got {invalid_res.status_code}"
 
     # Verify transitions endpoint returns valid transition paths

@@ -17,6 +17,8 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.database import get_db, AsyncSessionLocal
+from app.core.auth import get_current_user, require_role, AuthenticatedUser
+from app.models.domain import UserRole
 from app.services.ingestion import ensure_bus_exists, process_detection_event
 from app.schemas.ingestion import DetectionEvent, GeoPoint
 
@@ -376,7 +378,8 @@ async def list_library_videos():
 @router.post("/library")
 async def run_library_inspection(
     payload: LibraryInspectionRequest,
-    session: AsyncSession = Depends(get_db)
+    session: AsyncSession = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(require_role([UserRole.admin, UserRole.operator, UserRole.officer]))
 ):
     """
     Triggers real YOLO AI road inspection directly on an existing video library asset.
@@ -391,7 +394,17 @@ async def run_library_inspection(
         raise HTTPException(status_code=400, detail="Invalid video path traversal")
 
     if not os.path.isfile(source_video_path):
-        raise HTTPException(status_code=404, detail=f"Library video '{payload.video_filename}' not found")
+        # Fallback: search by basename in subdirectories of VIDEOS_DIR
+        base_target = os.path.basename(clean_name)
+        candidate = None
+        for root, _, files in os.walk(real_videos_dir):
+            if base_target in files:
+                candidate = os.path.join(root, base_target)
+                break
+        if candidate and os.path.isfile(candidate):
+            source_video_path = candidate
+        else:
+            raise HTTPException(status_code=404, detail=f"Library video '{payload.video_filename}' not found")
 
     await ensure_bus_exists(session, payload.bus_id)
 
@@ -454,7 +467,8 @@ async def upload_inspection_video(
     end_lat: float = Form(28.5355),
     end_lng: float = Form(77.3910),
     capture_started_at: str = Form(""),
-    session: AsyncSession = Depends(get_db)
+    session: AsyncSession = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(require_role([UserRole.admin, UserRole.operator, UserRole.officer]))
 ):
     """
     Accepts road inspection video upload and triggers real YOLO AI inspection in the background.
@@ -472,7 +486,11 @@ async def upload_inspection_video(
     inspection_id = f"INSP-{uuid.uuid4().hex[:8].upper()}"
     temp_dir = os.path.join(tempfile.gettempdir(), "aih_pothole_uploads")
     os.makedirs(temp_dir, exist_ok=True)
-    temp_video_path = os.path.join(temp_dir, f"{inspection_id}_{video.filename}")
+    
+    # Path traversal protection: sanitize filename and use random UUID suffix
+    original_name = os.path.basename(video.filename or "upload.mp4")
+    safe_disk_filename = f"{inspection_id}_{uuid.uuid4().hex[:8]}{ext}"
+    temp_video_path = os.path.join(temp_dir, safe_disk_filename)
 
     bytes_written = 0
     with open(temp_video_path, "wb") as f:
@@ -490,7 +508,7 @@ async def upload_inspection_video(
 
     new_job = InspectionJob(
         id=inspection_id,
-        filename=video.filename,
+        filename=original_name,
         bus_id=bus_id,
         status="pending",
         stage="upload",
@@ -503,7 +521,7 @@ async def upload_inspection_video(
     run_inspection_isolated_thread(
         inspection_id,
         temp_video_path,
-        video.filename,
+        original_name,
         bus_id,
         sample_fps,
         conf_threshold,

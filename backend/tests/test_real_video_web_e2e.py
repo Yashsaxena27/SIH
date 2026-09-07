@@ -23,7 +23,8 @@ async def test_real_video_web_e2e_pipeline():
                     "conf_threshold": "0.10",
                     "stability_frames": "1",
                     "generate_annotated": "false" # keep test fast
-                }
+                },
+                headers={"Authorization": "Bearer demo-operator-token"}
             )
 
         assert response.status_code == 200

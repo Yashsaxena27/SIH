@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { analyticsService } from '@/services/modules/analyticsService';
 
 interface TopBarProps {
   className?: string;
@@ -24,10 +25,34 @@ export function TopBar({ className, onMenuClick, onCommandPaletteOpen }: TopBarP
   const [showNotifications, setShowNotifications] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [pendingAlerts, setPendingAlerts] = useState<number>(0);
   const notifRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
-  const pendingAlerts = 3;
+  useEffect(() => {
+    let isMounted = true;
+    const fetchAlerts = () => {
+      analyticsService.getBadges()
+        .then(b => {
+          if (isMounted && b) {
+            setPendingAlerts(b.alerts || 0);
+          }
+        })
+        .catch(() => {});
+    };
+
+    fetchAlerts();
+
+    const handleMutation = () => fetchAlerts();
+    window.addEventListener('muin:mutation', handleMutation);
+    const interval = setInterval(fetchAlerts, 15000);
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener('muin:mutation', handleMutation);
+      clearInterval(interval);
+    };
+  }, []);
 
   // Keyboard shortcut for search
   useEffect(() => {

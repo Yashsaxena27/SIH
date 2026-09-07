@@ -147,8 +147,11 @@ async def test_scenario_c_unresolved_blocks_ticket(client):
         )
         assert t_res.scalar_one_or_none() is None
 
-    # Attempt to dispatch ticket for unresolved issue via API
-    resp = client.post("/api/v1/tickets?issue_id=iss_demo_gold_c")
+    # Attempt to dispatch ticket for unresolved issue via API (authenticated operator)
+    resp = client.post(
+        "/api/v1/tickets?issue_id=iss_demo_gold_c",
+        headers={"Authorization": "Bearer demo-operator-token"}
+    )
     assert resp.status_code == 400
     assert "issue jurisdiction is unresolved" in resp.json()["detail"].lower()
 

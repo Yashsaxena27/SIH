@@ -22,17 +22,31 @@ def test_model_inference_and_class_mapping():
     dets = engine.predict_frame(frame)
     assert isinstance(dets, list)
 
-def test_bengaluru_gps_simulator():
+def test_delhi_ncr_gps_simulator():
     lat0, lng0 = get_gps_for_frame(0, 100)
-    assert lat0 == 12.9716 and lng0 == 77.5946
+    assert lat0 == 28.5355 and lng0 == 77.2090
 
     lat_end, lng_end = get_gps_for_frame(99, 100)
+    assert abs(lat_end - 28.5750) < 0.001
+    assert abs(lng_end - 77.2250) < 0.001
+
+    # Bounds check
+    for i in range(10):
+        lat, lng = get_gps_for_frame(i * 10, 100)
+        assert 28.0 < lat < 29.0
+        assert 77.0 < lng < 78.0
+
+def test_bengaluru_gps_simulator():
+    lat0, lng0 = get_gps_for_frame(0, 100, route_name="BENGALURU")
+    assert lat0 == 12.9716 and lng0 == 77.5946
+
+    lat_end, lng_end = get_gps_for_frame(99, 100, route_name="BENGALURU")
     assert abs(lat_end - 12.9400) < 0.001
     assert abs(lng_end - 77.6300) < 0.001
 
     # Bounds check
     for i in range(10):
-        lat, lng = get_gps_for_frame(i * 10, 100)
+        lat, lng = get_gps_for_frame(i * 10, 100, route_name="BENGALURU")
         assert 12.0 < lat < 14.0
         assert 77.0 < lng < 78.0
 
@@ -102,7 +116,7 @@ def test_video_processor_e2e(tmp_path):
     # Verify event structure
     first_event = res["events"][0]
     assert first_event["bus_id"] == "BUS-001"
-    assert 12.0 < first_event["location"]["lat"] < 14.0
+    assert 28.0 < first_event["location"]["lat"] < 29.0
     assert 77.0 < first_event["location"]["lng"] < 78.0
     assert first_event["severity"] in ["low", "medium", "high", "critical"]
     assert first_event["evidence_url"].startswith("/evidence/")

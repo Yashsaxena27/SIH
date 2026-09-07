@@ -66,6 +66,7 @@ export const api = {
   // System
   getSystemHealth: analyticsService.getSystemHealth,
   getAlerts: analyticsService.getAlerts,
+  acknowledgeAlert: analyticsService.acknowledgeAlert,
   getSystemMetrics: analyticsService.getSystemMetrics,
   getActivityFeed: analyticsService.getActivityFeed
 };

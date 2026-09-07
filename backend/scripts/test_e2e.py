@@ -1,21 +1,27 @@
 import httpx
 import uuid
 import datetime
+import random
 import time
 import asyncio
 
 API_BASE = "http://localhost:8000/api/v1"
+AUTH_HEADERS = {"Authorization": "Bearer demo-operator-token"}
 
 def test_e2e_lifecycle():
     print("--- Starting End-to-End System Test ---")
     
-    # 1. Bus 1 detects a pothole
+    # 1. Bus 1 detects a pothole in MCD Central jurisdiction
     print("\n1. Simulated Bus 1 detecting pothole...")
+    # Randomized coordinates inside MCD Central polygon to guarantee test isolation
+    base_lat = round(28.6400 + random.uniform(0.0010, 0.0090), 6)
+    base_lng = round(77.2200 + random.uniform(0.0010, 0.0090), 6)
+    
     det1 = {
         "event_id": f"E2E-{uuid.uuid4().hex[:8]}",
         "bus_id": "BUS-1",
-        "timestamp": datetime.datetime.utcnow().isoformat(),
-        "location": {"lat": 12.9716, "lng": 77.5946},
+        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "location": {"lat": base_lat, "lng": base_lng},
         "detection_type": "pothole",
         "confidence": 0.88,
         "severity": "medium",
@@ -23,7 +29,7 @@ def test_e2e_lifecycle():
     }
     
     res1 = httpx.post(f"{API_BASE}/ingestion/detection", json=det1)
-    assert res1.status_code == 200
+    assert res1.status_code == 200, f"Detection 1 failed: {res1.text}"
     issue_id = res1.json()["issue_id"]
     print(f"Created Issue: {issue_id}")
     
@@ -33,13 +39,13 @@ def test_e2e_lifecycle():
     data = res_issue.json()
     assert data["observationCount"] == 1
     
-    # 3. Bus 2 detects same pothole (Fusion test)
+    # 3. Bus 2 detects same pothole (Fusion test within 10m)
     print("\n2. Simulated Bus 2 detecting same pothole (Fusion)...")
     det2 = {
         "event_id": f"E2E-{uuid.uuid4().hex[:8]}",
         "bus_id": "BUS-2",
-        "timestamp": datetime.datetime.utcnow().isoformat(),
-        "location": {"lat": 12.971601, "lng": 77.594601}, # Very close
+        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "location": {"lat": round(base_lat + 0.00001, 6), "lng": round(base_lng + 0.00001, 6)},
         "detection_type": "pothole",
         "confidence": 0.95,
         "severity": "high",
@@ -55,8 +61,16 @@ def test_e2e_lifecycle():
     assert data2["uniqueBusCount"] == 2
     print(f"Fusion successful. Observations: {data2['observationCount']}")
     
-    # 4. Mock transitioning issue to verified (Bus Revisit)
-    print("\n3. Testing Post-Repair Verification...")
+    # 4. Create municipal ticket and transition to verification_pending
+    print("\n3. Dispatching ticket and prepping for verification...")
+    tkt_res = httpx.post(f"{API_BASE}/tickets", params={"issue_id": issue_id}, headers=AUTH_HEADERS)
+    assert tkt_res.status_code == 200, f"Ticket creation failed: {tkt_res.text}"
+    
+    patch_res = httpx.patch(f"{API_BASE}/issues/{issue_id}", json={"status": "verification_pending"}, headers=AUTH_HEADERS)
+    assert patch_res.status_code == 200, f"Patch to verification_pending failed: {patch_res.text}"
+    
+    # 5. Mock transitioning issue to verified (Bus Revisit with no defect)
+    print("\n4. Testing Post-Repair Verification (Resolved)...")
     res3 = httpx.post(f"{API_BASE}/ingestion/verification/{issue_id}", json=None)
     assert res3.status_code == 200
     print(f"Verification response: {res3.json()}")
@@ -68,26 +82,36 @@ def test_e2e_lifecycle():
 
 def test_e2e_failure_path():
     print("--- Starting Failure Path Verification Test ---")
-    print("\n1. Simulated Bus 1 detecting pothole...")
+    base_lat = round(28.5600 + random.uniform(0.0010, 0.0090), 6)
+    base_lng = round(77.3200 + random.uniform(0.0010, 0.0090), 6)
+    
+    print("\n1. Simulated Bus 3 detecting pothole...")
     det1 = {
         "event_id": f"E2E-FAIL-{uuid.uuid4().hex[:8]}",
         "bus_id": "BUS-3",
-        "timestamp": datetime.datetime.utcnow().isoformat(),
-        "location": {"lat": 12.9350, "lng": 77.6240},
+        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "location": {"lat": base_lat, "lng": base_lng},
         "detection_type": "pothole",
         "confidence": 0.90,
         "severity": "medium",
     }
     res1 = httpx.post(f"{API_BASE}/ingestion/detection", json=det1)
+    assert res1.status_code == 200, f"Detection failed: {res1.text}"
     issue_id = res1.json()["issue_id"]
     
+    # Create ticket and set verification_pending
+    tkt_res = httpx.post(f"{API_BASE}/tickets", params={"issue_id": issue_id}, headers=AUTH_HEADERS)
+    assert tkt_res.status_code == 200, f"Ticket creation failed: {tkt_res.text}"
+    
+    patch_res = httpx.patch(f"{API_BASE}/issues/{issue_id}", json={"status": "verification_pending"}, headers=AUTH_HEADERS)
+    assert patch_res.status_code == 200, f"Patch failed: {patch_res.text}"
+    
     print(f"\n2. Testing Post-Repair Verification FAILED (defect still present)...")
-    # Event data is not None, meaning the CV model STILL sees a pothole at this location
     verification_det = {
         "event_id": f"E2E-VER-{uuid.uuid4().hex[:8]}",
         "bus_id": "BUS-4",
-        "timestamp": datetime.datetime.utcnow().isoformat(),
-        "location": {"lat": 12.9350, "lng": 77.6240},
+        "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "location": {"lat": base_lat, "lng": base_lng},
         "detection_type": "pothole",
         "confidence": 0.85,
         "severity": "medium"

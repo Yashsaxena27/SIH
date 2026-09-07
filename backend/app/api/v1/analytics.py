@@ -488,6 +488,58 @@ async def get_alerts(session: AsyncSession = Depends(get_db)):
     } for a in alerts]
 
 
+@router.patch('/system/alerts/{alert_id}/acknowledge')
+@router.post('/system/alerts/{alert_id}/acknowledge')
+async def acknowledge_alert(alert_id: str, session: AsyncSession = Depends(get_db)):
+    alert = await session.get(Alert, alert_id)
+    if not alert:
+        raise HTTPException(status_code=404, detail="Alert not found")
+    alert.acknowledged = True
+    await session.commit()
+    return {
+        "id": alert.id,
+        "acknowledged": True,
+        "message": "Alert acknowledged successfully"
+    }
+
+
+@router.get('/badges')
+@router.get('/analytics/badges')
+async def get_system_badges(session: AsyncSession = Depends(get_db)):
+    """
+    Lightweight single summary query for Sidebar and TopBar counters.
+    Avoids 3 heavy independent polling requests.
+    """
+    issues_active = await session.scalar(
+        select(func.count()).select_from(UrbanIssue).where(
+            UrbanIssue.status.in_([IssueStatus.new, IssueStatus.confirmed, IssueStatus.prioritized, IssueStatus.assigned, IssueStatus.in_progress])
+        )
+    ) or 0
+
+    tickets_active = await session.scalar(
+        select(func.count()).select_from(Ticket).where(
+            Ticket.status.in_([TicketStatus.open, TicketStatus.assigned, TicketStatus.in_progress, TicketStatus.repair_reported, TicketStatus.verifying])
+        )
+    ) or 0
+
+    alerts_unack = await session.scalar(
+        select(func.count()).select_from(Alert).where(Alert.acknowledged == False)
+    ) or 0
+
+    verifications_pending = await session.scalar(
+        select(func.count()).select_from(UrbanIssue).where(
+            UrbanIssue.status.in_([IssueStatus.repair_reported, IssueStatus.verification_pending])
+        )
+    ) or 0
+
+    return {
+        "issues": issues_active,
+        "tickets": tickets_active,
+        "alerts": alerts_unack,
+        "verifications": verifications_pending
+    }
+
+
 @router.get('/system/metrics')
 async def get_metrics():
     return []

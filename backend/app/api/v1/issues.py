@@ -1,14 +1,25 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func
+from sqlalchemy import select, func, or_
 from sqlalchemy.orm import selectinload
 from typing import List, Optional
+from pydantic import BaseModel, ConfigDict
 import shapely.wkb
+import uuid
 
 from app.core.database import get_db
-from app.models.domain import UrbanIssue, IssueStatus, Observation, TimelineEvent, Detection, Authority, Department, Jurisdiction, RoadSegment, Verification, Ticket
+from app.core.auth import get_current_user, require_role, AuthenticatedUser
+from app.models.domain import UrbanIssue, IssueStatus, Observation, TimelineEvent, Detection, Authority, Department, Jurisdiction, RoadSegment, Verification, Ticket, UserRole
 
 router = APIRouter(prefix="/api/v1/issues", tags=["Issues"])
+
+
+class IssueUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    status: Optional[str] = None
+    assigned_authority_id: Optional[str] = None
+    notes: Optional[str] = None
 
 
 def _serialize_issue(
@@ -67,6 +78,10 @@ def _serialize_issue(
         "status": issue.status.value if hasattr(issue.status, "value") else issue.status,
         "severity": issue.severity.value if hasattr(issue.severity, "value") else issue.severity,
         "priority": issue.priority.value if hasattr(issue.priority, "value") else issue.priority,
+        "priorityExplanation": (
+            f"Operational priority derived from severity {issue.severity.value if hasattr(issue.severity, 'value') else issue.severity}, "
+            f"{issue.unique_bus_count} observing transit buses, and {issue.observation_count} total passes."
+        ),
         "location": location_data,
         "observations": [],
         "observationCount": issue.observation_count,
@@ -107,14 +122,31 @@ def _serialize_issue(
 
 @router.get("")
 async def get_issues(
-    status: IssueStatus = None,
+    status: Optional[IssueStatus] = None,
+    search: Optional[str] = None,
+    limit: Optional[int] = None,
     session: AsyncSession = Depends(get_db),
 ):
     query = select(UrbanIssue)
     if status:
         query = query.where(UrbanIssue.status == status)
 
-    result = await session.execute(query.order_by(UrbanIssue.created_at.desc()))
+    if search and search.strip():
+        term = f"%{search.strip()}%"
+        query = query.where(
+            or_(
+                UrbanIssue.id.ilike(term),
+                UrbanIssue.issue_type.ilike(term),
+                UrbanIssue.road_segment_id.ilike(term),
+                UrbanIssue.authority_id.ilike(term),
+            )
+        )
+
+    query = query.order_by(UrbanIssue.created_at.desc())
+    if limit and limit > 0:
+        query = query.limit(limit)
+
+    result = await session.execute(query)
     issues = result.scalars().all()
 
     # Prefetch authorities, departments, jurisdictions
@@ -143,6 +175,7 @@ async def get_issues(
         )
         for issue in issues
     ]
+
 
 
 @router.get("/summary")
@@ -264,6 +297,15 @@ async def get_issue(issue_id: str, session: AsyncSession = Depends(get_db)):
         "healthScoreProvenance": "decision_support_derived" if road_segment.health_score is not None else "unavailable",
         "ownerAgency": road_segment.owner_agency,
     } if road_segment else None
+
+    # Explainable Priority Breakdown
+    from app.services.priority_engine import calculate_priority_with_explanation
+    _, p_breakdown = calculate_priority_with_explanation(
+        issue,
+        road_segment.road_class if road_segment else None
+    )
+    serialized["priorityBreakdown"] = p_breakdown
+    serialized["priorityExplanation"] = p_breakdown["explanation"]
 
     # Connected Ticket (Truthful: explicit null if not present)
     if issue.ticket:
@@ -401,6 +443,109 @@ async def get_issue(issue_id: str, session: AsyncSession = Depends(get_db)):
     serialized["resolutionHistory"] = timeline_events
 
     return serialized
+
+
+@router.patch("/{issue_id}")
+async def update_issue(
+    issue_id: str,
+    payload: IssueUpdate,
+    session: AsyncSession = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(require_role([UserRole.admin, UserRole.operator, UserRole.officer])),
+):
+    """
+    Domain-aware issue mutation endpoint.
+    Permits legal state transitions and authority assignment.
+    Prevents arbitrary field modification or provenance corruption.
+    """
+    issue = await session.get(UrbanIssue, issue_id)
+    if not issue:
+        raise HTTPException(status_code=404, detail="Issue not found")
+
+    if payload.assigned_authority_id is not None:
+        if payload.assigned_authority_id != "":
+            auth = await session.get(Authority, payload.assigned_authority_id)
+            if not auth:
+                raise HTTPException(status_code=400, detail=f"Authority '{payload.assigned_authority_id}' does not exist")
+            issue.authority_id = auth.id
+            issue.jurisdiction_source = "manual_override"
+        else:
+            issue.authority_id = None
+            issue.jurisdiction_source = "unresolved"
+
+    if payload.status is not None:
+        try:
+            target_status = IssueStatus(payload.status) if isinstance(payload.status, str) else payload.status
+        except ValueError:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid issue status: {payload.status}. Valid statuses: {[s.value for s in IssueStatus]}"
+            )
+
+        current_status_val = issue.status.value if hasattr(issue.status, "value") else issue.status
+        target_status_val = target_status.value if hasattr(target_status, "value") else target_status
+
+        # Legal state transitions mapping
+        valid_transitions = {
+            "new": {"confirmed", "prioritized", "assigned", "in_progress", "verified", "reopened"},
+            "confirmed": {"prioritized", "assigned", "in_progress", "verified", "reopened"},
+            "prioritized": {"assigned", "in_progress", "verified", "reopened"},
+            "assigned": {"in_progress", "verified", "reopened"},
+            "ticket_created": {"in_progress", "repair_reported", "verification_pending", "verified", "reopened"},
+            "in_progress": {"repair_reported", "verification_pending", "verified", "reopened"},
+            "repair_reported": {"verification_pending", "verified", "reopened", "in_progress"},
+            "verification_pending": {"verified", "reopened", "in_progress"},
+            "verified": {"reopened"},
+            "reopened": {"in_progress", "assigned", "prioritized", "verified"},
+        }
+
+        # Allow no-op transition (same status)
+        if current_status_val != target_status_val:
+            allowed = valid_transitions.get(current_status_val, set())
+            if target_status_val not in allowed:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Illegal status transition from '{current_status_val}' to '{target_status_val}'"
+                )
+            issue.status = target_status
+
+            # Record timeline event
+            timeline_evt = TimelineEvent(
+                id=f"evt_status_{uuid.uuid4().hex[:10]}",
+                entity_id=issue.id,
+                entity_type="issue",
+                event_type="status_change",
+                title=f"Issue Status Updated to {target_status_val.replace('_', ' ').title()}",
+                description=payload.notes or f"Status transitioned from {current_status_val} to {target_status_val}",
+                actor=current_user.username or "OPERATOR",
+                metadata_json={
+                    "old_status": current_status_val,
+                    "new_status": target_status_val,
+                    "actor_id": current_user.id,
+                    "actor_role": current_user.role.value if hasattr(current_user.role, "value") else str(current_user.role)
+                }
+            )
+            session.add(timeline_evt)
+
+    await session.commit()
+    await session.refresh(issue)
+
+    # Prefetch metadata for serialization
+    auth = await session.get(Authority, issue.authority_id) if issue.authority_id else None
+    dept = await session.get(Department, issue.assigned_department_id) if issue.assigned_department_id else None
+    jur = await session.get(Jurisdiction, issue.jurisdiction_id) if issue.jurisdiction_id else None
+
+    obs_res = await session.execute(
+        select(Observation.bus_id).where(Observation.issue_id == issue.id)
+    )
+    buses = sorted(list({b for b in obs_res.scalars().all() if b}))
+
+    return _serialize_issue(
+        issue=issue,
+        auth_map={auth.id: auth} if auth else {},
+        dept_map={dept.id: dept} if dept else {},
+        jur_map={jur.id: jur} if jur else {},
+        observing_buses=buses
+    )
 
 
 @router.get("/{issue_id}/jurisdiction")

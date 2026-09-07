@@ -41,6 +41,10 @@ cropped_detections/
 runs/
 backend/evidence/*
 !backend/evidence/.gitkeep
+ml/videos/*
+!ml/videos/fixtures/
+!ml/videos/fixtures/*
+!ml/videos/test_video.mp4
 
 # Logs
 *.log

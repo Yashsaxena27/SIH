@@ -7,6 +7,7 @@ import { motion } from 'framer-motion';
 import { Bell, AlertTriangle, Info, CheckCircle, Clock } from 'lucide-react';
 import { PageHeader, GlassPanel, LoadingState } from '@/components/ui';
 import { api } from '@/services/api';
+import { analyticsService } from '@/services/modules/analyticsService';
 import { cn, timeAgo } from '@/lib/utils';
 import type { Alert } from '@/types';
 
@@ -54,6 +55,18 @@ export function AlertsPage() {
     );
   }
 
+  const handleAcknowledge = async (alertId: string) => {
+    try {
+      await analyticsService.acknowledgeAlert(alertId);
+      setAlerts(prev => prev.map(a => a.id === alertId ? { ...a, acknowledged: true } : a));
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('muin:mutation'));
+      }
+    } catch (err) {
+      console.error("Failed to acknowledge alert:", err);
+    }
+  };
+
   const unacknowledged = alerts.filter(a => !a.acknowledged);
   const acknowledged = alerts.filter(a => a.acknowledged);
 
@@ -94,7 +107,10 @@ export function AlertsPage() {
                         <span className="text-[10px] text-on-surface-variant/60">{timeAgo(alert.timestamp)}</span>
                       </div>
                     </div>
-                    <button className="px-2.5 py-1 rounded-md bg-surface-container border border-outline-variant text-[10px] font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-high transition-colors flex-shrink-0">
+                    <button 
+                      onClick={() => handleAcknowledge(alert.id)}
+                      className="px-2.5 py-1 rounded-md bg-surface-container border border-outline-variant text-[10px] font-medium text-on-surface-variant hover:text-on-surface hover:bg-surface-high transition-colors flex-shrink-0"
+                    >
                       Acknowledge
                     </button>
                   </div>

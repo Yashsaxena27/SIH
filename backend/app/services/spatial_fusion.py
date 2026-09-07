@@ -16,7 +16,8 @@ async def find_nearby_issue(
     session: AsyncSession,
     location: GeoPoint,
     issue_type: str,
-    radius_meters: float = FUSION_RADIUS_METERS
+    radius_meters: float = FUSION_RADIUS_METERS,
+    for_update: bool = False
 ) -> Optional[UrbanIssue]:
     """
     Find an existing active UrbanIssue of the same type within the given radius.
@@ -46,6 +47,9 @@ async def find_nearby_issue(
             func.Geography(func.ST_GeomFromText(point_wkt, 4326))
         )
     ).limit(1)
+
+    if for_update:
+        query = query.with_for_update()
 
     result = await session.execute(query)
     return result.scalar_one_or_none()

@@ -4,7 +4,27 @@ from typing import List, Dict, Any, Optional
 
 from ml.core.config import settings
 
+import threading
+
 logger = logging.getLogger(__name__)
+
+_MODEL_CACHE: Dict[str, Any] = {}
+_MODEL_LOCK = threading.Lock()
+
+def get_yolo_model(model_path: str):
+    """
+    Thread-safe process-level singleton for YOLO model weights.
+    Avoids expensive repeated disk I/O and torch deserialization per video job.
+    """
+    if model_path in _MODEL_CACHE:
+        return _MODEL_CACHE[model_path]
+    with _MODEL_LOCK:
+        if model_path not in _MODEL_CACHE:
+            from ultralytics import YOLO
+            logger.info(f"Loading YOLO model into process cache from {model_path}")
+            _MODEL_CACHE[model_path] = YOLO(model_path)
+    return _MODEL_CACHE[model_path]
+
 
 class ModelInferenceEngine:
     """
@@ -27,12 +47,10 @@ class ModelInferenceEngine:
         
         if not self.mock_mode:
             try:
-                from ultralytics import YOLO
                 resolved_path = settings.RESOLVED_MODEL_PATH
-                logger.info(f"Loading YOLO model from {resolved_path}")
-                self.model = YOLO(resolved_path)
+                self.model = get_yolo_model(resolved_path)
                 self.classes = getattr(self.model, "names", {})
-                logger.info(f"YOLO model loaded successfully. Detected classes: {self.classes}")
+                logger.info(f"YOLO model ready from process cache. Detected classes: {self.classes}")
             except Exception as e:
                 logger.error(f"Failed to load YOLO model: {e}")
                 raise RuntimeError(

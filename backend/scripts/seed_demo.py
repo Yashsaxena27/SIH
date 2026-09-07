@@ -245,4 +245,15 @@ async def seed_demo_data():
         print(f" - {len(alerts)} Alerts")
 
 if __name__ == "__main__":
+    import sys
+    if "--force-legacy-bengaluru" not in sys.argv:
+        print("\n" + "=" * 60)
+        print("WARNING: seed_demo.py contains legacy Bengaluru coordinates that conflict")
+        print("with canonical SIH 2026 Delhi-NCR boundaries and golden scenarios.")
+        print("To seed the canonical SIH 2026 dataset, please run:")
+        print("  python backend/scripts/seed_golden_demo.py")
+        print("\nIf you strictly need the legacy Bengaluru demo data, rerun with:")
+        print("  python backend/scripts/seed_demo.py --force-legacy-bengaluru")
+        print("=" * 60 + "\n")
+        sys.exit(1)
     asyncio.run(seed_demo_data())
