@@ -13,7 +13,9 @@ import {
   ArrowDown, 
   GitMerge, 
   Ticket,
-  UserPlus
+  UserPlus,
+  Compass,
+  ArrowRight
 } from 'lucide-react';
 import { cn, timeAgo, getValidLatLng } from '@/lib/utils';
 import type { UrbanIssue } from '@/types';
@@ -21,9 +23,10 @@ import type { UrbanIssue } from '@/types';
 interface IssueDrawerProps {
   issue: UrbanIssue | null;
   onClose: () => void;
+  onRoadSelect?: (roadId: string) => void;
 }
 
-export function IssueDrawer({ issue, onClose }: IssueDrawerProps) {
+export function IssueDrawer({ issue, onClose, onRoadSelect }: IssueDrawerProps) {
   const getVisibleExtent = (issueObj: UrbanIssue) => {
     const ext = (issueObj as any).visibleExtentPct;
     if (ext != null && !isNaN(ext)) return `${Number(ext).toFixed(1)}% of frame`;
@@ -167,6 +170,75 @@ export function IssueDrawer({ issue, onClose }: IssueDrawerProps) {
                   })()}
                 </div>
               </div>
+
+              {/* Road Corridor GIS Link & Spatial Match */}
+              {(() => {
+                const roadMatch = issue.roadSegmentMatch;
+                const roadSeg = issue.roadSegment;
+                const matchState = roadMatch?.state || (issue.roadSegmentId ? 'MATCHED' : 'UNMATCHED');
+                const segmentName = roadMatch?.segmentName || roadSeg?.name || (issue.roadSegmentId ? issue.roadSegmentId : null);
+                const distanceMeters = roadMatch?.distanceMeters ?? roadSeg?.distanceMeters ?? null;
+                const targetSegId = roadMatch?.segmentId || issue.roadSegmentId || roadSeg?.id;
+
+                return (
+                  <div className="p-3.5 bg-white/[0.02] rounded-xl border border-white/[0.06] flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-xs font-mono text-emerald-400 font-bold">
+                        <Compass className="w-3.5 h-3.5" />
+                        <span>Road Corridor Matching</span>
+                      </div>
+                      <span className={cn(
+                        "px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase",
+                        matchState === 'MATCHED' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' :
+                        matchState === 'AMBIGUOUS' ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' :
+                        'bg-white/10 text-on-surface-variant/70 border border-white/10'
+                      )}>
+                        {matchState}
+                      </span>
+                    </div>
+
+                    {matchState === 'MATCHED' && (
+                      <>
+                        <div className="text-xs font-semibold text-white">
+                          {segmentName || 'Matched Road Corridor'}
+                        </div>
+                        <div className="flex items-center gap-2 text-[11px] font-mono text-on-surface-variant/70">
+                          {distanceMeters != null && (
+                            <span className="text-cyan-400">{distanceMeters.toFixed(1)}m from centerline</span>
+                          )}
+                          {roadSeg?.roadClass && (
+                            <span>• {roadSeg.roadClass}</span>
+                          )}
+                        </div>
+                        {targetSegId && onRoadSelect && (
+                          <button
+                            onClick={() => {
+                              onClose();
+                              onRoadSelect(targetSegId);
+                            }}
+                            className="mt-1 w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 text-xs font-mono font-semibold transition-colors"
+                          >
+                            <span>Inspect Road Corridor</span>
+                            <ArrowRight className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </>
+                    )}
+
+                    {matchState === 'AMBIGUOUS' && (
+                      <p className="text-[11px] font-mono text-yellow-400/80 leading-relaxed">
+                        Multiple candidate corridors within 50m tolerance with delta &le; 5m. Centerline unassigned to prevent spurious jurisdiction routing.
+                      </p>
+                    )}
+
+                    {matchState === 'UNMATCHED' && (
+                      <p className="text-[11px] font-mono text-on-surface-variant/60 leading-relaxed">
+                        No registered municipal corridor centerline within 50m tolerance.
+                      </p>
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* Operational Authority & Jurisdiction Routing */}
               <div className="p-3.5 bg-white/[0.02] rounded-xl border border-white/[0.06] flex flex-col gap-1.5">

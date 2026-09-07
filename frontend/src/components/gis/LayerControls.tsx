@@ -3,12 +3,13 @@
 // ============================================================
 
 import { useState } from 'react';
-import { Layers, Activity, AlertTriangle, Route as RouteIcon, Target, Bus, Plus, Minus, Locate } from 'lucide-react';
+import { Layers, Activity, AlertTriangle, Route as RouteIcon, Target, Bus, Plus, Minus, Locate, Compass } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export interface MapLayers {
   buses: boolean;
   issues: boolean;
+  roads: boolean;
   routes: boolean;
   heatmap: boolean;
   clusters: boolean;
@@ -25,6 +26,7 @@ export function LayerControls({ layers, onLayerToggle }: LayerControlsProps) {
   const controls = [
     { id: 'buses', label: 'Active Fleet', icon: Bus, color: 'text-cyan-400' },
     { id: 'issues', label: 'Civic Issues', icon: AlertTriangle, color: 'text-amber-400' },
+    { id: 'roads', label: 'Road Corridors', icon: Compass, color: 'text-emerald-400' },
     { id: 'heatmap', label: 'Density Heatmap', icon: Activity, color: 'text-rose-400' },
     { id: 'clusters', label: 'Smart Clusters', icon: Target, color: 'text-purple-400' },
     { id: 'routes', label: 'Transit Routes', icon: RouteIcon, color: 'text-indigo-400' },

@@ -6,6 +6,7 @@ import { ticketService, verificationService, authorityService } from './modules/
 import { fleetService, routeService } from './modules/fleetService';
 import { analyticsService, detectionService } from './modules/analyticsService';
 import { inspectionService } from './modules/inspectionService';
+import { roadService } from './modules/roadService';
 
 export const api = {
   createTicket: ticketService.createTicket,
@@ -48,6 +49,10 @@ export const api = {
   getVerificationSummary: verificationService.getVerificationSummary,
   
   // Roads / Analytics
+  getRoads: roadService.getRoads,
+  getRoad: roadService.getRoad,
+  getRoadHealth: roadService.getRoadHealth,
+  getRoadIssues: roadService.getRoadIssues,
   getAnalyticsSummary: analyticsService.getAnalyticsSummary,
   getAnalyticsIssues: analyticsService.getAnalyticsIssues,
   getAnalyticsTrends: analyticsService.getAnalyticsTrends,

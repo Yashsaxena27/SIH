@@ -4,7 +4,7 @@ import L from 'leaflet';
 import { renderToString } from 'react-dom/server';
 import { Bus as BusIcon, ShieldAlert, AlertTriangle, MapPin } from 'lucide-react';
 import { cn, getValidLatLng } from '@/lib/utils';
-import type { Bus, UrbanIssue, Route } from '@/types';
+import type { Bus, UrbanIssue, Route, RoadSegment } from '@/types';
 import type { MapLayers } from './LayerControls';
 import type { IntelligenceFilter } from './FilterBar';
 
@@ -57,7 +57,7 @@ const createIssueIcon = (severity: string, observationCount: number, showCluster
     'ring-1 ring-amber-400/40';
 
   const html = renderToString(
-    <div className="relative flex items-center justify-center group cursor-pointer">
+    <div className="relative flex items-center justify-center group cursor-pointer issue-marker-pin">
       {isCritical && <div className="absolute inset-[-4px] rounded-full bg-red-500/30 animate-ping" />}
       <div className={cn(
         "relative flex items-center justify-center rounded-full border shadow-lg transition-transform group-hover:scale-110",
@@ -88,13 +88,27 @@ interface CommandMapProps {
   buses: Bus[];
   issues: UrbanIssue[];
   routes: Route[];
+  roads?: RoadSegment[];
   hotspots?: any[];
   layers: MapLayers;
   filter: IntelligenceFilter;
   onIssueSelect: (issue: UrbanIssue) => void;
+  onRoadSelect?: (road: RoadSegment) => void;
+  selectedRoadId?: string | null;
 }
 
-export function CommandMap({ buses, issues, routes, hotspots = [], layers, filter, onIssueSelect }: CommandMapProps) {
+export function CommandMap({ 
+  buses, 
+  issues, 
+  routes, 
+  roads = [], 
+  hotspots = [], 
+  layers, 
+  filter, 
+  onIssueSelect,
+  onRoadSelect,
+  selectedRoadId
+}: CommandMapProps) {
   // Apply filters
   const visibleIssues = issues.filter(i => {
     if (filter === 'ALL') return true;
@@ -108,7 +122,8 @@ export function CommandMap({ buses, issues, routes, hotspots = [], layers, filte
   const hasValidIssues = visibleIssues.some(i => getValidLatLng(i) !== null);
   const hasValidBuses = buses.some(b => getValidLatLng(b) !== null);
   const hasValidHotspots = hotspots.some(h => getValidLatLng(h) !== null);
-  const hasAnyVisibleGeoData = hasValidIssues || (layers.buses && hasValidBuses) || (layers.clusters && hasValidHotspots);
+  const hasValidRoads = roads.some(r => (r.coordinates || r.geometry?.coordinates)?.length);
+  const hasAnyVisibleGeoData = hasValidIssues || (layers.buses && hasValidBuses) || (layers.clusters && hasValidHotspots) || (layers.roads && hasValidRoads);
 
   return (
     <div className="absolute inset-0 z-0 bg-[#0d0e11]">
@@ -124,6 +139,44 @@ export function CommandMap({ buses, issues, routes, hotspots = [], layers, filte
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         />
 
+        {/* Road Corridors GIS Layer */}
+        {layers.roads && roads.map(road => {
+          const coords = road.coordinates || road.geometry?.coordinates;
+          if (!coords || !Array.isArray(coords) || coords.length < 2) return null;
+          const positions = coords.map(([lng, lat]) => [lat, lng] as [number, number]);
+
+          const health = road.health || road.operational_health;
+          const score = health?.score ?? health?.healthScore ?? road.healthScore ?? 100;
+          const riskState = health?.riskState ?? (
+            score >= 90 ? 'HEALTHY' :
+            score >= 70 ? 'WATCH' :
+            score >= 50 ? 'ELEVATED' : 'CRITICAL'
+          );
+
+          const color = 
+            riskState === 'HEALTHY' ? '#10b981' :
+            riskState === 'WATCH' ? '#eab308' :
+            riskState === 'ELEVATED' ? '#f97316' : '#ef4444';
+
+          const isSelected = selectedRoadId === road.id;
+
+          return (
+            <Polyline
+              key={`road-${road.id}`}
+              positions={positions}
+              pathOptions={{
+                color,
+                weight: isSelected ? 8 : 5,
+                opacity: isSelected ? 1.0 : 0.8,
+                className: 'road-corridor-polyline cursor-pointer'
+              }}
+              eventHandlers={{
+                click: () => onRoadSelect && onRoadSelect(road)
+              }}
+            />
+          );
+        })}
+
         {/* Heatmap Simulation (Subtle glow circles under everything) */}
         {layers.heatmap && visibleIssues.map(issue => {
           const pos = getValidLatLng(issue);
@@ -136,7 +189,8 @@ export function CommandMap({ buses, issues, routes, hotspots = [], layers, filte
               pathOptions={{
                 stroke: false,
                 fillColor: issue.severity === 'critical' ? '#ef4444' : '#f97316',
-                fillOpacity: issue.severity === 'critical' ? 0.15 : 0.08
+                fillOpacity: issue.severity === 'critical' ? 0.15 : 0.08,
+                interactive: false
               }}
             />
           );

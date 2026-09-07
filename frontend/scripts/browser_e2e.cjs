@@ -154,8 +154,66 @@ async function runE2E() {
     if (!videoTestResults.seekSuccessful) throw new Error('Video failed to seek');
     if (!videoTestResults.reloadSuccessful) throw new Error('Video failed to reload');
 
+    console.log('\n[TEST 5] Testing Phase 6 GIS Road Intelligence & Bidirectional Drawer Navigation...');
+    await page.goto('http://localhost:5173/intelligence', { waitUntil: 'domcontentloaded' });
+    await page.waitForTimeout(2500);
+
+    // Verify top GIS banner shows Corridors count
+    const corridorsText = await page.getByText(/Corridors/i).first().textContent();
+    console.log('  - GIS Operational Banner Corridors indicator:', corridorsText ? 'PASSED (' + corridorsText.trim() + ')' : 'FAILED');
+
+    // 1. First test road selection: click a road corridor polyline
+    const corridorPolylineCount = await page.locator('path.road-corridor-polyline').count();
+    console.log('  - Road corridor polylines rendered on map:', corridorPolylineCount);
+
+    await page.evaluate(() => {
+      const roadEl = document.querySelector('path.road-corridor-polyline');
+      if (roadEl) {
+        roadEl.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+      }
+    });
+    await page.waitForTimeout(1200);
+
+    const roadHealthHeader = page.getByText('Operational Road Health');
+    const roadDrawerOpened = await roadHealthHeader.isVisible();
+    console.log('  - RoadDrawer opened on road corridor click:', roadDrawerOpened ? 'PASSED' : 'FAILED');
+    if (!roadDrawerOpened) throw new Error('RoadDrawer failed to open on road corridor selection');
+
+    const factorBreakdown = page.getByText('Scoring Factor Breakdown');
+    const hasFactors = await factorBreakdown.isVisible();
+    console.log('  - Operational Road Health factors rendered:', hasFactors ? 'PASSED' : 'FAILED');
+    if (!hasFactors) throw new Error('RoadDrawer missing Scoring Factor Breakdown');
+
+    // Test navigation: RoadDrawer -> IssueDrawer via Corridor Anomaly Inspect
+    await page.waitForSelector('button:has-text("Inspect")', { timeout: 4000 });
+    const inspectBtns = page.getByRole('button', { name: /Inspect/i });
+    const inspectCount = await inspectBtns.count();
+    console.log('  - Corridor active anomalies available to inspect:', inspectCount);
+    if (inspectCount === 0) throw new Error('No corridor anomalies rendered in RoadDrawer');
+
+    await inspectBtns.first().click();
+    await page.waitForTimeout(1200);
+
+    const roadMatchCard = page.getByText('Road Corridor Matching');
+    const hasMatchCard = await roadMatchCard.isVisible();
+    console.log('  - Bidirectional navigation: IssueDrawer opened from Corridor Anomaly:', hasMatchCard ? 'PASSED' : 'FAILED');
+    if (!hasMatchCard) throw new Error('IssueDrawer did not open with Road Corridor Matching card');
+
+    const inspectCorridorBtn = page.getByRole('button', { name: /Inspect Road Corridor/i });
+    const hasInspectCorridorBtn = await inspectCorridorBtn.isVisible();
+    console.log('  - "Inspect Road Corridor" button visible in IssueDrawer:', hasInspectCorridorBtn ? 'PASSED' : 'FAILED');
+    if (!hasInspectCorridorBtn) throw new Error('"Inspect Road Corridor" button not found in IssueDrawer');
+
+    // Test reverse navigation: IssueDrawer -> RoadDrawer
+    await inspectCorridorBtn.click();
+    await page.waitForTimeout(1200);
+
+    const reopenedRoadDrawer = await page.getByText('Operational Road Health').isVisible();
+    console.log('  - Bidirectional return navigation back to RoadDrawer:', reopenedRoadDrawer ? 'PASSED' : 'FAILED');
+    if (!reopenedRoadDrawer) throw new Error('RoadDrawer failed to re-open after clicking "Inspect Road Corridor"');
+
     console.log('\n====================================================');
-    console.log('ALL 4 BROWSER E2E CHECKS PASSED');
+    console.log('ALL 5 BROWSER E2E CHECKS PASSED');
     console.log('====================================================');
 
   } catch (error) {

@@ -38,6 +38,13 @@ export interface UrbanIssue {
   corroborationText?: string;
   assignedTo?: string;
   roadSegmentId?: string;
+  roadSegmentMatch?: {
+    state: 'MATCHED' | 'AMBIGUOUS' | 'UNMATCHED';
+    segmentId?: string | null;
+    segmentName?: string | null;
+    distanceMeters?: number | null;
+    reason?: string;
+  } | null;
   roadSegment?: {
     id: string;
     name: string;
@@ -45,6 +52,7 @@ export interface UrbanIssue {
     healthScore?: number;
     healthScoreProvenance?: string;
     ownerAgency?: string;
+    distanceMeters?: number;
   } | null;
   ticket?: any | null;
   verifications?: any[];

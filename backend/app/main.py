@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 
-from app.api.v1 import issues, simulator, ingestion, fleet, tickets, verifications, analytics, events, inspection, complaints, authorities
+from app.api.v1 import issues, simulator, ingestion, fleet, tickets, verifications, analytics, events, inspection, complaints, authorities, roads
 
 app = FastAPI(
     title="Urban Intelligence Network API",
@@ -20,6 +20,7 @@ app.add_middleware(
 )
 
 app.include_router(issues.router)
+app.include_router(roads.router)
 app.include_router(simulator.router)
 app.include_router(ingestion.router)
 app.include_router(fleet.router)

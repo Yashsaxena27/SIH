@@ -27,6 +27,7 @@ def _serialize_issue(
     auth_map: Optional[dict] = None,
     dept_map: Optional[dict] = None,
     jur_map: Optional[dict] = None,
+    road_map: Optional[dict] = None,
     observing_buses: Optional[List[str]] = None,
 ) -> dict:
     point = shapely.wkb.loads(bytes(issue.location.data)) if issue.location else None
@@ -48,6 +49,8 @@ def _serialize_issue(
     auth = auth_map.get(issue.authority_id) if auth_map and issue.authority_id else None
     dept = dept_map.get(issue.assigned_department_id) if dept_map and issue.assigned_department_id else None
     jur = jur_map.get(issue.jurisdiction_id) if jur_map and issue.jurisdiction_id else None
+    road_seg = road_map.get(issue.road_segment_id) if road_map and issue.road_segment_id else None
+    road_name = road_seg.name if road_seg else issue.road_segment_id
 
     jurisdiction_status = "resolved" if issue.authority_id else "unresolved"
     jurisdiction_source = issue.jurisdiction_source or (
@@ -90,6 +93,26 @@ def _serialize_issue(
         "corroborationText": corroboration_text,
         "confidence": issue.confidence,
         "roadSegmentId": issue.road_segment_id,
+        "roadSegmentMatch": {
+            "state": "MATCHED" if issue.road_segment_id else "UNMATCHED",
+            "segmentId": issue.road_segment_id,
+            "segmentName": road_name if issue.road_segment_id else None,
+            "distanceMeters": None,
+            "reason": (
+                f"Linked to corridor {road_name}"
+                if issue.road_segment_id
+                else "No valid road segment assigned within tolerance"
+            ),
+        },
+        "roadSegment": {
+            "id": issue.road_segment_id,
+            "name": road_name,
+            "roadClass": road_seg.road_class if road_seg else None,
+            "healthScore": road_seg.health_score if road_seg else None,
+            "healthScoreProvenance": "Operational Road Health (decision-support)",
+            "ownerAgency": road_seg.owner_agency if road_seg else None,
+            "authorityId": road_seg.authority_id if road_seg else None,
+        } if issue.road_segment_id else None,
         "departmentId": issue.assigned_department_id,
         "departmentName": dept.name if dept else (
             "Delhi-NCR Road Infrastructure" if issue.authority_id == "AUTH-PWD-DELHI" else None
@@ -149,7 +172,7 @@ async def get_issues(
     result = await session.execute(query)
     issues = result.scalars().all()
 
-    # Prefetch authorities, departments, jurisdictions
+    # Prefetch authorities, departments, jurisdictions, roads
     auth_res = await session.execute(select(Authority))
     auth_map = {a.id: a for a in auth_res.scalars().all()}
 
@@ -158,6 +181,9 @@ async def get_issues(
 
     jur_res = await session.execute(select(Jurisdiction))
     jur_map = {j.id: j for j in jur_res.scalars().all()}
+
+    road_res = await session.execute(select(RoadSegment))
+    road_map = {r.id: r for r in road_res.scalars().all()}
 
     # Prefetch distinct observing buses per issue for spatial fusion traceability
     obs_res = await session.execute(select(Observation.issue_id, Observation.bus_id))
@@ -171,6 +197,7 @@ async def get_issues(
             auth_map=auth_map,
             dept_map=dept_map,
             jur_map=jur_map,
+            road_map=road_map,
             observing_buses=sorted(list(issue_buses.get(issue.id, []))),
         )
         for issue in issues
@@ -288,14 +315,40 @@ async def get_issue(issue_id: str, session: AsyncSession = Depends(get_db)):
         observing_buses=distinct_buses,
     )
 
+    match_state = "MATCHED" if road_segment else "UNMATCHED"
+    distance_meters = None
+    if road_segment and issue.location and road_segment.geometry:
+        try:
+            d = await session.scalar(
+                select(func.ST_Distance(func.Geography(issue.location), func.Geography(road_segment.geometry)))
+            )
+            distance_meters = round(float(d), 2) if d is not None else None
+        except Exception:
+            distance_meters = None
+
+    serialized["roadSegmentMatch"] = {
+        "state": match_state,
+        "segmentId": road_segment.id if road_segment else None,
+        "segmentName": road_segment.name if road_segment else None,
+        "distanceMeters": distance_meters,
+        "reason": (
+            f"Matched to corridor '{road_segment.name}' ({distance_meters:.1f}m)"
+            if road_segment and distance_meters is not None
+            else f"Matched to corridor '{road_segment.name}'" if road_segment
+            else "No valid road segment assigned within tolerance"
+        )
+    }
+
     # Road Segment Provenance
     serialized["roadSegment"] = {
         "id": road_segment.id,
         "name": road_segment.name,
         "roadClass": road_segment.road_class,
         "healthScore": road_segment.health_score,
-        "healthScoreProvenance": "decision_support_derived" if road_segment.health_score is not None else "unavailable",
+        "healthScoreProvenance": "Operational Road Health (decision-support)",
         "ownerAgency": road_segment.owner_agency,
+        "authorityId": road_segment.authority_id,
+        "distanceMeters": distance_meters,
     } if road_segment else None
 
     # Explainable Priority Breakdown

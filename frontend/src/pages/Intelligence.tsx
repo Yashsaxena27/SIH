@@ -9,13 +9,14 @@ import {
   TimeScrubber, 
   LayerControls, 
   IssueDrawer,
+  RoadDrawer,
   type IntelligenceFilter,
   type MapLayers 
 } from '@/components/gis';
 import { LoadingState } from '@/components/ui';
 import { api } from '@/services/api';
-import type { Bus, UrbanIssue, Route } from '@/types';
-import { MapPin, Bus as BusIcon, AlertTriangle, Activity, RefreshCw } from 'lucide-react';
+import type { Bus, UrbanIssue, Route, RoadSegment, RoadIssueSummary } from '@/types';
+import { MapPin, Bus as BusIcon, AlertTriangle, Activity, RefreshCw, Compass } from 'lucide-react';
 
 export function IntelligencePage() {
   // Data State
@@ -23,14 +24,17 @@ export function IntelligencePage() {
   const [buses, setBuses] = useState<Bus[]>([]);
   const [issues, setIssues] = useState<UrbanIssue[]>([]);
   const [routes, setRoutes] = useState<Route[]>([]);
+  const [roads, setRoads] = useState<RoadSegment[]>([]);
   const [hotspots, setHotspots] = useState<any[]>([]);
   
   // UI State
   const [selectedIssue, setSelectedIssue] = useState<UrbanIssue | null>(null);
+  const [selectedRoad, setSelectedRoad] = useState<RoadSegment | null>(null);
   const [activeFilter, setActiveFilter] = useState<IntelligenceFilter>('ALL');
   const [layers, setLayers] = useState<MapLayers>({
     buses: true,
     issues: true,
+    roads: true,
     routes: false,
     heatmap: true,
     clusters: true,
@@ -43,21 +47,26 @@ export function IntelligencePage() {
     setLoading(true);
     setError(null);
     try {
-      const [b, i, r, h] = await Promise.allSettled([
+      const [b, i, r, rd, h] = await Promise.allSettled([
         api.getBuses ? api.getBuses() : Promise.resolve([]),
         api.getIssues ? api.getIssues() : Promise.resolve([]),
         api.getRoutes ? api.getRoutes() : Promise.resolve([]),
+        api.getRoads ? api.getRoads() : Promise.resolve({ items: [] }),
         api.getHotspots ? api.getHotspots() : Promise.resolve([])
       ]);
       
       const loadedBuses = b.status === 'fulfilled' && Array.isArray(b.value) ? b.value : [];
       const loadedIssues = i.status === 'fulfilled' && Array.isArray(i.value) ? i.value : [];
       const loadedRoutes = r.status === 'fulfilled' && Array.isArray(r.value) ? r.value : [];
+      const loadedRoads = rd.status === 'fulfilled' && rd.value 
+        ? (Array.isArray(rd.value) ? rd.value : (rd.value as any).items || []) 
+        : [];
       const loadedHotspots = h.status === 'fulfilled' && Array.isArray(h.value) ? h.value : [];
 
       setBuses(loadedBuses);
       setIssues(loadedIssues);
       setRoutes(loadedRoutes);
+      setRoads(loadedRoads);
       setHotspots(loadedHotspots);
     } catch (err) {
       console.error('Error initializing map data:', err);
@@ -70,6 +79,47 @@ export function IntelligencePage() {
   useEffect(() => {
     loadData();
   }, []);
+
+  const handleSelectRoad = (road: RoadSegment) => {
+    setSelectedIssue(null);
+    setSelectedRoad(road);
+  };
+
+  const handleSelectRoadById = async (roadId: string) => {
+    const existing = roads.find(r => r.id === roadId);
+    if (existing) {
+      setSelectedIssue(null);
+      setSelectedRoad(existing);
+      return;
+    }
+    try {
+      const fetched = await api.getRoad(roadId);
+      if (fetched) {
+        setSelectedIssue(null);
+        setSelectedRoad(fetched);
+      }
+    } catch (err) {
+      console.warn('Failed to load road details for navigation:', err);
+    }
+  };
+
+  const handleSelectIssue = async (issueItem: UrbanIssue | RoadIssueSummary) => {
+    const existing = issues.find(i => i.id === issueItem.id);
+    if (existing) {
+      setSelectedRoad(null);
+      setSelectedIssue(existing);
+      return;
+    }
+    try {
+      const fetched = await api.getIssue(issueItem.id);
+      if (fetched) {
+        setSelectedRoad(null);
+        setSelectedIssue(fetched);
+      }
+    } catch (err) {
+      console.warn('Failed to load issue details for navigation:', err);
+    }
+  };
 
   if (loading) {
     return (
@@ -107,10 +157,16 @@ export function IntelligencePage() {
         buses={buses}
         issues={issues}
         routes={routes}
+        roads={roads}
         hotspots={hotspots}
         layers={layers}
         filter={activeFilter}
-        onIssueSelect={setSelectedIssue}
+        onIssueSelect={(iss) => {
+          setSelectedRoad(null);
+          setSelectedIssue(iss);
+        }}
+        onRoadSelect={handleSelectRoad}
+        selectedRoadId={selectedRoad?.id}
       />
 
       {/* ── Floating Top Operational GIS Banner (Center-Left) ── */}
@@ -129,6 +185,11 @@ export function IntelligencePage() {
             <span className="text-on-surface-variant/70 flex items-center gap-1">
               <BusIcon className="w-3.5 h-3.5 text-cyan-400" />
               <strong className="text-white">{buses.length}</strong> Active Vehicles
+            </span>
+            <span>•</span>
+            <span className="text-on-surface-variant/70 flex items-center gap-1">
+              <Compass className="w-3.5 h-3.5 text-emerald-400" />
+              <strong className="text-white">{roads.length}</strong> Corridors
             </span>
             <span>•</span>
             <span className="text-on-surface-variant/70 flex items-center gap-1">
@@ -168,6 +229,14 @@ export function IntelligencePage() {
       <IssueDrawer 
         issue={selectedIssue} 
         onClose={() => setSelectedIssue(null)} 
+        onRoadSelect={handleSelectRoadById}
+      />
+
+      {/* Right Contextual Road Drawer */}
+      <RoadDrawer
+        road={selectedRoad}
+        onClose={() => setSelectedRoad(null)}
+        onIssueSelect={handleSelectIssue}
       />
     </div>
   );
